@@ -1,0 +1,10 @@
+# 图片文件 (如需保留示例图片可删除此行)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# 系统文件
+.DS_Store
+Thumbs.db
