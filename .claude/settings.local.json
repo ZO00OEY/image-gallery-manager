@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($content = Get-Content \"F:\\\\文生图\\\\工程\\\\图库管理.html\" -Encoding UTF8 -Raw; $lines = $content -split \"`n\"; for \\($i = 2364; $i -le 2381; $i++\\) { Write-Output \"$\\($i+1\\): [$\\($lines[$i]\\)]\" })",
+      "Bash(Get-ChildItem -Recurse -Depth 0 \"F:\\\\文生图\\\\工程\")",
+      "Bash(Select-Object Name)"
+    ]
+  }
+}
