@@ -575,31 +575,6 @@
             background: var(--primary-bg); color: var(--primary); border: 1px solid var(--primary-light);
         }
         .tag-chip:hover { background: var(--primary); color: #fff; transform: translateY(-1px); }
-
-        /* ─── Storage mode toggle ──────────────── */
-        .storage-toggle-row {
-            display: flex; align-items: center; gap: 0; margin-bottom: 8px;
-            background: var(--card-bg); border: 2px solid var(--border-color);
-            border-radius: var(--br-md); overflow: hidden;
-        }
-        .storage-toggle-btn {
-            flex: 1; padding: 9px 6px; border: none; cursor: pointer;
-            font-weight: 600; font-size: 0.82rem; transition: all 0.2s ease;
-            background: transparent; color: var(--text-light);
-            display: flex; align-items: center; justify-content: center; gap: 4px;
-            line-height: 1.3; font-family: inherit; position: relative;
-        }
-        .storage-toggle-btn.active {
-            background: var(--primary); color: #fff;
-        }
-        .storage-toggle-btn:not(.active):hover {
-            background: var(--primary-bg); color: var(--primary);
-        }
-        .storage-badge {
-            font-size: 0.55rem; font-weight: 400; opacity: 0.8;
-            position: absolute; top: 2px; right: 4px;
-            line-height: 1;
-        }
     </style>
 </head>
 <body>
@@ -632,30 +607,19 @@
                 <span class="arrow">▼</span>
             </div>
             <div class="sidebar-section-content">
-                <div class="storage-toggle-row" id="storageToggleRow">
-                    <button class="storage-toggle-btn active" data-mode="local" onclick="switchStorageMode('local')">
-                        <span data-icon="folder" data-icon-size="14"></span>本地储存<span class="storage-badge">推荐</span>
-                    </button>
-                    <button class="storage-toggle-btn" data-mode="indexeddb" onclick="switchStorageMode('indexeddb')">
-                        <span data-icon="database" data-icon-size="14"></span>浏览器储存
-                    </button>
-                </div>
-                <div id="localModeActions" style="display:none;">
-                    <div id="localFolderPath" style="font-size:0.75rem; color:var(--text-light); padding:4px 12px; margin-bottom:4px; word-break:break-all; line-height:1.4;">
-                    </div>
-                    <div style="display:flex; gap:6px;">
-                        <button class="btn-side" data-icon="check" onclick="runHealthCheck()" style="flex:1;">检查</button>
-                        <button class="btn-side" data-icon="refresh" onclick="reselectLocalFolder()" style="flex:1;" title="更换文件夹">更换</button>
-                    </div>
-                    <button class="btn-side" data-icon="auth" onclick="retryLocalPermission()" id="btnRetryAuth" style="display:none;">重新授权</button>
-                </div>
-                <div id="dbModeActions">
-                    <button class="btn-side" data-icon="import" onclick="document.getElementById('importJsonInput').click()">导入数据 (JSON)</button>
-                    <button class="btn-side" data-icon="export" onclick="exportData()">导出数据 (JSON)</button>
-                </div>
+                <button class="btn-side" onclick="document.getElementById('importJsonInput').click()">
+                    <span>📤</span> 导入数据 (JSON)
+                </button>
+                <button class="btn-side" onclick="exportData()">
+                    <span>💾</span> 导出数据 (JSON)
+                </button>
                 <div style="border-top:1px solid var(--border-color); margin:8px 0;"></div>
-                <button class="btn-side" data-icon="batch" onclick="toggleBatchMode()">批量管理</button>
-                <button class="btn-side" data-icon="filter" onclick="openFilterModal()">复制过滤</button>
+                <button class="btn-side" onclick="toggleBatchMode()">
+                    <span>☑️</span> 批量管理
+                </button>
+                <button class="btn-side" onclick="openFilterModal()">
+                    <span>📋</span> 复制过滤
+                </button>
                 <button class="btn-side" onclick="openPromptFixModal()">
                     <span>🔧</span> 提示词整理
                 </button>
@@ -1016,28 +980,6 @@
         </div>
     </div>
 
-    <!-- Storage Mode Switch Modal -->
-    <div class="modal-overlay" id="storageModeModal">
-        <div class="modal" style="max-width:480px;">
-            <div class="modal-header"><div class="modal-title" id="storageModeTitle">切换存储模式</div><button class="modal-close" onclick="hideModal('storageModeModal')">×</button></div>
-            <div class="modal-body" id="storageModeBody" style="text-align:center;">
-            </div>
-            <div class="modal-footer" id="storageModeFooter">
-            </div>
-        </div>
-    </div>
-
-    <!-- Health Check Modal -->
-    <div class="modal-overlay" id="healthCheckModal">
-        <div class="modal" style="max-width:550px;">
-            <div class="modal-header"><div class="modal-title">🔍 健康检查报告</div><button class="modal-close" onclick="hideModal('healthCheckModal')">×</button></div>
-            <div class="modal-body" id="healthCheckBody" style="max-height:400px; overflow-y:auto;">
-            </div>
-            <div class="modal-footer" id="healthCheckFooter">
-            </div>
-        </div>
-    </div>
-
     <!-- Progress Modal -->
     <div class="modal-overlay" id="progressModal" style="z-index:9999;">
         <div class="modal" style="max-width:400px; text-align:center; padding:30px;">
@@ -1125,36 +1067,6 @@ function sanitizeName(s) { try { return decodeURIComponent(s); } catch(e) { retu
 function showToast(msg) { const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 function showModal(id) { document.getElementById(id).style.display='flex'; }
 function hideModal(id) { document.getElementById(id).style.display='none'; if(id==='fullscreenOverlay') isFullscreenOpen=false; }
-
-// ─── SVG Line Icons ──────────────────────────
-function svgIcon(key, size=16){
-    const s='<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0;">';
-    const icons={
-        folder:'<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>',
-        database:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
-        'import':'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
-        'export':'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
-        'check':'<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><line x1="8" y1="11" x2="11" y2="14"/><line x1="11" y1="14" x2="16" y2="9"/>',
-        refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>',
-        batch:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
-        filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
-        wrench:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',
-        auth:'<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',
-        folderOpen:'<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 12v7"/><path d="M8 15l4-4 4 4"/>',
-        globe:'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>',
-        sparkle:'<path d="M12 2l1.5 5.5L19 6l-3.5 4.5L18 15l-5.5-1.5L11 19l-1-5.5L4.5 15l3-4.5L6 6l5.5 1.5z"/>',
-    };
-    return s+(icons[key]||'')+'</svg>';
-}
-function initIcons(){
-    document.querySelectorAll('[data-icon]').forEach(el=>{
-        const key=el.dataset.icon;
-        const size=el.dataset.iconSize||'16';
-        const svg=svgIcon(key,parseInt(size));
-        // Insert SVG before existing text, keeping text
-        if(!el.querySelector('svg')) el.insertAdjacentHTML('afterbegin',svg);
-    });
-}
 // ─── Settings ───────────────────────────────
 let appSettings={copyFilterPatterns:[]};
 
@@ -1284,11 +1196,10 @@ function formatTime(ts) {
 
 // ─── IndexedDB ──────────────────────────────
 const DB_NAME='ImagePromptManagerDB';
-const DB_VERSION=4;
+const DB_VERSION=3;
 const STORE_MODELS='models';
 const STORE_BOXES='boxes';
 const STORE_IMAGES='images';
-const CONFIG_DB_NAME='ImagePromptManagerConfig';
 let db;
 
 function initDB() {
@@ -1301,664 +1212,29 @@ function initDB() {
             if(!d.objectStoreNames.contains(STORE_IMAGES)) { const st=d.createObjectStore(STORE_IMAGES,{keyPath:'id'}); st.createIndex('boxId','boxId',{unique:false}); }
         };
         req.onsuccess=e=>{ db=e.target.result; resolve(); };
-        req.onerror=e=>{ console.error('DB init error:', e.target.error); resolve(); };
+        req.onerror=()=>{ console.error('DB init error'); resolve(); };
     });
 }
 
-// Separate config DB for directory handle (avoids main DB schema changes)
-async function openConfigDB(){
-    return new Promise((resolve,reject)=>{
-        const req=indexedDB.open(CONFIG_DB_NAME,1);
-        req.onupgradeneeded=e=>{
-            e.target.result.createObjectStore('config',{keyPath:'id'});
-        };
-        req.onsuccess=e=>resolve(e.target.result);
-        req.onerror=()=>resolve(null);
-    });
-}
-async function configGet(id){
-    const cdb=await openConfigDB();
-    if(!cdb) return null;
-    return new Promise(res=>{
-        try{ const tx=cdb.transaction(['config']); tx.objectStore('config').get(id).onsuccess=e=>{res(e.target.result); cdb.close();}; }
-        catch(e){ res(null); cdb.close(); }
-    });
-}
-async function configPut(id, data){
-    const cdb=await openConfigDB();
-    if(!cdb) return;
-    return new Promise(res=>{
-        try{ const tx=cdb.transaction(['config'],'readwrite'); tx.objectStore('config').put({id, data}).onsuccess=()=>{cdb.close(); res();}; }
-        catch(e){ cdb.close(); res(); }
-    });
-}
-async function configDelete(id){
-    const cdb=await openConfigDB();
-    if(!cdb) return;
-    return new Promise(res=>{
-        try{ const tx=cdb.transaction(['config'],'readwrite'); tx.objectStore('config').delete(id).onsuccess=()=>{cdb.close(); res();}; }
-        catch(e){ cdb.close(); res(); }
-    });
-}
-
-// ─── Raw IndexedDB helpers (always hit IndexedDB, never dispatch) ────
-function idbGet(store,id) {
+function dbGet(store,id) {
     return new Promise(res=>{ db.transaction([store]).objectStore(store).get(id).onsuccess=e=>res(e.target.result); });
 }
-function idbPut(store,data) {
+function dbPut(store,data) {
     return new Promise(res=>{ db.transaction([store],'readwrite').objectStore(store).put(data).onsuccess=res; });
 }
-function idbDelete(store,id) {
+function dbDelete(store,id) {
     return new Promise(res=>{ db.transaction([store],'readwrite').objectStore(store).delete(id).onsuccess=res; });
 }
-function idbGetAll(store) {
+function dbGetAll(store) {
     return new Promise(res=>{ db.transaction([store]).objectStore(store).getAll().onsuccess=e=>res(e.target.result||[]); });
 }
-function idbGetByIndex(store,indexName,value) {
+function dbGetByIndex(store,indexName,value) {
     return new Promise(res=>{ db.transaction([store]).objectStore(store).index(indexName).getAll(value).onsuccess=e=>res(e.target.result||[]); });
 }
-async function idbDeleteAll(store) {
-    const all=await idbGetAll(store);
-    for(const item of all) await idbDelete(store,item.id);
+async function dbDeleteAll(store) {
+    const all=await dbGetAll(store);
+    for(const item of all) await dbDelete(store,item.id);
 }
-
-// ─── Storage mode & directory handle ─────────
-let storageMode='indexeddb'; // 'indexeddb' | 'local'
-let localRootHandle=null;    // FileSystemDirectoryHandle
-
-function getStorageMode(){ return storageMode; }
-function setStorageMode(mode){
-    storageMode=mode;
-    try{ localStorage.setItem('ipm_storageMode',mode); }catch(e){}
-}
-
-const LOCAL_SUBFOLDER='图库数据';
-
-async function saveRootHandle(handle){
-    try{ await configPut('rootHandle',handle); }catch(e){ console.warn('saveRootHandle failed',e); }
-}
-async function loadRootHandle(){
-    try{
-        const record=await configGet('rootHandle');
-        return record?record.data:null;
-    }catch(e){ return null; }
-}
-async function clearRootHandle(){
-    try{ await configDelete('rootHandle'); }catch(e){}
-}
-
-async function getOrCreateSubfolder(parentHandle){
-    // If the selected folder is already named 图库数据, use it directly
-    if(parentHandle.name===LOCAL_SUBFOLDER) return parentHandle;
-    return await ensureDir(parentHandle, LOCAL_SUBFOLDER);
-}
-
-// ─── Dispatch wrappers (route to idb* or local* based on storageMode) ────
-function dbGet(store,id){
-    return storageMode==='local'?localGet(store,id):idbGet(store,id);
-}
-function dbPut(store,data){
-    return storageMode==='local'?localPut(store,data):idbPut(store,data);
-}
-function dbDelete(store,id){
-    return storageMode==='local'?localDelete(store,id):idbDelete(store,id);
-}
-function dbGetAll(store){
-    return storageMode==='local'?localGetAll(store):idbGetAll(store);
-}
-function dbGetByIndex(store,indexName,value){
-    return storageMode==='local'?localGetByIndex(store,indexName,value):idbGetByIndex(store,indexName,value);
-}
-async function dbDeleteAll(store){
-    return storageMode==='local'?localDeleteAll(store):idbDeleteAll(store);
-}
-
-// ─── Local file storage helpers ───────────────
-const blobUrlMap=new Map(); // "model/box/file" -> blobUrl — for revocation
-
-function sanitizeFileName(name){
-    return name.replace(/[<>:"/\\|?*]/g,'_').replace(/\s+/g,' ').trim()||'untitled';
-}
-
-async function ensureDir(parentHandle, name){
-    try{ return await parentHandle.getDirectoryHandle(name); }
-    catch{ return await parentHandle.getDirectoryHandle(name,{create:true}); }
-}
-
-async function readJSON(handle, fileName){
-    try{
-        const fh=await handle.getFileHandle(fileName);
-        const file=await fh.getFile();
-        const text=await file.text();
-        return JSON.parse(text);
-    }catch(e){ return null; }
-}
-
-async function writeJSON(handle, fileName, data){
-    const fh=await handle.getFileHandle(fileName,{create:true});
-    const writable=await fh.createWritable();
-    await writable.write(JSON.stringify(data,null,2));
-    await writable.close();
-}
-
-async function readFileBytes(handle, fileName){
-    try{
-        const fh=await handle.getFileHandle(fileName);
-        const file=await fh.getFile();
-        return await file.arrayBuffer();
-    }catch(e){ return null; }
-}
-
-async function writeFileBytes(handle, fileName, bytes){
-    const fh=await handle.getFileHandle(fileName,{create:true});
-    const writable=await fh.createWritable();
-    await writable.write(bytes);
-    await writable.close();
-}
-
-async function removeEntrySafe(handle, name){
-    try{ await handle.removeEntry(name,{recursive:true}); }catch(e){}
-}
-
-// Convert dataURL (base64) to ArrayBuffer
-function dataUrlToBytes(dataUrl){
-    const comma=dataUrl.indexOf(',');
-    const b64=dataUrl.slice(comma+1);
-    const raw=atob(b64);
-    const bytes=new Uint8Array(raw.length);
-    for(let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
-    return bytes.buffer;
-}
-
-// Convert ArrayBuffer to dataURL
-function bytesToDataUrl(bytes, mimeType){
-    // Use chunked conversion to avoid "Maximum call stack size exceeded" for large images
-    const arr=new Uint8Array(bytes);
-    const CHUNK=8192;
-    let raw='';
-    for(let i=0;i<arr.length;i+=CHUNK){
-        raw+=String.fromCharCode(...arr.subarray(i,i+CHUNK));
-    }
-    return `data:${mimeType};base64,${btoa(raw)}`;
-}
-
-function guessMimeType(fileName){
-    const ext=fileName.split('.').pop().toLowerCase();
-    const map={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',bmp:'image/bmp',svg:'image/svg+xml'};
-    return map[ext]||'image/png';
-}
-
-// Compute SHA-256 hash of a file (for dedup detection)
-async function computeFileHash(handle, fileName){
-    try{
-        const bytes=await readFileBytes(handle, fileName);
-        if(!bytes) return null;
-        const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
-        return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }catch(e){ return null; }
-}
-
-// Compute SHA-256 hash from a dataURL (for DB-side dedup)
-async function hashFromDataUrl(dataUrl){
-    if(!dataUrl||!dataUrl.startsWith('data:')) return null;
-    try{
-        const bytes=dataUrlToBytes(dataUrl);
-        const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
-        return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }catch(e){ return null; }
-}
-
-// Dedup an images array by content hash (returns new array, keeps first of each hash)
-async function dedupImagesByHash(images){
-    if(!images||images.length<2) return images;
-    const hashMap=new Map();
-    const result=[];
-    for(const img of images){
-        const hash=await hashFromDataUrl(img.dataUrl);
-        if(hash&&hashMap.has(hash)) continue;
-        if(hash) hashMap.set(hash,true);
-        result.push(img);
-    }
-    return result;
-}
-
-// Get file name for an image (with counter for duplicates)
-function getImageFileName(image, index){
-    const name=image.name||`image_${index+1}`;
-    const ext=name.split('.').pop().toLowerCase();
-    const baseName=name.slice(0,name.lastIndexOf('.'));
-    const safeBase=sanitizeFileName(baseName);
-    const safeExt=ext.match(/^(png|jpe?g|gif|webp|bmp)$/i)?ext:'png';
-    return `${safeBase}.${safeExt}`;
-}
-
-// Resolve a box folder from root: root / modelName / boxFolderName
-async function getBoxFolderHandle(modelId, boxId){
-    if(!localRootHandle) throw new Error('No root handle');
-    const settings=await readJSON(localRootHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex) return null;
-    const modelBoxes=settings.boxIndex[modelId];
-    if(!modelBoxes||!modelBoxes[boxId]) return null;
-    const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-    const folderName=modelBoxes[boxId];
-    try{
-        const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-        return await modelDir.getDirectoryHandle(folderName);
-    }catch(e){ return null; }
-}
-
-// Revoke all cached blob URLs
-function revokeAllBlobUrls(){
-    for(const url of blobUrlMap.values()){
-        try{ URL.revokeObjectURL(url); }catch(e){}
-    }
-    blobUrlMap.clear();
-}
-
-// ─── Local storage implementations of db functions ────
-
-async function localGetSettings(){
-    if(!localRootHandle) return null;
-    let settings=await readJSON(localRootHandle,'gallery_settings.json');
-    if(!settings){
-        settings={version:1,models:{},boxIndex:{},currentModelId:null,copyFilterPatterns:[]};
-        await writeJSON(localRootHandle,'gallery_settings.json',settings);
-    }
-    return settings;
-}
-
-async function localGet(store, id){
-    if(!localRootHandle) return null;
-    if(store===STORE_MODELS){
-        const settings=await localGetSettings();
-        return {id:'main', data:settings.models||{}};
-    }
-    if(store===STORE_BOXES){
-        const settings=await localGetSettings();
-        if(!settings.boxIndex) return null;
-        // Search all models for this boxId
-        for(const modelId of Object.keys(settings.boxIndex)){
-            if(settings.boxIndex[modelId][id]){
-                const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-                const folderName=settings.boxIndex[modelId][id];
-                try{
-                    const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-                    const boxDir=await modelDir.getDirectoryHandle(folderName);
-                    const meta=await readJSON(boxDir,'_meta.json');
-                    if(meta) return meta; // meta IS the box object (includes id, name, tags, etc.)
-                }catch(e){ continue; }
-            }
-        }
-        return null;
-    }
-    if(store===STORE_IMAGES){
-        const settings=await localGetSettings();
-        if(!settings.boxIndex) return null;
-        for(const modelId of Object.keys(settings.boxIndex)){
-            if(settings.boxIndex[modelId][id]){
-                const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-                const folderName=settings.boxIndex[modelId][id];
-                try{
-                    const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-                    const boxDir=await modelDir.getDirectoryHandle(folderName);
-                    const meta=await readJSON(boxDir,'_meta.json');
-                    if(!meta||!meta.images) return {id, boxId:id, images:[]};
-                    const images=[];
-                    for(const imgName of Object.keys(meta.images)){
-                        const imgMeta=meta.images[imgName];
-                        const blobKey=`${modelId}/${id}/${imgName}`;
-                        let blobUrl=blobUrlMap.get(blobKey);
-                        const fileBytes=await readFileBytes(boxDir,imgName);
-                        if(fileBytes){
-                            if(blobUrl) URL.revokeObjectURL(blobUrl);
-                            const mime=guessMimeType(imgName);
-                            const blob=new Blob([fileBytes],{type:mime});
-                            blobUrl=URL.createObjectURL(blob);
-                            blobUrlMap.set(blobKey,blobUrl);
-                        }
-                        images.push({
-                            name:imgName,
-                            dataUrl:blobUrl||'',
-                            remark:imgMeta.remark||'',
-                            positivePrompt:imgMeta.positivePrompt||'',
-                            negativePrompt:imgMeta.negativePrompt||'',
-                            steps:imgMeta.steps||'',
-                            workflow:imgMeta.workflow||null
-                        });
-                    }
-                    return {id, boxId:id, images};
-                }catch(e){ continue; }
-            }
-        }
-        return null;
-    }
-    return null;
-}
-
-async function localPut(store, data){
-    if(!localRootHandle) return;
-    if(store===STORE_MODELS){
-        const settings=await localGetSettings();
-        settings.models=data.data||{};
-        await writeJSON(localRootHandle,'gallery_settings.json',settings);
-        return;
-    }
-    if(store===STORE_BOXES){
-        const box=data;
-        const settings=await localGetSettings();
-        if(!settings.boxIndex) settings.boxIndex={};
-        if(!settings.boxIndex[box.modelId]) settings.boxIndex[box.modelId]={};
-        const oldFolderName=settings.boxIndex[box.modelId][box.id];
-        const newFolderName=sanitizeFileName(box.name);
-        const modelName=settings.models[box.modelId]?settings.models[box.modelId].name:box.modelId;
-        const modelDir=await ensureDir(localRootHandle,modelName);
-
-        // If renamed, move folder
-        if(oldFolderName && oldFolderName!==newFolderName){
-            try{
-                const oldDir=await modelDir.getDirectoryHandle(oldFolderName);
-                // Read existing meta + images
-                const oldMeta=await readJSON(oldDir,'_meta.json');
-                const newDir=await ensureDir(modelDir,newFolderName);
-                if(oldMeta){
-                    await writeJSON(newDir,'_meta.json',{...oldMeta, name:box.name});
-                }
-                // Move image files
-                for await(const [name,entry] of oldDir.entries()){
-                    if(entry.kind==='file'&&name!=='_meta.json'){
-                        const bytes=await readFileBytes(oldDir,name);
-                        if(bytes) await writeFileBytes(newDir,name,bytes);
-                    }
-                }
-                await removeEntrySafe(modelDir,oldFolderName);
-            }catch(e){ /* fall through to write meta */ }
-        }else if(!oldFolderName){
-            await ensureDir(modelDir,newFolderName);
-        }
-
-        settings.boxIndex[box.modelId][box.id]=newFolderName;
-        await writeJSON(localRootHandle,'gallery_settings.json',settings);
-
-        // Write/update _meta.json in box folder
-        try{
-            const boxDir=await modelDir.getDirectoryHandle(newFolderName);
-            const existingMeta=await readJSON(boxDir,'_meta.json');
-            const images=existingMeta&&existingMeta.images?existingMeta.images:{};
-            const meta={...box, images};
-            await writeJSON(boxDir,'_meta.json',meta);
-        }catch(e){ console.warn('localPut box meta write failed',e); }
-        return;
-    }
-    if(store===STORE_IMAGES){
-        const boxId=data.boxId||data.id;
-        const newImages=data.images||[];
-        const settings=await localGetSettings();
-        if(!settings.boxIndex) return;
-
-        // Find modelId and folder for this box
-        let foundModelId=null, foundFolderName=null;
-        for(const mId of Object.keys(settings.boxIndex)){
-            if(settings.boxIndex[mId][boxId]){
-                foundModelId=mId; foundFolderName=settings.boxIndex[mId][boxId]; break;
-            }
-        }
-        if(!foundModelId||!foundFolderName) return;
-
-        const modelName=settings.models[foundModelId]?settings.models[foundModelId].name:foundModelId;
-        const modelDir=await ensureDir(localRootHandle,modelName);
-        const boxDir=await ensureDir(modelDir,foundFolderName);
-
-        // Read existing meta
-        let meta=await readJSON(boxDir,'_meta.json');
-        if(!meta) meta={id:boxId, name:foundFolderName, tags:[], remark:'', createdAt:Date.now(), modelId:foundModelId, viewIndex:0, imageCount:0, images:{}};
-
-        // Build new images map: name -> metadata (NO dataUrl)
-        const newImagesMap={};
-        for(let i=0;i<newImages.length;i++){
-            const img=newImages[i];
-            const fname=getImageFileName(img,i);
-            let finalName=fname;
-
-            // Handle duplicate file names
-            let counter=1;
-            const base=fname.slice(0,fname.lastIndexOf('.'));
-            const ext=fname.slice(fname.lastIndexOf('.'));
-            while(newImagesMap[finalName]||(meta.images&&meta.images[finalName]&&!meta.images[finalName]._replaced)){
-                finalName=`${base}_${counter}${ext}`;
-                counter++;
-            }
-
-            // Write image file from dataUrl
-            if(img.dataUrl){
-                if(img.dataUrl.startsWith('data:')){
-                    const bytes=dataUrlToBytes(img.dataUrl);
-                    await writeFileBytes(boxDir,finalName,bytes);
-                }else if(img.dataUrl.startsWith('blob:')){
-                    // Blob URL — fetch and write
-                    try{
-                        const resp=await fetch(img.dataUrl);
-                        const buf=await resp.arrayBuffer();
-                        await writeFileBytes(boxDir,finalName,buf);
-                    }catch(e){ console.warn('Failed to write blob URL',e); }
-                }
-            }
-
-            newImagesMap[finalName]={
-                remark:img.remark||'',
-                positivePrompt:img.positivePrompt||'',
-                negativePrompt:img.negativePrompt||'',
-                steps:img.steps||'',
-                workflow:img.workflow||null
-            };
-
-            // Update blob URL cache
-            const blobKey=`${foundModelId}/${boxId}/${finalName}`;
-            const oldUrl=blobUrlMap.get(blobKey);
-            if(oldUrl&&oldUrl!==img.dataUrl){
-                try{ URL.revokeObjectURL(oldUrl); }catch(e){}
-            }
-            if(img.dataUrl&&img.dataUrl.startsWith('blob:')){
-                blobUrlMap.set(blobKey,img.dataUrl);
-            }
-        }
-
-        // Remove old image files that are no longer in the images list
-        const oldImageNames=meta.images?Object.keys(meta.images):[];
-        for(const oldName of oldImageNames){
-            if(!newImagesMap[oldName]){
-                await removeEntrySafe(boxDir,oldName);
-                const blobKey=`${foundModelId}/${boxId}/${oldName}`;
-                const url=blobUrlMap.get(blobKey);
-                if(url){ URL.revokeObjectURL(url); blobUrlMap.delete(blobKey); }
-            }
-        }
-
-        meta.images=newImagesMap;
-        meta.imageCount=Object.keys(newImagesMap).length;
-        await writeJSON(boxDir,'_meta.json',meta);
-        return;
-    }
-}
-
-async function localDelete(store, id){
-    if(!localRootHandle) return;
-    if(store===STORE_BOXES){
-        const settings=await localGetSettings();
-        if(!settings.boxIndex) return;
-        for(const modelId of Object.keys(settings.boxIndex)){
-            if(settings.boxIndex[modelId][id]){
-                const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-                const folderName=settings.boxIndex[modelId][id];
-                try{
-                    const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-                    await removeEntrySafe(modelDir,folderName);
-                }catch(e){}
-                delete settings.boxIndex[modelId][id];
-                await writeJSON(localRootHandle,'gallery_settings.json',settings);
-                // Revoke blob URLs for this box
-                for(const key of blobUrlMap.keys()){
-                    if(key.includes(`/${id}/`)){ URL.revokeObjectURL(blobUrlMap.get(key)); blobUrlMap.delete(key); }
-                }
-                return;
-            }
-        }
-    }
-    if(store===STORE_IMAGES){
-        // Delete all image files in box folder
-        const settings=await localGetSettings();
-        if(!settings.boxIndex) return;
-        for(const modelId of Object.keys(settings.boxIndex)){
-            if(settings.boxIndex[modelId][id]){
-                const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-                const folderName=settings.boxIndex[modelId][id];
-                try{
-                    const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-                    const boxDir=await modelDir.getDirectoryHandle(folderName);
-                    const meta=await readJSON(boxDir,'_meta.json');
-                    if(meta&&meta.images){
-                        for(const imgName of Object.keys(meta.images)){
-                            await removeEntrySafe(boxDir,imgName);
-                        }
-                        meta.images={};
-                        meta.imageCount=0;
-                        await writeJSON(boxDir,'_meta.json',meta);
-                    }
-                }catch(e){}
-                return;
-            }
-        }
-    }
-}
-
-async function localGetAll(store){
-    if(!localRootHandle) return [];
-    if(store===STORE_BOXES){
-        const settings=await localGetSettings();
-        if(!settings||!settings.boxIndex) return [];
-        const results=[];
-        for(const modelId of Object.keys(settings.boxIndex)){
-            const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-            for(const boxId of Object.keys(settings.boxIndex[modelId])){
-                const meta=await localGet(STORE_BOXES,boxId);
-                if(meta) results.push(meta);
-            }
-        }
-        return results;
-    }
-    if(store===STORE_IMAGES){
-        const settings=await localGetSettings();
-        if(!settings||!settings.boxIndex) return [];
-        const results=[];
-        for(const modelId of Object.keys(settings.boxIndex)){
-            for(const boxId of Object.keys(settings.boxIndex[modelId])){
-                const record=await localGet(STORE_IMAGES,boxId);
-                if(record) results.push(record);
-            }
-        }
-        return results;
-    }
-    if(store===STORE_MODELS){
-        const settings=await localGetSettings();
-        return settings&&settings.models?[{id:'main',data:settings.models}]:[];
-    }
-    return [];
-}
-
-async function localGetByIndex(store, indexName, value){
-    if(!localRootHandle) return [];
-    if(store===STORE_BOXES&&indexName==='modelId'){
-        const settings=await localGetSettings();
-        if(!settings||!settings.boxIndex||!settings.boxIndex[value]) return [];
-        const results=[];
-        const modelBoxes=settings.boxIndex[value];
-        for(const boxId of Object.keys(modelBoxes)){
-            const meta=await localGet(STORE_BOXES,boxId);
-            if(meta) results.push(meta);
-        }
-        return results;
-    }
-    if(store===STORE_IMAGES&&indexName==='boxId'){
-        const record=await localGet(STORE_IMAGES,value);
-        return record?[record]:[];
-    }
-    // Fallback: getAll and filter
-    const all=await localGetAll(store);
-    return all.filter(item=>item&&item[indexName]===value);
-}
-
-async function localDeleteAll(store){
-    if(!localRootHandle) return;
-    const settings=await localGetSettings();
-    if(store===STORE_BOXES){
-        if(settings&&settings.boxIndex){
-            for(const modelId of Object.keys(settings.boxIndex)){
-                for(const boxId of Object.keys(settings.boxIndex[modelId])){
-                    await localDelete(STORE_BOXES,boxId);
-                }
-            }
-            settings.boxIndex={};
-            await writeJSON(localRootHandle,'gallery_settings.json',settings);
-        }
-    }else if(store===STORE_IMAGES){
-        if(settings&&settings.boxIndex){
-            for(const modelId of Object.keys(settings.boxIndex)){
-                for(const boxId of Object.keys(settings.boxIndex[modelId])){
-                    await localDelete(STORE_IMAGES,boxId);
-                }
-            }
-        }
-    }
-}
-
-// ─── Directory picker & permission ──────────
-async function selectLocalFolder(skipConfirm=false){
-    // Show confirmation modal before opening directory picker (unless already explained)
-    if(!skipConfirm){
-        const proceed=await new Promise(resolve=>{
-            showStyledConfirm(
-                '📁 选择本地文件夹',
-                `<p style="color:var(--text-main);">选择文件夹后将自动创建「${LOCAL_SUBFOLDER}」目录存放数据。</p>
-                 <p style="font-size:0.85rem; color:var(--text-main); margin-top:8px; opacity:0.75;">若选中的文件夹内已有图库数据，将自动识别并加载。</p>`,
-                '选择文件夹', '取消',
-                ()=>resolve(true),
-                ()=>resolve(false)
-            );
-        });
-        if(!proceed) return null;
-    }
-
-    try{
-        const parentHandle=await window.showDirectoryPicker({mode:'readwrite'});
-        // Store parent handle; actual data goes into a dedicated subfolder
-        const subHandle=await getOrCreateSubfolder(parentHandle);
-        localRootHandle=subHandle;
-        await saveRootHandle(parentHandle);
-        showToast(`已在「${parentHandle.name}」内使用「${LOCAL_SUBFOLDER}」文件夹储存图库数据`);
-        return subHandle;
-    }catch(e){
-        if(e.name==='AbortError') return null;
-        console.error('showDirectoryPicker failed',e);
-        showToast('浏览器不支持此功能，请使用 Chrome 或 Edge');
-        return null;
-    }
-}
-
-async function restoreLocalFolder(){
-    const parentHandle=await loadRootHandle();
-    if(!parentHandle) return false;
-    try{
-        const opts={mode:'readwrite'};
-        let state=await parentHandle.queryPermission(opts);
-        // Try harder: request permission even if currently 'denied' or 'prompt'
-        if(state!=='granted') state=await parentHandle.requestPermission(opts);
-        if(state==='granted'){
-            localRootHandle=await getOrCreateSubfolder(parentHandle);
-            return true;
-        }
-    }catch(e){ console.warn('Permission restore failed',e); }
-    return false;
-}
-
 
 // ─── Data Model ─────────────────────────────
 // MODELS: { modelId: { id, name } } — stored in STORE_MODELS
@@ -2004,8 +1280,12 @@ async function loadModels() {
 }
 
 function initDefaultModels() {
-    MODELS={};
-    currentModelId=null;
+    MODELS={
+        'model_1':{id:'model_1',name:'SDXL',sortIndex:0},
+        'model_2':{id:'model_2',name:'Pony',sortIndex:1},
+        'model_3':{id:'model_3',name:'Flux',sortIndex:2}
+    };
+    currentModelId='model_1';
 }
 
 function saveModels() {
@@ -2018,9 +1298,8 @@ async function loadBoxes() {
     imageCount.clear();
     cachedBoxImages.clear();
 
-    // Migrate: ensure boxes have imageCount field, and old-format images are updated.
-    // Skip in local mode — data comes from _meta.json files, already in correct format.
-    if(!appSettings.imgCountMigrated&&storageMode!=='local'){
+    // Migrate: ensure boxes have imageCount field, and old-format images are updated
+    if(!appSettings.imgCountMigrated){
         const boxIds=currentBoxes.map(b=>b.id);
         const records=await Promise.all(boxIds.map(id=>dbGet(STORE_IMAGES,id)));
         for(let i=0;i<currentBoxes.length;i++){
@@ -3081,29 +2360,20 @@ function parsePromptParts(fullText) {
     // Detect API-format JSON (ComfyUI prompt chunk)
     if(fullText.trim().startsWith('{')){
         const wfResult=extractPromptsFromWorkflow(fullText);
-        return {positive:wfResult.positive, negative:wfResult.negative, steps:wfResult.steps||''};
+        return {positive:wfResult.positive, negative:wfResult.negative, steps:''};
     }
     const negIdx=fullText.indexOf('Negative prompt:');
-    // Match "Steps:" followed by a number, with word boundary to avoid "footsteps: N" etc.
-    const stepsRe=/\bSteps:\s*\d+/i;
-    const stepsMatch=fullText.match(stepsRe);
     let positive='', negative='', steps='';
     if(negIdx>=0){
         positive=fullText.substring(0, negIdx).trim();
         const afterNeg=fullText.substring(negIdx+'Negative prompt:'.length);
-        const stepsAfterNeg=afterNeg.match(stepsRe);
-        if(stepsAfterNeg){
-            negative=afterNeg.substring(0, stepsAfterNeg.index).trim();
-            // Include "Steps: N" prefix so user sees full parameter string
-            steps=afterNeg.substring(stepsAfterNeg.index).trim();
+        const stepsIdx=afterNeg.indexOf('Steps:');
+        if(stepsIdx>=0){
+            negative=afterNeg.substring(0, stepsIdx).trim();
+            steps=afterNeg.substring(stepsIdx+'Steps:'.length).trim();
         } else {
             negative=afterNeg.trim();
         }
-    } else if(stepsMatch){
-        // No negative prompt, but step parameters exist — split them out
-        positive=fullText.substring(0, stepsMatch.index).trim();
-        // Include "Steps: N" prefix so user sees full parameter string
-        steps=fullText.substring(stepsMatch.index).trim();
     } else {
         positive=fullText.trim();
     }
@@ -3111,14 +2381,13 @@ function parsePromptParts(fullText) {
 }
 
 function extractPromptsFromWorkflow(workflowStr){
-    if(!workflowStr) return {positive:'', negative:'', steps:''};
+    if(!workflowStr) return {positive:'', negative:''};
     try{
         const wf=JSON.parse(workflowStr);
-        const found={positive:'', negative:'', steps:''};
+        const found={positive:'', negative:''};
         const posKeywords=['score_9','score_8','masterpiece','best quality','amazing quality','very aesthetic','absurdres','newest'];
         const negKeywords=['score_4','score_3','score_2','score_1','worst quality','low quality','normal quality','bad anatomy','deformed','mutated','disfigured','badhandv4','EasyNegative','bad proportions','worstquality','bad body','extra limb','missing limb','poorly drawn','malformed','fused fingers','long neck','extra arms','extra legs','missing fingers','missing arms','missing legs'];
         const skipNodeTypes=new Set(['MarkdownNote','Note','VAELoader','LoadImage','SaveImage','KSampler','UNETLoader','DualCLIPLoader','VAEEncode','VAEDecode','CheckpointLoaderSimple','EmptyLatentImage','FluxKontextImageScale']);
-        const samplerTypes=new Set(['KSampler','KSamplerAdvanced','KSamplerSelect','SamplerCustom','SamplerCustomAdvanced','BNK_CustomSampler']);
 
         function isPositivePrompt(s){ const lc=s.toLowerCase(); return posKeywords.some(k=>lc.includes(k)); }
         function isNegativePrompt(s){ const lc=s.toLowerCase(); return negKeywords.some(k=>lc.includes(k)); }
@@ -3154,26 +2423,8 @@ function extractPromptsFromWorkflow(workflowStr){
             }
             // Determine node type
             const nodeType=obj.type||obj.class_type||'';
-            if(skipNodeTypes.has(nodeType)){
-                // Extract steps from sampler nodes before skipping
-                if(samplerTypes.has(nodeType)&&!found.steps){
-                    const inputs=obj.inputs||obj.widgets_values;
-                    if(inputs){
-                        const stepsKey=Object.keys(inputs).find(k=>k.toLowerCase()==='steps');
-                        if(stepsKey){
-                            const parts=['Steps: '+inputs[stepsKey]];
-                            const samplerKey=Object.keys(inputs).find(k=>k.toLowerCase()==='sampler_name');
-                            if(samplerKey) parts.push('Sampler: '+inputs[samplerKey]);
-                            const cfgKey=Object.keys(inputs).find(k=>k.toLowerCase()==='cfg');
-                            if(cfgKey) parts.push('CFG scale: '+inputs[cfgKey]);
-                            const seedKey=Object.keys(inputs).find(k=>k.toLowerCase()==='seed'||k.toLowerCase()==='noise_seed');
-                            if(seedKey) parts.push('Seed: '+inputs[seedKey]);
-                            found.steps=parts.join(', ');
-                        }
-                    }
-                }
-                return;
-            }
+            if(skipNodeTypes.has(nodeType)) return; // Skip known non-prompt nodes
+
             for(const key of Object.keys(obj)){
                 const val=obj[key];
                 if(typeof val==='string'&&val.length>20){
@@ -3186,63 +2437,23 @@ function extractPromptsFromWorkflow(workflowStr){
                         else if(!found.positive) found.positive=val;
                     }
                 }
-                // Extract steps from any node that has a numeric steps field
-                if(!found.steps&&typeof val==='number'&&key.toLowerCase()==='steps'){
-                    found.steps=String(val);
-                }
-                // Extract steps from string fields named 'steps' (e.g., "20" or "Steps: 20, ...")
-                if(!found.steps&&typeof val==='string'&&key.toLowerCase()==='steps'&&val.length<40){
-                    found.steps=val.trim();
-                }
                 search(val, nodeType||parentType);
             }
         }
         search(wf, '');
         return found;
-    } catch(e){ return {positive:'', negative:'', steps:''}; }
+    } catch(e){ return {positive:'', negative:''}; }
 }
 
 function resolvePrompts(remark, workflow){
     const wfParts=extractPromptsFromWorkflow(workflow);
     const parts=parsePromptParts(remark||'');
     // Remark is the definitive prompt source; workflow is fallback
-    let positive=parts.positive||wfParts.positive;
-    let negative=parts.negative||wfParts.negative;
-    let steps=parts.steps||wfParts.steps;
-    // Post-process: scan positive/negative for leftover generation params and move to steps
-    const posResult=stripGenerationParams(positive);
-    if(posResult.params){
-        positive=posResult.cleaned;
-        steps=steps||posResult.params;
-    }
-    const negResult=stripGenerationParams(negative);
-    if(negResult.params){
-        negative=negResult.cleaned;
-        if(!steps) steps=negResult.params;
-    }
-    return {positive, negative, steps};
-}
-
-// Scan text for generation parameter blocks and strip them out, returning {cleaned, params}
-// Matches patterns like "Steps: 28, Sampler: Euler a Karras, CFG scale: 7.0, Seed: ..., Size: WxH"
-function stripGenerationParams(text){
-    if(!text) return {cleaned:text, params:''};
-    // Find the start of generation parameters: "Steps: N" pattern
-    // Use a simple, reliable regex — word boundary + "Steps:" + whitespace + digits
-    const stepsRe=/\bSteps:\s*\d+/i;
-    const m=text.match(stepsRe);
-    if(!m) return {cleaned:text, params:''};
-    // Generation params typically run from "Steps: N" to end of text (or end of line if embedded)
-    // Check if the section after "Steps:" looks like comma-separated key:value pairs
-    const afterSteps=text.substring(m.index);
-    // If "Steps: N" is part of a longer comma-separated param block, capture to end
-    // Generation params end at double-newline, or at end of string
-    const endMatch=afterSteps.match(/\n\s*\n/);
-    const paramBlock=endMatch ? afterSteps.substring(0, endMatch.index) : afterSteps;
-    const cleaned=(text.substring(0, m.index)+text.substring(m.index+paramBlock.length)).trim();
-    // Clean up trailing comma/space left behind
-    const finalCleaned=cleaned.replace(/[,，]\s*$/,'').replace(/\n\s*[,，]\s*$/,'').trim();
-    return {cleaned:finalCleaned, params:paramBlock.trim()};
+    return {
+        positive: parts.positive||wfParts.positive,
+        negative: parts.negative||wfParts.negative,
+        steps: parts.steps
+    };
 }
 
 function extractPngTextChunks(bytes){
@@ -3702,144 +2913,65 @@ async function doExport(exportAll) {
     modelIds.forEach(id=>{ exportModels[id]=MODELS[id]; });
 
     showModal('progressModal');
-    const progressModal=document.getElementById('progressModal');
-    const modalContent=progressModal.querySelector('.modal');
     document.getElementById('progressTitle').innerText='计算导出规模...';
     document.getElementById('progressFill').style.width='0%';
     document.getElementById('progressText').innerText='0%';
 
-    // Phase 1: count total images and collect boxes by model
+    // Phase 1: count total images
     let totalImages=0;
-    const modelBoxes={}; // modelId -> [{box, count}]
+    const allBoxes=[];
     for(const modelId of modelIds){
         const boxes=await dbGetByIndex(STORE_BOXES,'modelId',modelId);
-        const entries=[];
         for(const box of boxes){
             const imgRecord=await dbGet(STORE_IMAGES,box.id);
-            const count=(imgRecord&&imgRecord.images)?imgRecord.images.length:0;
-            totalImages+=count;
-            entries.push({box, count});
+            const imgs=(imgRecord&&imgRecord.images)?imgRecord.images.length:0;
+            totalImages+=imgs;
+            allBoxes.push({box, imgs});
         }
-        modelBoxes[modelId]=entries;
     }
 
     document.getElementById('progressTitle').innerText='导出中...';
-    const progressFill=document.getElementById('progressFill');
-    const progressText=document.getElementById('progressText');
+    const exportData={
+        version:2,
+        exportScope:exportAll?'all':'single',
+        exportedAt:Date.now(),
+        models:exportModels,
+        currentModelId:currentModelId,
+        copyFilterPatterns:appSettings.copyFilterPatterns||[],
+        boxes:{}
+    };
+    modelIds.forEach(id=>{ exportData.boxes[id]={boxes:[],images:{}}; });
 
-    // Phase 2: stream-build JSON incrementally — memory peaks at single-image size
-    const parts=[];
+    // Phase 2: export with progress per image
     let processed=0;
-    let cancelled=false;
-
-    // Add cancel button
-    const cancelBtn=document.createElement('button');
-    cancelBtn.innerText='取消导出';
-    cancelBtn.style.cssText='margin-top:12px;padding:8px 20px;background:var(--error);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;';
-    cancelBtn.onclick=()=>{ cancelled=true; };
-    modalContent.appendChild(cancelBtn);
-
-    function updateProgress(){
+    for(const {box} of allBoxes){
+        exportData.boxes[box.modelId].boxes.push(box);
+        const imgRecord=await dbGet(STORE_IMAGES,box.id);
+        if(imgRecord){
+            let imgs=imgRecord.images||[];
+            if(imgs.length>0 && typeof imgs[0]==='string') imgs=imgs.map(url=>({dataUrl:url, remark:''}));
+            exportData.boxes[box.modelId].images[box.id]=imgs;
+            processed+=imgs.length;
+        }
         const pct=totalImages>0?Math.round(processed/totalImages*100):100;
-        progressFill.style.width=pct+'%';
-        progressText.innerText=totalImages>0?`${processed} / ${totalImages} 张图片 (${pct}%)`:'完成';
+        document.getElementById('progressFill').style.width=pct+'%';
+        document.getElementById('progressText').innerText=totalImages>0?`${processed} / ${totalImages} 张图片 (${pct}%)`:'完成';
     }
 
-    try{
-        // JSON header — all metadata except bulk image data
-        parts.push('{"version":2,');
-        parts.push(`"exportScope":${JSON.stringify(exportAll?'all':'single')},`);
-        parts.push(`"exportedAt":${Date.now()},`);
-        parts.push(`"models":${JSON.stringify(exportModels)},`);
-        parts.push(`"currentModelId":${JSON.stringify(currentModelId)},`);
-        parts.push(`"copyFilterPatterns":${JSON.stringify(appSettings.copyFilterPatterns||[])},`);
+    const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`图库备份_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 
-        // Boxes section
-        parts.push('"boxes":{');
-        let modelIdx=0;
-        for(const modelId of modelIds){
-            if(cancelled) break;
-            if(modelIdx>0) parts.push(',');
-            modelIdx++;
-
-            const entries=modelBoxes[modelId];
-
-            parts.push(`${JSON.stringify(modelId)}:{`);
-            parts.push(`"boxes":${JSON.stringify(entries.map(e=>e.box))},`);
-            parts.push('"images":{');
-
-            let boxIdx=0;
-            for(const {box} of entries){
-                if(cancelled) break;
-                if(boxIdx>0) parts.push(',');
-                boxIdx++;
-
-                parts.push(`${JSON.stringify(box.id)}:[`);
-
-                const imgRecord=await dbGet(STORE_IMAGES,box.id);
-                let imgs=(imgRecord&&imgRecord.images)?imgRecord.images:[];
-                // Migrate old string-format images
-                if(imgs.length>0&&typeof imgs[0]==='string'){
-                    imgs=imgs.map(url=>({dataUrl:url, remark:''}));
-                }
-
-                for(let i=0;i<imgs.length;i++){
-                    if(cancelled) break;
-                    if(i>0) parts.push(',');
-                    // Convert blob URLs to data URLs for export (local mode uses blob URLs)
-                    const img={...imgs[i]};
-                    if(img.dataUrl&&img.dataUrl.startsWith('blob:')){
-                        try{
-                            const resp=await fetch(img.dataUrl);
-                            const buf=await resp.arrayBuffer();
-                            const mime=guessMimeType(img.name||'image.png');
-                            const raw=String.fromCharCode(...new Uint8Array(buf));
-                            img.dataUrl=`data:${mime};base64,${btoa(raw)}`;
-                        }catch(e){ /* keep original blob URL */ }
-                    }
-                    // Single image serialized alone — dominant memory cost is this one string
-                    parts.push(JSON.stringify(img));
-                    processed++;
-
-                    if(processed%5===0||processed===totalImages) updateProgress();
-                    // Yield to browser every 10 images to keep UI responsive (incl. cancel button)
-                    if(processed%10===0) await new Promise(r=>setTimeout(r,0));
-                }
-
-                parts.push(']');
-            }
-
-            parts.push('}'); // close images
-            parts.push('}'); // close model
-        }
-
-        parts.push('}'); // close boxes
-        parts.push('}'); // close root
-
-        if(cancelled){
-            showToast('导出已取消');
-            return;
-        }
-
-        // Build blob from parts — browser streams parts without allocating a merge buffer
-        const blob=new Blob(parts,{type:'application/json'});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');
-        a.href=url; a.download=`图库备份_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-
-        showToast(`导出完成，共 ${totalImages} 张图片`);
-    }finally{
-        if(cancelBtn.parentNode) cancelBtn.parentNode.removeChild(cancelBtn);
-        hideModal('progressModal');
-    }
+    hideModal('progressModal');
+    showToast(`导出完成，共 ${totalImages} 张图片`);
 }
 
 let pendingImportData=null;
 let pendingConflicts=[];
 let pendingImportFilters=null; // [{boxId, boxName, existingImg, importImg, resolution:'keepExisting'|'keepImport'}]
-
 
 async function handleJsonImport(event) {
     const file=event.target.files[0];
@@ -3850,10 +2982,6 @@ async function handleJsonImport(event) {
     document.getElementById('progressTitle').innerText='解析数据中...';
 
     try{
-        // For very large files, warn but try anyway
-        if(file.size > 200*1024*1024){
-            document.getElementById('progressText').innerText='文件较大，可能需要较长时间...';
-        }
         const text=await new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsText(file); });
         const data=JSON.parse(text);
 
@@ -4331,962 +3459,16 @@ function toggleTagBar(){
     localStorage.setItem('ipm_tagBar',on?'1':'0');
 }
 
-// ─── Styled Confirm Modal ────────────────────
-function showStyledConfirm(title, messageHtml, confirmLabel, cancelLabel, onConfirm, onCancel){
-    const body=document.getElementById('storageModeBody');
-    const footer=document.getElementById('storageModeFooter');
-    document.getElementById('storageModeTitle').innerText=title;
-    body.innerHTML=messageHtml;
-    footer.innerHTML=`
-        <button class="btn btn-outline" id="btnStyledCancel">${cancelLabel||'取消'}</button>
-        <button class="btn btn-primary" id="btnStyledConfirm">${confirmLabel||'确认'}</button>
-    `;
-    showModal('storageModeModal');
-    document.getElementById('btnStyledConfirm').onclick=()=>{ hideModal('storageModeModal'); if(onConfirm) onConfirm(); };
-    document.getElementById('btnStyledCancel').onclick=()=>{ hideModal('storageModeModal'); if(onCancel) onCancel(); };
-}
-
-// ─── First-Run Mode Picker ──────────────────
-function showFirstRunModal(){
-    return new Promise(resolve=>{
-        const body=document.getElementById('storageModeBody');
-        const footer=document.getElementById('storageModeFooter');
-        // Hide close button — user must make a choice, can't dismiss
-        const closeBtn=document.querySelector('#storageModeModal .modal-close');
-        if(closeBtn) closeBtn.style.display='none';
-        document.getElementById('storageModeTitle').innerHTML=`${svgIcon('sparkle',20)} 欢迎使用图库管理器`;
-        body.innerHTML=`
-            <p style="color:var(--text-main); margin-bottom:16px;">请选择图片数据的储存方式：</p>
-            <div style="display:flex; flex-direction:column; gap:10px; text-align:left;">
-                <div class="firstrun-option" data-choice="local"
-                     style="padding:14px 16px; background:var(--primary-bg); border-radius:var(--br-sm); border:2px solid var(--primary-light); cursor:pointer; transition:all 0.18s ease; display:flex; align-items:flex-start; gap:12px;">
-                    ${svgIcon('folder',22)}
-                    <div style="flex:1; color:var(--text-main);">
-                        <div style="font-weight:700; margin-bottom:4px;">本地储存（推荐）</div>
-                        <div style="font-size:0.8rem; opacity:0.75;">图片存为真实文件，安全可靠不会丢失。<br>选择文件夹后将自动创建「${LOCAL_SUBFOLDER}」目录存放数据。<br>若选中的文件夹内已有图库数据，将自动识别并加载。</div>
-                    </div>
-                </div>
-                <div class="firstrun-option" data-choice="indexeddb"
-                     style="padding:14px 16px; background:var(--card-bg); border-radius:var(--br-sm); border:2px solid var(--border-color); cursor:pointer; transition:all 0.18s ease; display:flex; align-items:flex-start; gap:12px;">
-                    ${svgIcon('globe',22)}
-                    <div style="flex:1; color:var(--text-main);">
-                        <div style="font-weight:700; margin-bottom:4px;">浏览器储存</div>
-                        <div style="font-size:0.8rem; opacity:0.75;">数据存储在浏览器数据库内。<br>⚠ 清除浏览器数据或换浏览器可能导致数据丢失。</div>
-                    </div>
-                </div>
-            </div>
-        `;
-        footer.innerHTML='';
-        showModal('storageModeModal');
-        function choose(mode){
-            hideModal('storageModeModal');
-            if(closeBtn) closeBtn.style.display='';
-            resolve(mode);
-        }
-        body.querySelectorAll('.firstrun-option').forEach(el=>{
-            const origBorder=el.dataset.choice==='local'?'2px solid var(--primary-light)':'2px solid var(--border-color)';
-            el.addEventListener('mouseenter',()=>{
-                el.style.borderColor='var(--primary)';
-                el.style.transform='translateY(-1px)';
-                el.style.boxShadow='var(--shadow-sm)';
-            });
-            el.addEventListener('mouseleave',()=>{
-                el.style.border=origBorder;
-                el.style.transform='';
-                el.style.boxShadow='';
-            });
-            el.addEventListener('click',()=>choose(el.dataset.choice));
-        });
-    });
-}
-
-// ─── Storage Mode Switch ─────────────────────
-async function getFolderDisplayPath(){
-    if(!localRootHandle) return '';
-    const parentHandle=await loadRootHandle();
-    // If the selected folder is already 图库数据, don't show parent ▸ subfolder
-    if(parentHandle&&parentHandle.name===LOCAL_SUBFOLDER) return LOCAL_SUBFOLDER;
-    const parentName=parentHandle?parentHandle.name:'?';
-    return `${parentName} ▸ ${LOCAL_SUBFOLDER}`;
-}
-
-function updateStorageToggleUI(){
-    const btns=document.querySelectorAll('.storage-toggle-btn');
-    btns.forEach(b=>b.classList.toggle('active',b.dataset.mode===storageMode));
-    const localActions=document.getElementById('localModeActions');
-    const dbActions=document.getElementById('dbModeActions');
-    if(localActions) localActions.style.display=storageMode==='local'?'block':'none';
-    if(dbActions) dbActions.style.display=storageMode==='local'?'none':'block';
-    if(storageMode==='local'){
-        getFolderDisplayPath().then(path=>{
-            const el=document.getElementById('localFolderPath');
-            if(el) el.innerHTML=path?`<span style="opacity:0.7;">◷</span> ${path}`:'<span style="opacity:0.5;">⚠ 未连接文件夹</span>';
-        });
-        // Show retry auth button if we don't have a handle
-        const retryBtn=document.getElementById('btnRetryAuth');
-        if(retryBtn) retryBtn.style.display=localRootHandle?'none':'block';
-    }
-}
-
-async function retryLocalPermission(){
-    const restored=await restoreLocalFolder();
-    if(restored){
-        updateStorageToggleUI();
-        showToast('文件夹已重新连接');
-        await reloadData();
-    }else{
-        const handle=await selectLocalFolder();
-        if(handle){
-            updateStorageToggleUI();
-            await reloadData();
-        }
-    }
-}
-
-// One-way sync: pull DB data into local (only when entering local mode)
-async function syncDBToLocal(handle){
-    const dbBoxes=await idbGetAll(STORE_BOXES);
-    if(dbBoxes&&dbBoxes.length>0){
-        await mergeDBToLocal(handle);
-    }
-}
-
-async function switchStorageMode(targetMode){
-    if(targetMode===storageMode){
-        showToast(targetMode==='local'?'当前已是本地储存模式':'当前已是浏览器储存模式');
-        return;
-    }
-    const isSwitchingToLocal=targetMode==='local';
-
-    if(isSwitchingToLocal){
-        // Try to restore stored folder; if not, pick one
-        let handle=null;
-        const restored=await restoreLocalFolder();
-        if(restored){
-            handle=localRootHandle;
-        }else{
-            handle=await selectLocalFolder();
-            if(!handle) return;
-        }
-        localRootHandle=handle;
-        setStorageMode('local');
-        // Pull DB data into local (local is primary, no push-back needed)
-        await syncDBToLocal(handle);
-        // Scan local folder, rebuild index from actual files if needed
-        revokeAllBlobUrls();
-        await loadExistingLocalData(handle);
-        updateStorageToggleUI();
-        initIcons();
-        showToast('已切换至本地储存模式');
-    }else{
-        // Switching to IndexedDB — push local data to DB so browser has everything
-        if(localRootHandle){
-            const settings=await readJSON(localRootHandle,'gallery_settings.json');
-            const hasLocalData=settings&&settings.boxIndex&&
-                Object.values(settings.boxIndex).some(m=>Object.keys(m).length>0);
-            if(hasLocalData){
-                await mergeLocalToDB();
-            }
-        }
-        revokeAllBlobUrls();
-        setStorageMode('indexeddb');
-        // Keep handle in memory and config so switching back doesn't require re-selection
-        localRootHandle=null;
-        updateStorageToggleUI();
-        initIcons();
-        await reloadData();
-        showToast('已切换至浏览器储存模式');
-    }
-}
-
-// Additive merge: DB → Local (skip duplicates by name, add new only)
-async function mergeDBToLocal(handle){
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='同步到本地储存...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='0%';
-
-    let settings=await readJSON(handle,'gallery_settings.json');
-    if(!settings){ settings={version:1,models:{},boxIndex:{},currentModelId,copyFilterPatterns:[]}; }
-    if(!settings.boxIndex) settings.boxIndex={};
-    // Merge models (additive)
-    for(const [id,m] of Object.entries(MODELS)){
-        if(!settings.models[id]) settings.models[id]=m;
-    }
-    settings.currentModelId=currentModelId;
-    settings.copyFilterPatterns=appSettings.copyFilterPatterns||[];
-
-    // Count total boxes & images for progress
-    let totalBoxes=0, totalImages=0, doneBoxes=0, doneImages=0;
-    for(const modelId of Object.keys(MODELS)){
-        const boxes=await idbGetByIndex(STORE_BOXES,'modelId',modelId);
-        totalBoxes+=boxes.length;
-        for(const box of boxes){
-            const rec=await idbGet(STORE_IMAGES,box.id);
-            totalImages+=(rec&&rec.images)?rec.images.length:0;
-        }
-    }
-
-    for(const modelId of Object.keys(MODELS)){
-        if(!settings.boxIndex[modelId]) settings.boxIndex[modelId]={};
-        const modelName=MODELS[modelId]?MODELS[modelId].name:modelId;
-        const modelDir=await ensureDir(handle,modelName);
-        const dbBoxes=await idbGetByIndex(STORE_BOXES,'modelId',modelId);
-
-        for(const box of dbBoxes){
-            const folderName=sanitizeFileName(box.name);
-            // Check if local already has this box
-            let existingBoxId=null;
-            for(const [bid,fname] of Object.entries(settings.boxIndex[modelId])){
-                if(fname===folderName){ existingBoxId=bid; break; }
-            }
-            const boxId=existingBoxId||box.id;
-            settings.boxIndex[modelId][boxId]=folderName;
-            const boxDir=await ensureDir(modelDir,folderName);
-            let meta=await readJSON(boxDir,'_meta.json');
-            if(!meta){ meta={...box, images:{}, imageCount:0}; }
-            if(!meta.images) meta.images={};
-            // Merge box metadata
-            meta.name=box.name;
-            meta.tags=[...new Set([...(meta.tags||[]),...(box.tags||[])])];
-            if(!meta.remark&&box.remark) meta.remark=box.remark;
-            if(!meta.createdAt) meta.createdAt=box.createdAt;
-            meta.modelId=modelId;
-
-            const rec=await idbGet(STORE_IMAGES,box.id);
-            const dbImages=(rec&&rec.images)?rec.images:[];
-            if(dbImages.length>0&&typeof dbImages[0]==='string') dbImages=dbImages.map(u=>({dataUrl:u,remark:''}));
-
-            let addedCount=0;
-            for(let i=0;i<dbImages.length;i++){
-                const img=dbImages[i];
-                const fname=getImageFileName(img,i);
-                // Skip if already in local — no renaming, no duplicates
-                if(meta.images[fname]) continue;
-                // Write image file
-                if(img.dataUrl&&img.dataUrl.startsWith('data:')){
-                    const bytes=dataUrlToBytes(img.dataUrl);
-                    await writeFileBytes(boxDir,fname,bytes);
-                }
-                meta.images[fname]={
-                    remark:img.remark||'',
-                    positivePrompt:img.positivePrompt||'',
-                    negativePrompt:img.negativePrompt||'',
-                    steps:img.steps||'',
-                    workflow:img.workflow||null
-                };
-                addedCount++;
-            }
-            if(addedCount>0){
-                meta.imageCount=Object.keys(meta.images).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }
-            // Hash-based dedup: remove duplicate files within this box
-            if(meta.images&&Object.keys(meta.images).length>1){
-                const hashMap=new Map();
-                for(const imgName of Object.keys(meta.images)){
-                    const hash=await computeFileHash(boxDir, imgName);
-                    if(hash){
-                        if(hashMap.has(hash)){
-                            await removeEntrySafe(boxDir, imgName);
-                            delete meta.images[imgName];
-                        }else{
-                            hashMap.set(hash, imgName);
-                        }
-                    }
-                }
-                if(Object.keys(meta.images).length!==meta.imageCount){
-                    meta.imageCount=Object.keys(meta.images).length;
-                    await writeJSON(boxDir,'_meta.json',meta);
-                }
-            }
-            doneBoxes++;
-            doneImages+=addedCount;
-            const pct=totalBoxes>0?Math.round(doneBoxes/totalBoxes*100):100;
-            document.getElementById('progressFill').style.width=pct+'%';
-            document.getElementById('progressText').innerText=`${doneBoxes}/${totalBoxes} 盒 · ${doneImages}/${totalImages} 图 (${pct}%)`;
-        }
-    }
-    await writeJSON(handle,'gallery_settings.json',settings);
-    hideModal('progressModal');
-    showToast('已同步到本地储存');
-}
-
-// Additive merge: Local → DB (skip duplicates by name+content, add new)
-async function mergeLocalToDB(){
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='同步到浏览器储存...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='计算中...';
-
-    const settings=await readJSON(localRootHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex){ hideModal('progressModal'); return; }
-
-    // Validate & clean phantom entries: boxIndex records whose dirs are missing on disk
-    let settingsChanged=false;
-    for(const modelId of Object.keys(settings.boxIndex||{})){
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        let modelDir=null;
-        try{ modelDir=await localRootHandle.getDirectoryHandle(modelName); }catch(e){}
-        if(!modelDir){ delete settings.boxIndex[modelId]; settingsChanged=true; continue; }
-        for(const boxId of Object.keys(settings.boxIndex[modelId]||{})){
-            const folderName=settings.boxIndex[modelId][boxId];
-            let boxDir=null;
-            try{ boxDir=await modelDir.getDirectoryHandle(folderName); }catch(e){}
-            if(!boxDir){ delete settings.boxIndex[modelId][boxId]; settingsChanged=true; continue; }
-        }
-        if(Object.keys(settings.boxIndex[modelId]).length===0){
-            delete settings.boxIndex[modelId]; settingsChanged=true;
-        }
-    }
-    if(settingsChanged) await writeJSON(localRootHandle,'gallery_settings.json',settings);
-    if(!settings.boxIndex||Object.keys(settings.boxIndex).length===0){ hideModal('progressModal'); return; }
-
-    // Count total boxes for progress (only valid ones)
-    let totalBoxes=0, doneBoxes=0, doneImages=0;
-    for(const modelId of Object.keys(settings.boxIndex)){
-        totalBoxes+=Object.keys(settings.boxIndex[modelId]).length;
-    }
-
-    // Ensure models exist in DB — match by NAME, resolve ID conflicts
-    const dbModels=await idbGet(STORE_MODELS,'main');
-    const existingModels=dbModels?dbModels.data:{};
-    const localToDbModelId={}; // localModelId → dbModelId mapping for box loop
-    for(const [localId,m] of Object.entries(settings.models||{})){
-        // Find if DB already has a model with this name
-        let dbMatchId=null;
-        for(const [dbId,dbModel] of Object.entries(existingModels)){
-            if(dbModel.name===m.name){ dbMatchId=dbId; break; }
-        }
-        if(dbMatchId){
-            // Name match — map to existing DB model
-            localToDbModelId[localId]=dbMatchId;
-        }else if(!existingModels[localId]){
-            // No name match, no ID conflict — add as-is
-            existingModels[localId]=m;
-            localToDbModelId[localId]=localId;
-        }else{
-            // ID conflict with different-name model — generate new ID
-            let newId, n=Object.keys(existingModels).length+1;
-            do{ newId='model_'+(n++); }while(existingModels[newId]);
-            existingModels[newId]={...m,id:newId};
-            localToDbModelId[localId]=newId;
-        }
-    }
-    // Also cover modelIds in boxIndex that are missing from settings.models
-    for(const modelId of Object.keys(settings.boxIndex||{})){
-        if(!localToDbModelId[modelId]){
-            const modelName=(settings.models&&settings.models[modelId])?settings.models[modelId].name:modelId;
-            if(!existingModels[modelId]){
-                existingModels[modelId]={id:modelId,name:modelName,sortIndex:Object.keys(existingModels).length};
-            }
-            localToDbModelId[modelId]=modelId;
-        }
-    }
-    await idbPut(STORE_MODELS,{id:'main',data:existingModels});
-
-    for(const modelId of Object.keys(settings.boxIndex)){
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        const dbModelId=localToDbModelId[modelId];
-        if(!dbModelId) continue;
-        for(const boxId of Object.keys(settings.boxIndex[modelId])){
-            const folderName=settings.boxIndex[modelId][boxId];
-            try{
-                const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-                const boxDir=await modelDir.getDirectoryHandle(folderName);
-                const meta=await readJSON(boxDir,'_meta.json');
-                if(!meta) continue;
-
-                // Check if box exists in DB by name (within the matched DB model)
-                const dbBoxes=await idbGetByIndex(STORE_BOXES,'modelId',dbModelId);
-                let existingBox=dbBoxes.find(b=>b.name===meta.name);
-                if(!existingBox){
-                    existingBox={id:boxId, name:meta.name, tags:meta.tags||[], remark:meta.remark||'', createdAt:meta.createdAt||Date.now(), modelId:dbModelId, viewIndex:0, imageCount:0};
-                    await idbPut(STORE_BOXES,existingBox);
-                }else{
-                    // Merge tags
-                    existingBox.tags=[...new Set([...(existingBox.tags||[]),...(meta.tags||[])])];
-                    if(!existingBox.remark&&meta.remark) existingBox.remark=meta.remark;
-                    await idbPut(STORE_BOXES,existingBox);
-                }
-
-                // Get existing images from DB
-                const dbImgRec=await idbGet(STORE_IMAGES,existingBox.id);
-                const existingImgs=(dbImgRec&&dbImgRec.images)?dbImgRec.images:[];
-                if(existingImgs.length>0&&typeof existingImgs[0]==='string') existingImgs=existingImgs.map(u=>({dataUrl:u,remark:''}));
-                const existingNames=new Set(existingImgs.map(im=>im.name));
-
-                let addedCount=0, metaCleaned=false;
-                if(meta.images){
-                    for(const imgName of Object.keys(meta.images)){
-                        // Skip if already in DB — no renaming, no duplicates
-                        if(existingNames.has(imgName)) continue;
-                        const imgMeta=meta.images[imgName];
-
-                        const bytes=await readFileBytes(boxDir,imgName);
-                        if(!bytes){
-                            // File missing on disk — remove phantom entry from meta
-                            delete meta.images[imgName];
-                            metaCleaned=true;
-                            continue;
-                        }
-                        existingNames.add(imgName);
-                        const mime=guessMimeType(imgName);
-                        const dataUrl=bytesToDataUrl(bytes,mime);
-                        existingImgs.push({
-                            name:imgName,
-                            dataUrl,
-                            remark:imgMeta.remark||'',
-                            positivePrompt:imgMeta.positivePrompt||'',
-                            negativePrompt:imgMeta.negativePrompt||'',
-                            steps:imgMeta.steps||'',
-                            workflow:imgMeta.workflow||null
-                        });
-                        addedCount++;
-                    }
-                }
-                if(metaCleaned){
-                    meta.imageCount=Object.keys(meta.images).length;
-                    await writeJSON(boxDir,'_meta.json',meta);
-                }
-                if(addedCount>0){
-                    // Dedup by content hash before writing to DB
-                    const deduped=await dedupImagesByHash(existingImgs);
-                    await idbPut(STORE_IMAGES,{id:existingBox.id, boxId:existingBox.id, images:deduped});
-                }
-                doneBoxes++;
-                doneImages+=addedCount;
-                const pct=Math.round(doneBoxes/totalBoxes*100);
-                document.getElementById('progressFill').style.width=pct+'%';
-                document.getElementById('progressText').innerText=`${doneBoxes}/${totalBoxes} 盒 · ${doneImages} 图 (${pct}%)`;
-            }catch(e){ console.warn('mergeLocalToDB box failed',boxId,e); doneBoxes++; }
-        }
-    }
-    hideModal('progressModal');
-    showToast('已同步到浏览器储存');
-}
-
-async function reloadData(){
-    await loadModels();
-    await loadBoxes();
-    updateStatsAndTags();
-    renderItems(true);
-}
-
-// Scan folder for model/box subdirectories with _meta.json, rebuild index
-async function scanLocalFolderStructure(handle){
-    const models={};
-    const boxIndex={};
-    let modelIdx=0;
-    try{
-        for await(const [entryName, entry] of handle.entries()){
-            if(entry.kind!=='directory') continue;
-            if(entryName.startsWith('.')||entryName.startsWith('_')) continue;
-            const modelId='model_'+(++modelIdx);
-            const modelDir=entry;
-            let hasBox=false;
-            for await(const [boxName, boxEntry] of modelDir.entries()){
-                if(boxEntry.kind!=='directory') continue;
-                if(boxName.startsWith('.')||boxName.startsWith('_')) continue;
-                try{
-                    const meta=await readJSON(boxEntry,'_meta.json');
-                    if(meta&&meta.id){
-                        if(!boxIndex[modelId]) boxIndex[modelId]={};
-                        boxIndex[modelId][meta.id]=boxName;
-                        hasBox=true;
-                    }
-                }catch(e){}
-            }
-            if(hasBox){
-                models[modelId]={id:modelId, name:entryName, sortIndex:modelIdx-1};
-            }
-        }
-    }catch(e){ console.warn('scanLocalFolderStructure failed',e); }
-    return {models, boxIndex};
-}
-
-// Reusable: detect & load existing data from a local folder handle
-// Returns true if existing data was found, false if folder was empty/initialized
-async function loadExistingLocalData(handle){
-    localRootHandle=handle;
-    revokeAllBlobUrls();
-    let settings=await readJSON(handle,'gallery_settings.json');
-    const hasData=settings&&settings.boxIndex&&
-        Object.values(settings.boxIndex).some(m=>Object.keys(m).length>0);
-    if(hasData){
-        // Quick validation: remove boxIndex entries whose dirs are gone
-        let cleaned=false;
-        for(const modelId of Object.keys(settings.boxIndex||{})){
-            const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-            let modelDir=null;
-            try{ modelDir=await handle.getDirectoryHandle(modelName); }catch(e){}
-            if(!modelDir){ delete settings.boxIndex[modelId]; cleaned=true; continue; }
-            for(const boxId of Object.keys(settings.boxIndex[modelId]||{})){
-                const folderName=settings.boxIndex[modelId][boxId];
-                try{ await modelDir.getDirectoryHandle(folderName); }catch(e){ delete settings.boxIndex[modelId][boxId]; cleaned=true; }
-            }
-            if(Object.keys(settings.boxIndex[modelId]).length===0){ delete settings.boxIndex[modelId]; cleaned=true; }
-        }
-        if(cleaned) await writeJSON(handle,'gallery_settings.json',settings);
-        await reloadData();
-        updateStorageToggleUI();
-        initIcons();
-        showToast('已加载本地图库数据');
-        return true;
-    }
-    // No settings found or empty boxIndex — scan folder for existing model/box structure
-    const scanned=await scanLocalFolderStructure(handle);
-    const scannedHasData=Object.keys(scanned.boxIndex).length>0;
-    if(scannedHasData){
-        settings=settings||{version:1, copyFilterPatterns:[]};
-        settings.models=scanned.models;
-        settings.boxIndex=scanned.boxIndex;
-        settings.currentModelId=settings.currentModelId||Object.keys(scanned.models)[0]||null;
-        await writeJSON(handle,'gallery_settings.json',settings);
-        const modelCount=Object.keys(scanned.models).length;
-        const boxCount=Object.values(scanned.boxIndex).reduce((s,m)=>s+Object.keys(m).length,0);
-        await reloadData();
-        let imgCount=0; imageCount.forEach(v=>imgCount+=v);
-        updateStorageToggleUI();
-        initIcons();
-        showToast(`已识别本地图库：${modelCount} 个模型，${boxCount} 个卡片盒，${imgCount} 张图片`);
-        return true;
-    }
-    // Truly empty — initialize
-    await writeJSON(handle,'gallery_settings.json',{
-        version:1, models:{...MODELS}, boxIndex:{},
-        currentModelId, copyFilterPatterns:appSettings.copyFilterPatterns||[]
-    });
-    await reloadData();
-    updateStorageToggleUI();
-    initIcons();
-    return false;
-}
-
-async function reselectLocalFolder(){
-    const currentPath=await getFolderDisplayPath();
-    const body=document.getElementById('storageModeBody');
-    const footer=document.getElementById('storageModeFooter');
-    const title=document.getElementById('storageModeTitle');
-    title.innerText='更换本地储存';
-    body.innerHTML=`
-        <p style="color:var(--text-light); margin-bottom:8px;">当前文件夹：</p>
-        <p style="font-weight:700; margin-bottom:16px; color:var(--primary);">📁 ${currentPath}</p>
-        <p style="margin-bottom:12px;">选择新文件夹后：</p>
-        <button class="btn btn-primary" id="btnReselectMigrate" style="width:100%; margin-bottom:8px; padding:12px;">
-            📤 迁移现有数据到新文件夹
-        </button>
-        <button class="btn btn-outline" id="btnReselectOnly" style="width:100%; padding:12px;">
-            📂 仅切换（不迁移数据）
-        </button>
-    `;
-    footer.innerHTML=`<button class="btn btn-outline" onclick="hideModal('storageModeModal')">取消</button>`;
-    showModal('storageModeModal');
-
-    setTimeout(()=>{
-        const btnMigrate=document.getElementById('btnReselectMigrate');
-        const btnOnly=document.getElementById('btnReselectOnly');
-        if(btnMigrate) btnMigrate.onclick=async()=>{
-            hideModal('storageModeModal');
-            const newHandle=await selectLocalFolder();
-            if(!newHandle) return;
-            const oldHandle=localRootHandle;
-            localRootHandle=newHandle;
-            await doMigrateLocalToLocal(oldHandle, newHandle);
-        };
-        if(btnOnly) btnOnly.onclick=async()=>{
-            hideModal('storageModeModal');
-            const newHandle=await selectLocalFolder();
-            if(!newHandle) return;
-            const oldHandle=localRootHandle;
-            const found=await loadExistingLocalData(newHandle);
-            if(!found){
-                // New folder is empty, offer to migrate from old
-                const body2=document.getElementById('storageModeBody');
-                body2.innerHTML=`
-                    <p style="color:var(--text-light); margin-bottom:16px;">
-                        新文件夹为空。要将旧文件夹的数据迁移过来吗？
-                    </p>
-                    <button class="btn btn-primary" id="btnDoMigrate" style="width:100%; margin-bottom:8px; padding:12px;">
-                        📤 迁移数据
-                    </button>
-                    <button class="btn btn-outline" id="btnSkipIt" style="width:100%; padding:12px;">
-                        🗑️ 跳过，创建空文件夹
-                    </button>
-                `;
-                showModal('storageModeModal');
-                setTimeout(()=>{
-                    const btnDo=document.getElementById('btnDoMigrate');
-                    const btnSkip=document.getElementById('btnSkipIt');
-                    if(btnDo) btnDo.onclick=async()=>{
-                        hideModal('storageModeModal');
-                        await doMigrateLocalToLocal(oldHandle, newHandle);
-                    };
-                    if(btnSkip) btnSkip.onclick=()=>{
-                        hideModal('storageModeModal');
-                        showToast('已切换至空文件夹');
-                    };
-                },100);
-            }
-        };
-    },100);
-}
-
-// Migrate between two local folders
-async function doMigrateLocalToLocal(oldHandle, newHandle){
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='迁移数据到新文件夹...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='计算中...';
-
-    const oldSettings=await readJSON(oldHandle,'gallery_settings.json');
-    if(!oldSettings||!oldSettings.boxIndex){
-        hideModal('progressModal');
-        showToast('旧文件夹无数据');
-        return;
-    }
-
-    // Count total images
-    let total=0;
-    for(const modelId of Object.keys(oldSettings.boxIndex)){
-        const modelName=oldSettings.models[modelId]?oldSettings.models[modelId].name:modelId;
-        for(const boxId of Object.keys(oldSettings.boxIndex[modelId])){
-            const folderName=oldSettings.boxIndex[modelId][boxId];
-            try{
-                const modelDir=await oldHandle.getDirectoryHandle(modelName);
-                const boxDir=await modelDir.getDirectoryHandle(folderName);
-                const meta=await readJSON(boxDir,'_meta.json');
-                if(meta&&meta.images) total+=Object.keys(meta.images).length;
-            }catch(e){}
-        }
-    }
-
-    // Copy settings
-    const newSettings={...oldSettings};
-    await writeJSON(newHandle,'gallery_settings.json',newSettings);
-
-    let processed=0;
-    for(const modelId of Object.keys(oldSettings.boxIndex)){
-        const modelName=oldSettings.models[modelId]?oldSettings.models[modelId].name:modelId;
-        const newModelDir=await ensureDir(newHandle,modelName);
-        for(const boxId of Object.keys(oldSettings.boxIndex[modelId])){
-            const folderName=oldSettings.boxIndex[modelId][boxId];
-            try{
-                const modelDir=await oldHandle.getDirectoryHandle(modelName);
-                const boxDir=await modelDir.getDirectoryHandle(folderName);
-                const meta=await readJSON(boxDir,'_meta.json');
-                const newBoxDir=await ensureDir(newModelDir,folderName);
-                if(meta){
-                    if(meta.images){
-                        for(const imgName of Object.keys(meta.images)){
-                            const bytes=await readFileBytes(boxDir,imgName);
-                            if(bytes){
-                                await writeFileBytes(newBoxDir,imgName,bytes);
-                            }
-                            processed++;
-                        }
-                    }
-                    await writeJSON(newBoxDir,'_meta.json',meta);
-                }
-                const pct=total>0?Math.round(processed/total*100):100;
-                document.getElementById('progressFill').style.width=pct+'%';
-                document.getElementById('progressText').innerText=`${processed} / ${total} (${pct}%)`;
-                if(processed%5===0) await new Promise(r=>setTimeout(r,0));
-            }catch(e){ console.warn('migrate box failed',boxId,e); }
-        }
-    }
-
-    localRootHandle=newHandle;
-    hideModal('progressModal');
-    showToast(`迁移完成，共 ${processed} 张图片`);
-    await reloadData();
-}
-
-// ─── Health Check ────────────────────────────
-async function runHealthCheck(){
-    if(!localRootHandle){
-        // Try to restore permission first
-        const restored=await restoreLocalFolder();
-        if(!restored){
-            showToast('未连接本地储存，请先点击切换至本地储存模式');
-            return;
-        }
-        updateStorageToggleUI();
-        showToast('已重新连接本地储存');
-    }
-
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='健康检查中...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='扫描文件夹...';
-
-    const settings=await readJSON(localRootHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex){
-        hideModal('progressModal');
-        showToast('未找到图库数据');
-        return;
-    }
-
-    const issues=[];
-    const stats={models:0, boxes:0, images:0, missing:0, orphan:0, emptyBoxes:0, duplicates:0};
-    let totalChecks=0, done=0;
-
-    // Count total boxes for progress
-    for(const modelId of Object.keys(settings.boxIndex)){
-        for(const boxId of Object.keys(settings.boxIndex[modelId])){
-            totalChecks++;
-        }
-    }
-
-    for(const modelId of Object.keys(settings.boxIndex)){
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        stats.models++;
-        const modelExists=await (async()=>{ try{ await localRootHandle.getDirectoryHandle(modelName); return true; }catch(e){ return false; } })();
-        if(!modelExists){ issues.push({type:'error',msg:`模型文件夹缺失: ${modelName}`}); continue; }
-
-        const modelDir=await localRootHandle.getDirectoryHandle(modelName);
-        for(const boxId of Object.keys(settings.boxIndex[modelId])){
-            done++;
-            const folderName=settings.boxIndex[modelId][boxId];
-            stats.boxes++;
-            const boxExists=await (async()=>{ try{ await modelDir.getDirectoryHandle(folderName); return true; }catch(e){ return false; } })();
-            if(!boxExists){ issues.push({type:'error',msg:`卡片盒文件夹缺失: ${modelName} / ${folderName}`}); continue; }
-
-            const boxDir=await modelDir.getDirectoryHandle(folderName);
-            const meta=await readJSON(boxDir,'_meta.json');
-            if(!meta){ issues.push({type:'warn',msg:`_meta.json 缺失: ${modelName} / ${folderName}`}); continue; }
-
-            // Compare listed files vs meta.images
-            const listedFiles=new Set();
-            try{ for await(const [name] of boxDir.entries()){ if(name!=='_meta.json') listedFiles.add(name); } }catch(e){}
-            const metaFiles=new Set(meta.images?Object.keys(meta.images):[]);
-
-            const orphanFiles=[...listedFiles].filter(f=>!metaFiles.has(f));
-            const missingFiles=[...metaFiles].filter(f=>!listedFiles.has(f));
-            const imageCount=Object.keys(meta.images||{}).length;
-
-            stats.images+=imageCount;
-            stats.missing+=missingFiles.length;
-            stats.orphan+=orphanFiles.length;
-
-            if(imageCount===0&&(meta.imageCount||0)>0) stats.emptyBoxes++;
-            if(missingFiles.length>0){
-                issues.push({type:'error',msg:`文件缺失: ${modelName} / ${folderName}: ${missingFiles.join(', ')}`});
-            }
-            if(orphanFiles.length>0){
-                issues.push({type:'warn',msg:`多余文件: ${modelName} / ${folderName}: ${orphanFiles.join(', ')}`});
-            }
-
-            // Hash-based duplicate detection (same box only)
-            if(meta.images&&Object.keys(meta.images).length>1){
-                const hashMap=new Map(); // hash -> [filenames]
-                for(const imgName of Object.keys(meta.images)){
-                    const hash=await computeFileHash(boxDir, imgName);
-                    if(hash){
-                        if(!hashMap.has(hash)) hashMap.set(hash,[]);
-                        hashMap.get(hash).push(imgName);
-                    }
-                }
-                const dupGroups=[...hashMap.values()].filter(g=>g.length>1);
-                if(dupGroups.length>0){
-                    let dupCount=0;
-                    for(const group of dupGroups){
-                        dupCount+=group.length-1;
-                        issues.push({type:'warn',msg:`重复图片(${group.length}份): ${modelName} / ${folderName}: ${group.slice(1).join(', ')} (保留 ${group[0]})`});
-                    }
-                    stats.duplicates+=dupCount;
-                }
-            }
-
-            const pct=Math.round(done/totalChecks*100);
-            document.getElementById('progressFill').style.width=pct+'%';
-            document.getElementById('progressText').innerText=`${done} / ${totalChecks} 个卡片盒`;
-            if(done%5===0) await new Promise(r=>setTimeout(r,0));
-        }
-    }
-
-    hideModal('progressModal');
-
-    // Show results
-    const body=document.getElementById('healthCheckBody');
-    const footer=document.getElementById('healthCheckFooter');
-
-    let html=`<div style="margin-bottom:16px;">
-        <b>📊 概览：</b> ${stats.models} 模型, ${stats.boxes} 卡片盒, ${stats.images} 图片
-        <span style="color:var(--error);">${stats.missing} 缺失</span>
-        <span style="color:#f0ad4e;">${stats.orphan} 多余</span>
-        ${stats.duplicates>0?`<span style="color:#f0ad4e;">${stats.duplicates} 重复</span>`:''}
-        ${stats.emptyBoxes>0?`<span style="color:var(--text-light);">${stats.emptyBoxes} 空盒子</span>`:''}
-    </div>`;
-
-    if(issues.length===0){
-        html+=`<div style="text-align:center; padding:20px; color:#4caf50; font-size:1.2rem;">✅ 一切正常！</div>`;
-    }else{
-        html+=`<div style="max-height:250px; overflow-y:auto;">`;
-        issues.forEach(issue=>{
-            const color=issue.type==='error'?'var(--error)':'#f0ad4e';
-            const icon=issue.type==='error'?'❌':'⚠️';
-            html+=`<div style="padding:6px 0; color:${color}; border-bottom:1px solid var(--border-color);">${icon} ${issue.msg}</div>`;
-        });
-        html+=`</div>`;
-    }
-
-    body.innerHTML=html;
-    footer.innerHTML=issues.length>0
-        ? `<button class="btn btn-primary" onclick="autoFixHealth()">🔧 自动修复</button>
-           <button class="btn btn-outline" onclick="hideModal('healthCheckModal')">关闭</button>`
-        : `<button class="btn btn-outline" onclick="hideModal('healthCheckModal')">关闭</button>`;
-
-    showModal('healthCheckModal');
-}
-
-async function autoFixHealth(){
-    if(!localRootHandle){ showToast('未连接本地储存'); return; }
-    const settings=await readJSON(localRootHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex){ showToast('未找到图库数据（gallery_settings.json 不存在或为空）'); return; }
-
-    let fixed=0, boxCleaned=0, settingsChanged=false;
-    for(const modelId of Object.keys(settings.boxIndex)){
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        let modelDir;
-        try{ modelDir=await localRootHandle.getDirectoryHandle(modelName); }catch(e){ delete settings.boxIndex[modelId]; settingsChanged=true; boxCleaned++; continue; }
-
-        for(const boxId of Object.keys(settings.boxIndex[modelId])){
-            const folderName=settings.boxIndex[modelId][boxId];
-            let boxDir;
-            try{ boxDir=await modelDir.getDirectoryHandle(folderName); }catch(e){ delete settings.boxIndex[modelId][boxId]; settingsChanged=true; boxCleaned++; continue; }
-
-            const meta=await readJSON(boxDir,'_meta.json');
-            if(!meta) continue;
-
-            // Collect listed files
-            const listedFiles=new Set();
-            try{ for await(const [name] of boxDir.entries()){ if(name!=='_meta.json') listedFiles.add(name); } }catch(e){}
-
-            const metaFiles=new Set(meta.images?Object.keys(meta.images):{});
-            const orphanFiles=[...listedFiles].filter(f=>!metaFiles.has(f));
-            const missingFiles=[...metaFiles].filter(f=>!listedFiles.has(f));
-
-            let metaChanged=false;
-
-            // Remove orphan files (on disk but not in meta)
-            for(const f of orphanFiles){ await removeEntrySafe(boxDir,f); fixed++; }
-
-            // Remove missing files from meta (in meta but not on disk)
-            if(missingFiles.length>0){
-                for(const f of missingFiles){ delete meta.images[f]; }
-                metaChanged=true;
-                fixed+=missingFiles.length;
-            }
-
-            // Remove duplicate images by hash (keep first, delete rest)
-            if(meta.images&&Object.keys(meta.images).length>1){
-                const hashMap=new Map();
-                for(const imgName of Object.keys(meta.images)){
-                    const hash=await computeFileHash(boxDir, imgName);
-                    if(hash){
-                        if(!hashMap.has(hash)) hashMap.set(hash,[]);
-                        hashMap.get(hash).push(imgName);
-                    }
-                }
-                for(const [hash, names] of hashMap){
-                    if(names.length>1){
-                        for(let i=1;i<names.length;i++){
-                            await removeEntrySafe(boxDir, names[i]);
-                            delete meta.images[names[i]];
-                            fixed++;
-                        }
-                        metaChanged=true;
-                    }
-                }
-            }
-
-            if(metaChanged||Object.keys(meta.images||{}).length!==(meta.imageCount||0)){
-                meta.imageCount=Object.keys(meta.images||{}).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }
-        }
-    }
-    if(settingsChanged) await writeJSON(localRootHandle,'gallery_settings.json',settings);
-
-    hideModal('healthCheckModal');
-    const parts=[];
-    if(boxCleaned>0) parts.push(`${boxCleaned} 个无效盒子`);
-    if(fixed>0) parts.push(`${fixed} 张图片`);
-    showToast(parts.length>0?`已清理 ${parts.join('、')}`:'未发现问题');
-
 // ─── Reset ──────────────────────────────────
 function resetAll() {
+    if(!confirm('⚠️ 确认重置所有数据吗？此操作将删除所有卡片盒、图片和模型配置，不可恢复！')) return;
+    if(!confirm('请再次确认：真的要删除所有数据吗？')) return;
 
-    function doReset(deleteLocal){
-        (async()=>{
-            if(deleteLocal&&localRootHandle){
-                try{
-                    const settings=await readJSON(localRootHandle,'gallery_settings.json');
-                    if(settings&&settings.boxIndex){
-                        for(const modelId of Object.keys(settings.boxIndex)){
-                            const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-                            await removeEntrySafe(localRootHandle,modelName);
-                        }
-                    }
-                    await removeEntrySafe(localRootHandle,'gallery_settings.json');
-                }catch(e){ console.warn('reset local files failed',e); }
-            }
-            revokeAllBlobUrls();
-            localRootHandle=null;
-            try{ await clearRootHandle(); }catch(e){}
-            try{ indexedDB.deleteDatabase(CONFIG_DB_NAME); }catch(e){}
-            try{ db.close(); }catch(e){}
-            const req=indexedDB.deleteDatabase(DB_NAME);
-            req.onsuccess=()=>{
-                localStorage.removeItem('ipm_storageMode');
-                localStorage.removeItem('gallery_app_settings');
-                localStorage.removeItem('ipm_lastModel');
-                location.reload();
-            };
-            req.onerror=()=>{ showToast('重置失败，请重试'); };
-            req.onblocked=()=>{ showToast('数据库被占用，请关闭其他标签页后重试'); };
-        })();
-    }
-
-    function showStep1(){
-        showStyledConfirm(
-            '⚠️ 重置数据',
-            '<p style="color:var(--text-light);">确认重置所有浏览器数据吗？</p><p style="font-size:0.85rem; color:var(--error); margin-top:8px;">此操作将删除所有卡片盒、图片和模型配置，不可恢复。</p>',
-            '确认重置', '取消',
-            ()=>{
-                // Step 2: always ask about local files
-                const body=document.getElementById('storageModeBody');
-                const footer=document.getElementById('storageModeFooter');
-                document.getElementById('storageModeTitle').innerText='⚠️ 本地图片';
-                body.innerHTML=`
-                    <p style="color:var(--text-light); margin-bottom:12px;">浏览器数据将被清除。本地储存中的图片文件要如何处理？</p>
-                    <label style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--primary-bg); border-radius:var(--br-sm); cursor:pointer; font-size:0.9rem;">
-                        <input type="checkbox" id="chkDeleteLocal" style="width:16px; height:16px; accent-color:var(--error);">
-                        同时删除本地图片库数据
-                    </label>
-                    <p style="font-size:0.75rem; color:var(--text-light); margin-top:6px;">不勾选则仅清除浏览器数据，本地图片文件保留不变</p>
-                `;
-                footer.innerHTML=`
-                    <button class="btn btn-outline" id="btnStyledCancel2">上一步</button>
-                    <button class="btn btn-primary" id="btnStyledConfirm2">确认</button>
-                `;
-                showModal('storageModeModal');
-                document.getElementById('btnStyledConfirm2').onclick=()=>{
-                    hideModal('storageModeModal');
-                    const delLocal=document.getElementById('chkDeleteLocal').checked;
-                    doReset(delLocal);
-                };
-                document.getElementById('btnStyledCancel2').onclick=()=>{
-                    hideModal('storageModeModal');
-                    showStep1();
-                };
-            }
-        );
-    }
-
-    // Step 1: confirm reset
-    showStep1();
+    db.close();
+    const req=indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess=()=>{ localStorage.clear(); location.reload(); };
+    req.onerror=()=>{ showToast('重置失败，请重试'); };
+    req.onblocked=()=>{ showToast('数据库被占用，请关闭其他标签页后重试'); };
 }
 
 // ─── Scroll Handler ─────────────────────────
@@ -5600,89 +3782,17 @@ document.addEventListener('mouseup',()=>{
 
 document.addEventListener('DOMContentLoaded',async ()=>{
     await initDB();
-
-    // Restore storage mode
-    // Restore or pick storage mode
-    let savedMode=localStorage.getItem('ipm_storageMode');
-    let localRestored=false;
-    let localPermissionLost=false;
-
-    if(!savedMode){
-        // First run — keep showing welcome modal until a valid choice is made
-        while(!savedMode){
-            const choice=await showFirstRunModal();
-            if(choice==='indexeddb'){
-                savedMode='indexeddb';
-                setStorageMode('indexeddb');
-            }else{
-                // Local — must select a folder; cancel brings back welcome modal
-                const handle=await selectLocalFolder(true);
-                if(handle){
-                    savedMode='local';
-                    setStorageMode('local');
-                    localRestored=true;
-                    await loadExistingLocalData(handle);
-                }
-                // If cancelled, savedMode stays null → loop back to welcome
-            }
-        }
-    }else{
-        storageMode=savedMode;
-        if(storageMode==='local'){
-            localRestored=await restoreLocalFolder();
-            if(!localRestored) localPermissionLost=true;
-        }
-    }
-
     loadSettings();
     await loadModels();
     await loadBoxes();
-
-    // If local mode is active but folder inaccessible or empty, load from IndexedDB as temporary fallback
-    if(storageMode==='local'&&!localRestored){
-        // Load from IndexedDB via direct idb calls
-        const saved=await idbGet(STORE_MODELS,'main');
-        if(saved){ MODELS=saved.data; }
-        if(Object.keys(MODELS).length===0) initDefaultModels();
-        const lastId=localStorage.getItem('ipm_lastModel');
-        if(lastId&&MODELS[lastId]) currentModelId=lastId; else currentModelId=Object.keys(MODELS)[0];
-        currentBoxes=await idbGetByIndex(STORE_BOXES,'modelId',currentModelId);
-        currentBoxes.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-        imageCount.clear(); cachedBoxImages.clear();
-        currentBoxes.forEach(b=>{ imageCount.set(b.id,b.imageCount||0); });
-    }
-
-    // If local mode was restored but folder has no useful data, fall back
-    if(localRestored&&currentBoxes.length===0){
-        const idbBoxes=await idbGetByIndex(STORE_BOXES,'modelId',Object.keys(MODELS)[0]||currentModelId);
-        if(idbBoxes.length>0){
-            storageMode='indexeddb';
-            setStorageMode('indexeddb');
-            localRootHandle=null;
-            revokeAllBlobUrls();
-            await loadModels();
-            await loadBoxes();
-            showToast('本地储存无数据，已切换回浏览器储存模式');
-        }
-    }
-
-    // Update toggle UI
-    updateStorageToggleUI();
-
-    // If local permission was lost, show a one-time banner
-    if(localPermissionLost){
-        showToast('⚠️ 需要重新授权文件夹访问，请点击侧边栏「重新授权」');
-    }
 
     // Restore scale before first render so updateGridLayout reads saved value
     const savedScale=localStorage.getItem('ipm_scale');
     if(savedScale) document.getElementById('cardScaleSlider').value=savedScale;
 
-    initIcons();
     renderModelTabs();
     updateStatsAndTags();
     renderItems(true);
-    initIcons(); // for dynamically created card elements
 
     // Restore sidebar state
     if(localStorage.getItem('ipm_sidebarCollapsed')==='1'){
