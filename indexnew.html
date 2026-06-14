@@ -401,6 +401,14 @@
             white-space: nowrap; cursor: pointer;
         }
         .card-bottom-tags { display: none; }
+        .card-tags-row {
+            display: flex; gap: 4px; flex-wrap: wrap; padding: 2px 6px 4px;
+            max-height: 44px; overflow: hidden;
+        }
+        .card-tags-row .tag {
+            background: var(--primary); color: #fff; padding: 1px 6px;
+            border-radius: var(--br-sm); font-size: 0.65rem; font-weight: 600;
+        }
 
         /* SFW mode */
         .sfw-mode .item-card.nsfw .preview-image { filter: blur(28px) brightness(0.85); }
@@ -2894,7 +2902,10 @@ function createCardElement(box,index) {
     };
 
     const count=imageCount.get(box.id)||0;
-    card.innerHTML=`<div class="preview-wrapper"></div>`;
+    card.innerHTML=`
+        <div class="preview-wrapper"></div>
+        <div class="card-tags-row" style="display:none;"></div>
+    `;
 
     renderCardImages(card, box);
     return card;
@@ -2997,6 +3008,17 @@ async function renderCardImages(card, box) {
         thumbBar.style.display='';
     }else if(thumbBar){
         thumbBar.style.display='none';
+    }
+    // Tags row below thumbnails, only when tag bar is open
+    const tagsRow=card.querySelector('.card-tags-row');
+    if(tagsRow){
+        const tagBarOn=document.getElementById('tagChipsBar').style.display==='flex';
+        if(tagBarOn && box.tags && box.tags.length>0){
+            tagsRow.style.display='flex';
+            tagsRow.innerHTML=box.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+        }else{
+            tagsRow.style.display='none';
+        }
     }
 
     // Bind preview events
