@@ -336,34 +336,48 @@
         .preview-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease, filter 0.3s ease; }
         .preview-container:hover .preview-image { transform: scale(1.05); }
 
-        /* Gradient overlay — white (light) / dark (night), stronger */
+        /* Gradient overlay — heavy white (light) / dark (night) */
         .preview-overlay {
             position: absolute; inset: 0; z-index: 2; pointer-events: none;
             background: linear-gradient(to bottom,
-                rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 12%,
-                rgba(255,255,255,0.4) 30%, transparent 45%,
-                transparent 70%, rgba(255,255,255,0.3) 85%, rgba(255,255,255,0.85) 100%);
+                rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.9) 10%,
+                rgba(255,255,255,0.5) 28%, transparent 42%,
+                transparent 65%, rgba(255,255,255,0.4) 82%, rgba(255,255,255,0.92) 100%);
         }
         .theme-night .preview-overlay {
             background: linear-gradient(to bottom,
-                rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 12%,
-                rgba(0,0,0,0.3) 30%, transparent 45%,
-                transparent 70%, rgba(0,0,0,0.3) 85%, rgba(0,0,0,0.85) 100%);
+                rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 10%,
+                rgba(0,0,0,0.4) 28%, transparent 42%,
+                transparent 65%, rgba(0,0,0,0.4) 82%, rgba(0,0,0,0.9) 100%);
         }
-        /* Card name + count row at top */
+        /* Card name at top-left */
         .card-top-row {
-            position: absolute; top: 6px; left: 10px; right: 10px; z-index: 3;
-            display: flex; align-items: center; gap: 8px;
+            position: absolute; top: 6px; left: 10px; right: 68px; z-index: 3;
+            display: flex; align-items: center;
         }
         .card-name-overlay {
             font-size: 0.9rem; font-weight: 700; color: var(--text-main);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; cursor: pointer;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+        }
+        /* Count + action icons stacked at top-right */
+        .card-top-actions {
+            position: absolute; top: 4px; right: 6px; z-index: 3;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
         }
         .card-img-count-overlay {
-            display: flex; align-items: center; gap: 3px; flex-shrink: 0;
-            font-size: 0.78rem; font-weight: 600; color: var(--text-main);
+            display: flex; align-items: center; gap: 3px;
+            font-size: 0.75rem; font-weight: 600; color: var(--text-main);
         }
-        .card-img-count-overlay svg { opacity: 0.7; }
+        .card-img-count-overlay svg { opacity: 0.6; width: 12px; height: 12px; }
+        .card-top-actions .img-action-btn {
+            width: 20px; height: 20px; border: none; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(180,180,180,0.5); color: var(--text-main); transition: 0.2s;
+            opacity: 0; padding: 0;
+        }
+        .preview-container:hover .card-top-actions .img-action-btn { opacity: 1; }
+        .card-top-actions .img-action-btn:hover { background: var(--primary); color: #fff; }
+        .card-top-actions .img-action-btn.del:hover { background: var(--error); color: #fff; }
         /* Prompt + tags at bottom of image */
         .card-bottom-overlay {
             position: absolute; bottom: 6px; left: 8px; right: 8px; z-index: 3;
@@ -377,7 +391,7 @@
             display: flex; gap: 3px; flex-wrap: wrap; overflow: hidden; max-height: 20px;
         }
         .card-bottom-tags .tag {
-            background: rgba(107,107,107,0.7); color: #fff; padding: 1px 5px;
+            background: rgba(128,128,128,0.65); color: #fff; padding: 1px 5px;
             border-radius: var(--br-sm); font-size: 0.62rem; font-weight: 600;
         }
 
@@ -1305,7 +1319,7 @@ let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
 let globalBoxCount=0, globalImgCount=0;
 
-let virtualGrid={ cardWidth:230, cardHeight:460, gap:20, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:230, cardHeight:390, gap:20, cols:1, bufferRows:3 };
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
@@ -2932,18 +2946,18 @@ async function renderCardImages(card, box) {
                 <div class="preview-overlay"></div>
                 <div class="card-top-row">
                     <div class="card-name-overlay" title="${escapeHtml(box.name)}">${escapeHtml(box.name)}</div>
+                </div>
+                <div class="card-top-actions">
                     <div class="card-img-count-overlay">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         ${count}
                     </div>
+                    <button class="img-action-btn" data-action="editImg" title="编辑">${pencilSVG}</button>
+                    <button class="img-action-btn del" data-action="delImg" title="删除">${xSVG}</button>
                 </div>
                 <div class="card-bottom-overlay">
                     <div class="card-prompt-overlay" title="${escapeHtml(currentImgRemark||'')}">${escapeHtml(currentImgRemark||'')}</div>
                     <div class="card-bottom-tags">${tagsHTML}</div>
-                </div>
-                <div class="preview-actions">
-                    <button class="img-action-btn" data-action="editImg" title="编辑当前图片">${pencilSVG}</button>
-                    <button class="img-action-btn del" data-action="delImg" title="删除当前图片">${xSVG}</button>
                 </div>
                 <button class="nav-arrow right-arrow">▶</button>
             </div>`;
@@ -2991,7 +3005,7 @@ async function renderCardImages(card, box) {
         const promptOverlay=card.querySelector('.card-prompt-overlay');
         if(nameOverlay) nameOverlay.onclick=e=>{ e.stopPropagation(); openEditCard(box.id); };
         if(promptOverlay) promptOverlay.onclick=e=>{ e.stopPropagation(); copyText(currentImgRemark||box.name); };
-        card.querySelectorAll('.img-action-btn').forEach(btn=>{
+        card.querySelectorAll('.card-top-actions .img-action-btn').forEach(btn=>{
             btn.onclick=e=>{
                 e.stopPropagation();
                 const action=btn.dataset.action;
