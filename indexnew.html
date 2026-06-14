@@ -3686,7 +3686,7 @@ function toggleTagBar(){
     const on=document.getElementById('tagBarToggle').checked;
     document.getElementById('tagChipsBar').style.display=on?'flex':'none';
     localStorage.setItem('ipm_tagBar',on?'1':'0');
-    updateGridLayout(); renderItems(false);
+    updateGridLayout(); renderItems(true);
 }
 
 function toggleSfwMode(){
@@ -4352,6 +4352,12 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     const savedScale=localStorage.getItem('ipm_scale');
     if(savedScale) document.getElementById('cardScaleSlider').value=savedScale;
 
+    // Restore tag bar before first render so card tags show correctly
+    if(localStorage.getItem('ipm_tagBar')==='1'){
+        document.getElementById('tagBarToggle').checked=true;
+        document.getElementById('tagChipsBar').style.display='flex';
+    }
+
     renderModelTabs();
     updateStatsAndTags();
     renderItems(true);
@@ -4371,11 +4377,6 @@ document.addEventListener('DOMContentLoaded',async ()=>{
         document.getElementById('sfwToggle').checked=true;
     } else {
         document.body.classList.add('sfw-mode');
-    }
-    // Restore tag bar visibility
-    if(localStorage.getItem('ipm_tagBar')==='1'){
-        document.getElementById('tagBarToggle').checked=true;
-        document.getElementById('tagChipsBar').style.display='flex';
     }
     // Event listeners
     window.addEventListener('scroll',onScroll,{passive:true});
