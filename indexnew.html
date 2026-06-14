@@ -336,21 +336,23 @@
         .preview-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease, filter 0.3s ease; }
         .preview-container:hover .preview-image { transform: scale(1.05); }
 
-        /* Minimal overlay — tiny solid bars with sharp fade at edges */
+        /* Dark frosted glass overlay — top & bottom bars */
         .preview-overlay {
             position: absolute; inset: 0; z-index: 2; pointer-events: none;
             background: linear-gradient(to bottom,
-                rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.95) 6%,
-                rgba(255,255,255,0) 12%,
-                transparent 85%,
-                rgba(255,255,255,0) 88%, rgba(255,255,255,0.95) 94%, rgba(255,255,255,0.95) 100%);
+                rgba(30,30,30,0.75) 0%, rgba(30,30,30,0.75) 8%,
+                rgba(30,30,30,0) 14%,
+                transparent 84%,
+                rgba(30,30,30,0) 90%, rgba(30,30,30,0.75) 96%, rgba(30,30,30,0.75) 100%);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .theme-night .preview-overlay {
             background: linear-gradient(to bottom,
-                rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.92) 6%,
-                rgba(0,0,0,0) 12%,
-                transparent 85%,
-                rgba(0,0,0,0) 88%, rgba(0,0,0,0.92) 94%, rgba(0,0,0,0.92) 100%);
+                rgba(15,15,15,0.8) 0%, rgba(15,15,15,0.8) 8%,
+                rgba(15,15,15,0) 14%,
+                transparent 84%,
+                rgba(15,15,15,0) 90%, rgba(15,15,15,0.8) 96%, rgba(15,15,15,0.8) 100%);
         }
         /* Card name at top-left */
         .card-top-row {
@@ -358,7 +360,7 @@
             display: flex; align-items: center;
         }
         .card-name-overlay {
-            font-size: 0.9rem; font-weight: 700; color: var(--text-main);
+            font-size: 0.9rem; font-weight: 700; color: #fff;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
         }
         /* Count icon aligned with title, edit+delete below side by side */
@@ -368,7 +370,7 @@
         }
         .card-img-count-overlay {
             display: flex; align-items: center; gap: 3px;
-            font-size: 0.82rem; font-weight: 600; color: var(--text-main);
+            font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.9);
         }
         .card-img-count-overlay svg { opacity: 0.6; width: 14px; height: 14px; }
         .card-top-actions .img-action-row {
@@ -389,7 +391,7 @@
             display: flex; flex-direction: column; gap: 2px;
         }
         .card-prompt-overlay {
-            font-size: 0.68rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis;
+            font-size: 0.68rem; color: rgba(255,255,255,0.85); overflow: hidden; text-overflow: ellipsis;
             white-space: nowrap; cursor: pointer;
         }
         .card-bottom-tags {
@@ -435,7 +437,7 @@
         .img-action-btn:hover { background: var(--primary); color: #fff; }
         .img-action-btn.del:hover { background: var(--error); color: #fff; }
 
-        .thumbnails-bar { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; min-height: 32px; padding: 6px 10px; }
+        .thumbnails-bar { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; min-height: 32px; padding: 4px 6px 0; }
         .thumbnails-bar::-webkit-scrollbar { display: none; }
         .thumb-box {
             width: 36px; height: 36px; border-radius: var(--br-xs); object-fit: cover;
@@ -1324,7 +1326,7 @@ let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
 let globalBoxCount=0, globalImgCount=0;
 
-let virtualGrid={ cardWidth:230, cardHeight:370, gap:20, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:230, cardHeight:355, gap:20, cols:1, bufferRows:3 };
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
