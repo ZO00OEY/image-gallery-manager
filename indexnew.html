@@ -321,29 +321,52 @@
 
         .item-card {
             position: absolute; background: var(--card-bg); border-radius: var(--br-lg);
-            padding: 16px; box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-sm); overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
-            display: flex; flex-direction: column; gap: 6px; overflow: hidden; will-change: transform;
+            display: flex; flex-direction: column; will-change: transform;
         }
         .item-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); z-index: 10; }
 
-        .preview-wrapper { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+        .preview-wrapper { position: relative; flex-shrink: 0; }
         .preview-container {
-            width: 100%; aspect-ratio: 1 / 1; border-radius: var(--br-md);
-            background: rgba(0,0,0,0.03); overflow: hidden; position: relative; cursor: pointer;
-            border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center;
+            width: 100%; aspect-ratio: 3 / 4; overflow: hidden; position: relative; cursor: pointer;
+            background: rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center;
             transition: var(--transition);
         }
-        .preview-container:hover { border-color: var(--primary-light); }
         .preview-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease, filter 0.3s ease; }
         .preview-container:hover .preview-image { transform: scale(1.05); }
+
+        /* Gradient overlay on image — dark top to transparent */
+        .preview-overlay {
+            position: absolute; inset: 0; z-index: 2; pointer-events: none;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 30%, transparent 55%);
+        }
+        /* Card info layered on top of image gradient */
+        .card-info-overlay {
+            position: absolute; top: 8px; left: 10px; right: 10px; z-index: 3;
+            color: #fff; display: flex; flex-direction: column; gap: 2px;
+        }
+        .card-name-overlay {
+            font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .card-prompt-overlay {
+            font-size: 0.7rem; opacity: 0.9; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .card-img-count-overlay {
+            position: absolute; top: 8px; right: 10px; z-index: 3;
+            display: flex; align-items: center; gap: 4px; color: #fff;
+            font-size: 0.78rem; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .card-img-count-overlay svg { opacity: 0.85; }
 
         /* SFW mode */
         .sfw-mode .item-card.nsfw .preview-image { filter: blur(28px) brightness(0.85); }
         .sfw-mode .item-card.nsfw .preview-container::after {
             content: 'NSFW'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             font-size: 1.2rem; font-weight: 700; color: var(--error); pointer-events: none;
-            background: rgba(0,0,0,0.08); z-index: 1;
+            background: rgba(0,0,0,0.08); z-index: 4;
         }
         .sfw-mode .item-card.nsfw .preview-container:hover .preview-image { transform: none; }
         .preview-placeholder { color: var(--text-light); font-weight: 600; font-size: 0.9rem; pointer-events: none; padding: 0 10px; text-align: center; }
@@ -361,15 +384,17 @@
         .nav-arrow.right-arrow { right: 4px; }
         .nav-arrow:hover { background: var(--primary); }
 
-        .preview-actions { position: absolute; top: 8px; right: 8px; display: none; z-index: 10; }
-        .preview-container:hover .preview-actions { display: block; }
-        .del-img-btn {
-            background: rgba(230,57,70,0.9); color: white; border: none; border-radius: 50%;
-            width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; font-size: 1.1rem;
+        .preview-actions { position: absolute; top: 8px; right: 8px; display: none; z-index: 10; gap: 6px; }
+        .preview-container:hover .preview-actions { display: flex; }
+        .img-action-btn {
+            width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.5); color: #fff; transition: 0.2s;
         }
+        .img-action-btn:hover { background: var(--primary); }
+        .img-action-btn.del:hover { background: var(--error); }
 
-        .thumbnails-bar { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; min-height: 32px; }
+        .thumbnails-bar { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; min-height: 32px; padding: 6px 10px; }
         .thumbnails-bar::-webkit-scrollbar { display: none; }
         .thumb-box {
             width: 36px; height: 36px; border-radius: var(--br-xs); object-fit: cover;
@@ -380,35 +405,9 @@
         .thumb-box:hover { opacity: 1; }
         .thumb-box.active { border-color: var(--primary); opacity: 1; }
 
-        .item-header { display: flex; flex-direction: column; margin-bottom: 0; flex-shrink: 0; }
-        .item-index {
-            display: inline-flex; align-items: center; justify-content: center;
-            background: var(--primary); color: #fff; min-width: 24px; height: 24px;
-            padding: 0 6px; border-radius: var(--br-xs); font-size: 0.85rem;
-            font-weight: 800; margin-right: 8px; flex-shrink: 0;
-        }
-        .item-name {
-            display: flex; align-items: center; font-size: 1.05rem; font-weight: 700;
-            color: var(--primary); overflow: hidden; white-space: nowrap; flex: 1; cursor: pointer;
-        }
-        .item-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-        .item-image-name {
-            font-size: 0.75rem; color: var(--accent); padding: 2px 0; overflow: hidden;
-            text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0;
-        }
-
-        .item-remark {
-            background: #fefce8; border: 1px solid #fde68a; border-radius: var(--br-xs);
-            padding: 8px 10px; font-size: 0.8rem; color: #92400e; line-height: 1.4;
-            max-height: 64px; overflow-y: auto; scrollbar-width: none; word-break: break-all; flex-shrink: 0;
-        }
-        .item-remark::-webkit-scrollbar { display: none; }
-        .theme-night .item-remark { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: #fbbf24; }
-        .theme-night .tag.system { background: rgba(2,132,199,0.15); color: #7dd3fc; }
-
         .item-tags {
             display: flex; gap: 6px; flex-wrap: wrap; max-height: 70px; overflow-y: auto;
-            scrollbar-width: none; flex-grow: 1; align-content: flex-start;
+            scrollbar-width: none; padding: 4px 12px 0;
         }
         .item-tags::-webkit-scrollbar { display: none; }
         .tag {
@@ -416,20 +415,18 @@
             border-radius: var(--br-sm); font-size: 0.7rem; font-weight: 600; display: flex; align-items: center;
         }
         .tag.system { background: #e0f2fe; color: #0284c7; }
+        .theme-night .tag.system { background: rgba(2,132,199,0.15); color: #7dd3fc; }
 
-        .item-footer-actions {
-            display: flex; justify-content: space-between; align-items: center; padding-top: 4px;
-            border-top: 1px dashed var(--border-color); flex-shrink: 0;
+        .item-card-footer {
+            display: flex; justify-content: center; align-items: center; padding: 8px;
+            border-top: 1px solid var(--border-color);
         }
-        .item-img-count {
-            font-size: 0.7rem; color: var(--text-light); font-weight: 600;
-        }
-        .icon-btn {
-            width: 26px; height: 26px; border: 1.5px solid var(--border-color); border-radius: var(--br-xs);
+        .card-edit-btn {
+            width: 30px; height: 30px; border: 1.5px solid var(--border-color); border-radius: var(--br-xs);
             background: var(--card-bg); color: var(--text-light); cursor: pointer; display: flex;
             align-items: center; justify-content: center; font-size: 0.8rem; transition: var(--transition);
         }
-        .icon-btn:hover { border-color: var(--primary-light); color: var(--primary); transform: translateY(-2px); }
+        .card-edit-btn:hover { border-color: var(--primary-light); color: var(--primary); transform: translateY(-2px); }
 
         .floating-actions { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
         .floating-btn {
@@ -912,7 +909,7 @@
     <!-- Edit Card Modal -->
     <div class="modal-overlay" id="editCardModal">
         <div class="modal" style="max-width:600px; max-height:90vh;">
-            <div class="modal-header"><div class="modal-title">✏️ 编辑卡片盒</div><button class="modal-close" onclick="hideModal('editCardModal')">×</button></div>
+            <div class="modal-header"><div class="modal-title">✏️ 编辑卡片盒</div><div style="display:flex; gap:8px; align-items:center;"><button class="btn btn-outline" onclick="deleteCard(editingBoxId)" style="color:var(--error); border-color:var(--error); padding:4px 12px; font-size:0.8rem;">🗑️ 删除</button><button class="modal-close" onclick="hideModal('editCardModal')">×</button></div></div>
             <div class="modal-body" style="overflow-y:auto;">
                 <div class="fullscreen-card-info" style="margin-bottom:10px;">
                     <div class="fullscreen-card-name" id="editCardTime" style="font-size:0.75rem; color:var(--text-light);"></div>
@@ -1282,7 +1279,7 @@ let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
 let globalBoxCount=0, globalImgCount=0;
 
-let virtualGrid={ cardWidth:230, cardHeight:486, gap:20, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:230, cardHeight:460, gap:20, cols:1, bufferRows:3 };
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
@@ -2844,54 +2841,37 @@ function createCardElement(box,index) {
     card.className='item-card'+(isBatchSel?' selected':'')+(isNsfw?' nsfw':'');
     card.dataset.boxId=box.id;
 
-    // Batch mode click selection — click anywhere on card to select
     card.onclick=e=>{
-        if(batchMode){
-            toggleBatchSelection(box.id);
-        }
+        if(batchMode){ toggleBatchSelection(box.id); }
     };
 
+    const count=imageCount.get(box.id)||0;
     card.innerHTML=`
-        <div class="item-header">
-            <div class="item-name" title="${escapeHtml(box.name)}">
-                <span class="item-index">${index+1}</span>
-                <span class="item-name-text">${escapeHtml(box.name)}</span>
-            </div>
-            <div class="item-image-name"></div>
-        </div>
         <div class="preview-wrapper"></div>
-        <div class="item-remark"></div>
         <div class="item-tags">
             ${(box.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}
         </div>
-        <div class="item-footer-actions">
-            <span class="item-img-count"></span>
-            <span style="display:flex; gap:8px;">
-                <button class="icon-btn btn-edit" title="编辑卡片">✏️</button>
-                <button class="icon-btn btn-delete" title="删除卡片" style="color:var(--error);">🗑️</button>
-            </span>
+        <div class="item-card-footer">
+            <button class="card-edit-btn" title="编辑卡片">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
         </div>
     `;
 
-    // Name click → copy box name
-    card.querySelector('.item-name').onclick=e=>{ e.stopPropagation(); copyText(box.name); };
-    card.querySelector('.btn-edit').onclick=e=>{ e.stopPropagation(); openEditCard(box.id); };
-    card.querySelector('.btn-delete').onclick=e=>{ e.stopPropagation(); deleteCard(box.id); };
+    card.querySelector('.card-edit-btn').onclick=e=>{ e.stopPropagation(); openEditCard(box.id); };
 
-    // Render the dynamic preview part
     renderCardImages(card, box);
-
     return card;
 }
 
 // Only updates the preview section + remark + image count of a single card
+// Only updates the preview section + overlay info of a single card
 async function renderCardImages(card, box) {
     const pw=card.querySelector('.preview-wrapper');
     if(!pw) return;
 
     let images=cachedBoxImages.get(box.id);
 
-    // Lazy load from DB on first render
     if(!images && card.dataset.imgLoaded!=='true'){
         pw.innerHTML=`<div class="preview-container"><div class="preview-loading">↻</div></div>`;
         const record=await dbGet(STORE_IMAGES, box.id);
@@ -2908,13 +2888,49 @@ async function renderCardImages(card, box) {
 
     const count=images.length;
     let viewIdx=box.viewIndex||0;
+    if(viewIdx>=count) viewIdx=Math.max(0,count-1);
     const isAddPage=(count>0 && viewIdx>=count);
 
-    const currentImgName=(count>0&&viewIdx<count)?getImageName(images[viewIdx]):'';
     const currentImgRemark=(count>0&&viewIdx<count)?getImageRemark(images[viewIdx]):'';
-    const displayRemark=currentImgRemark;
+    const imgUrl=(count>0&&viewIdx<count)?getImageUrl(images[viewIdx]):'';
 
-    // Build thumbnails bar (limit to avoid excessive base64 decode)
+    // Build preview HTML with gradient overlay
+    let previewHTML;
+    if(count===0){
+        previewHTML=`
+            <div class="preview-container" data-action="uploadImg">
+                <span class="preview-placeholder">点击上传图片</span>
+            </div>`;
+    } else if(isAddPage){
+        previewHTML=`
+            <div class="preview-container" data-action="uploadImg">
+                <span class="preview-placeholder" style="font-size:1.5rem;">+ 追加图片</span>
+            </div>`;
+    } else {
+        const pencilSVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+        const xSVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        previewHTML=`
+            <div class="preview-container">
+                <button class="nav-arrow left-arrow" ${viewIdx===0?'style="display:none;"':''}>◀</button>
+                <img src="${imgUrl}" class="preview-image" decoding="async">
+                <div class="preview-overlay"></div>
+                <div class="card-info-overlay">
+                    <div class="card-name-overlay" title="${escapeHtml(box.name)}">${escapeHtml(box.name)}</div>
+                    <div class="card-prompt-overlay">${escapeHtml(currentImgRemark||'')}</div>
+                </div>
+                <div class="card-img-count-overlay">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    ${count}
+                </div>
+                <div class="preview-actions">
+                    <button class="img-action-btn" data-action="editImg" title="编辑当前图片">${pencilSVG}</button>
+                    <button class="img-action-btn del" data-action="delImg" title="删除当前图片">${xSVG}</button>
+                </div>
+                <button class="nav-arrow right-arrow">▶</button>
+            </div>`;
+    }
+
+    // Build thumbnails bar
     function buildThumbBar(activeIdx, total) {
         const MAX=8;
         let html='';
@@ -2927,89 +2943,51 @@ async function renderCardImages(card, box) {
         return html;
     }
 
-    // Build preview HTML
-    let previewHTML;
-    if(count===0){
-        previewHTML=`
-            <div class="preview-container" data-action="uploadImg">
-                <span class="preview-placeholder">点击上传图片</span>
-            </div>`;
-    } else if(isAddPage){
-        previewHTML=`
-            <div class="preview-container" data-action="uploadImg">
-                <button class="nav-arrow left-arrow">◀</button>
-                <span class="preview-placeholder" style="font-size:1.5rem;">+ 追加图片</span>
-                <div class="preview-actions"></div>
-            </div>
-            <div class="thumbnails-bar">
-                ${buildThumbBar(count,count)}
-            </div>`;
-    } else {
-        previewHTML=`
-            <div class="preview-container">
-                <button class="nav-arrow left-arrow" ${viewIdx===0?'style="display:none;"':''}>◀</button>
-                <img src="${getImageUrl(images[viewIdx])}" class="preview-image" decoding="async">
-                <div class="preview-actions"><button class="del-img-btn" data-action="delImg">×</button></div>
-                <button class="nav-arrow right-arrow">▶</button>
-            </div>
-            <div class="thumbnails-bar">
-                ${buildThumbBar(viewIdx,count)}
-            </div>`;
-    }
-
-    // Update preview-wrapper
     pw.innerHTML=previewHTML;
-
-    // Update remark
-    const remarkEl=card.querySelector('.item-remark');
-    if(remarkEl){
-        if(displayRemark){
-            remarkEl.style.display='';
-            remarkEl.innerHTML='💬 卡片提示词: '+escapeHtml(displayRemark);
-            remarkEl.title=displayRemark;
-            remarkEl.onclick=e=>{ e.stopPropagation(); copyText(displayRemark); };
-        } else {
-            remarkEl.style.display='none';
-            remarkEl.innerHTML='';
-        }
+    // Thumbnails go after tags, before footer
+    const tagsEl=card.querySelector('.item-tags');
+    let thumbBar=card.querySelector('.thumbnails-bar');
+    if(!thumbBar && count>0){
+        thumbBar=document.createElement('div');
+        thumbBar.className='thumbnails-bar';
+        if(tagsEl) tagsEl.after(thumbBar);
+        else card.querySelector('.item-card-footer').before(thumbBar);
     }
-
-    // Update image name
-    const imgNameEl=card.querySelector('.item-image-name');
-    if(imgNameEl){
-        if(currentImgName){
-            imgNameEl.style.display='';
-            imgNameEl.innerHTML=escapeHtml(currentImgName);
-            imgNameEl.title=currentImgName;
-        } else {
-            imgNameEl.style.display='none';
-            imgNameEl.innerHTML='';
-        }
+    if(thumbBar && count>0){
+        thumbBar.innerHTML=buildThumbBar(viewIdx,count);
+        thumbBar.style.display='';
+    }else if(thumbBar){
+        thumbBar.style.display='none';
     }
-
-    // Update image count
-    const countEl=card.querySelector('.item-img-count');
-    if(countEl) countEl.textContent=count>0?count+' 张图':'';
 
     // Bind preview events
     const pc=card.querySelector('.preview-container');
-    if(count>0){
+    if(count>0 && !isAddPage){
         const leftBtn=card.querySelector('.left-arrow');
         const rightBtn=card.querySelector('.right-arrow');
-        const delBtn=card.querySelector('.del-img-btn');
         const mainImg=card.querySelector('.preview-image');
-
-        if(isAddPage){
-            if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=count-1; renderCardImages(card,box); };
-            pc.onclick=()=>addImagesToBox(box.id);
-            pc.ondragover=e=>e.preventDefault();
-            pc.ondrop=e=>{ e.preventDefault(); if(e.dataTransfer.files.length>0) handleDropUpload(e.dataTransfer.files,box.id); };
-        } else {
-            if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.max(0,(box.viewIndex||0)-1); dbPut(STORE_BOXES,box); renderCardImages(card,box); };
-            if(rightBtn) rightBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.min(count,(box.viewIndex||0)+1); dbPut(STORE_BOXES,box); renderCardImages(card,box); };
-            if(mainImg) mainImg.onclick=e=>{ e.stopPropagation(); showFullscreen(box.id, box.viewIndex||0); };
-            if(delBtn) delBtn.onclick=e=>{ e.stopPropagation(); deleteImage(box.id,box.viewIndex||0,card); };
-        }
+        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.max(0,(box.viewIndex||0)-1); dbPut(STORE_BOXES,box); renderCardImages(card,box); };
+        if(rightBtn) rightBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.min(count-1,(box.viewIndex||0)+1); dbPut(STORE_BOXES,box); renderCardImages(card,box); };
+        if(mainImg) mainImg.onclick=e=>{ e.stopPropagation(); showFullscreen(box.id, box.viewIndex||0); };
+        // Card name overlay → edit, prompt overlay → copy
+        const nameOverlay=card.querySelector('.card-name-overlay');
+        const promptOverlay=card.querySelector('.card-prompt-overlay');
+        if(nameOverlay) nameOverlay.onclick=e=>{ e.stopPropagation(); openEditCard(box.id); };
+        if(promptOverlay) promptOverlay.onclick=e=>{ e.stopPropagation(); copyText(currentImgRemark||box.name); };
+        card.querySelectorAll('.img-action-btn').forEach(btn=>{
+            btn.onclick=e=>{
+                e.stopPropagation();
+                const action=btn.dataset.action;
+                if(action==='delImg') deleteImage(box.id,box.viewIndex||0,card);
+                else if(action==='editImg') openEditCard(box.id);
+            };
+        });
+    } else if(isAddPage){
+        pc.onclick=()=>addImagesToBox(box.id);
+        pc.ondragover=e=>e.preventDefault();
+        pc.ondrop=e=>{ e.preventDefault(); if(e.dataTransfer.files.length>0) handleDropUpload(e.dataTransfer.files,box.id); };
+        const leftBtn=card.querySelector('.left-arrow');
+        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=count-1; renderCardImages(card,box); };
     } else {
         pc.onclick=()=>addImagesToBox(box.id);
         pc.ondragover=e=>e.preventDefault();
@@ -3026,58 +3004,6 @@ async function renderCardImages(card, box) {
         };
     });
 }
-
-async function handleDropUpload(files, boxId) {
-    const box=currentBoxes.find(b=>b.id===boxId);
-    if(!box) return;
-    const imageFiles=Array.from(files).filter(f=>f.type.match('image.*'));
-    if(!imageFiles.length) return;
-
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='拖拽上传中...';
-    let existing=cachedBoxImages.get(boxId)||[];
-    const record=await dbGet(STORE_IMAGES,boxId);
-    if(record){
-        existing=record.images||[];
-        if(existing.length>0 && typeof existing[0]==='string'){
-            existing=existing.map(url=>({dataUrl:url, remark:''}));
-        }
-    }
-
-    for(let i=0;i<imageFiles.length;i++){
-        const file=imageFiles[i];
-        const dataUrl=await readFileAsDataURL(file);
-        const compressed=await compressImage(dataUrl).catch(()=>dataUrl);
-        let remark='', workflow=null;
-        const extracted=await extractImageRemark(file);
-        if(extracted){
-            remark=extracted.remark||'';
-            workflow=extracted.workflow||null;
-        }
-        const prompts=resolvePrompts(remark, workflow);
-        const imgName=file.name.replace(/\.[^.]+$/,'')||'';
-        existing.push({name:imgName, dataUrl:compressed, remark, positivePrompt:prompts.positive, negativePrompt:prompts.negative, steps:prompts.steps, workflow});
-        if(i%3===0) await new Promise(r=>setTimeout(r,0));
-    }
-
-    await dbPut(STORE_IMAGES,{id:boxId,boxId,images:existing});
-    cachedBoxImages.set(boxId,existing);
-    imageCount.set(boxId,existing.length);
-    syncBoxImageCount(boxId);
-    box.viewIndex=existing.length-1;
-
-    hideModal('progressModal');
-    const card=cardByBoxId.get(boxId);
-    if(card){
-        renderCardImages(card, box);
-    } else {
-        renderItems(true);
-    }
-    updateStatsAndTags();
-    showToast(`已添加 ${imageFiles.length} 张图片`);
-}
-
-let fullscreenBoxId=null, fullscreenImgIdx=0, isFullscreenOpen=false;
 
 async function showFullscreen(boxId, imgIdx) {
     let images=cachedBoxImages.get(boxId);
