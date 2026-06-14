@@ -338,16 +338,15 @@
 
         /* Dark frosted glass — top bar only */
         .preview-overlay-top {
-            position: absolute; top: 0; left: 0; right: 0; height: 18%; z-index: 2; pointer-events: none;
+            position: absolute; top: 0; left: 0; right: 0; height: 9%; z-index: 2; pointer-events: none;
             background: linear-gradient(to bottom,
                 rgba(30,30,30,0.75) 0%, rgba(30,30,30,0.75) 45%,
                 rgba(30,30,30,0) 100%);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
-        /* Dark frosted glass — bottom bar only */
         .preview-overlay-bottom {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 14%; z-index: 2; pointer-events: none;
+            position: absolute; bottom: 0; left: 0; right: 0; height: 10%; z-index: 2; pointer-events: none;
             background: linear-gradient(to top,
                 rgba(30,30,30,0.75) 0%, rgba(30,30,30,0.75) 45%,
                 rgba(30,30,30,0) 100%);
@@ -375,23 +374,23 @@
         }
         /* Top-right row: edit | delete | image-count, aligned with title */
         .card-top-actions {
-            position: absolute; top: 5px; right: 6px; z-index: 3;
+            position: absolute; top: 5px; right: 10px; z-index: 3;
             display: flex; align-items: center; gap: 4px;
         }
         .card-img-count-overlay {
             display: flex; align-items: center; gap: 3px;
             font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.9);
         }
-        .card-img-count-overlay svg { opacity: 0.6; width: 14px; height: 14px; }
+        .card-img-count-overlay svg { opacity: 0.7; width: 14px; height: 14px; }
         .card-top-actions .img-action-btn {
             width: 20px; height: 20px; border: none; border-radius: 50%; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(180,180,180,0.5); color: #fff; transition: 0.2s;
+            background: transparent; color: #fff; transition: 0.2s;
             opacity: 0; padding: 0;
         }
         .preview-container:hover .card-top-actions .img-action-btn { opacity: 1; }
-        .card-top-actions .img-action-btn:hover { background: var(--primary); color: #fff; }
-        .card-top-actions .img-action-btn.del:hover { background: var(--error); color: #fff; }
+        .card-top-actions .img-action-btn:hover { background: rgba(255,255,255,0.85); color: var(--text-main); }
+        .card-top-actions .img-action-btn.del:hover { background: rgba(255,255,255,0.85); color: var(--error); }
         /* Prompt + tags at bottom of image */
         .card-bottom-overlay {
             position: absolute; bottom: 6px; left: 8px; right: 8px; z-index: 3;
@@ -2966,7 +2965,7 @@ async function renderCardImages(card, box) {
                     <button class="img-action-btn" data-action="editImg" title="编辑">${pencilSVG}</button>
                     <button class="img-action-btn del" data-action="delImg" title="删除">${xSVG}</button>
                     <div class="card-img-count-overlay">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="15" rx="1.5"/><rect x="8" y="2" width="12" height="15" rx="1.5"/></svg>
                         ${count}
                     </div>
                 </div>
