@@ -329,7 +329,7 @@
 
         .preview-wrapper { position: relative; flex-shrink: 0; }
         .preview-container {
-            width: 100%; aspect-ratio: 2 / 3; overflow: hidden; position: relative; cursor: pointer;
+            width: 100%; aspect-ratio: 4 / 5; overflow: hidden; position: relative; cursor: pointer;
             background: rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center;
             transition: var(--transition);
         }
@@ -1332,7 +1332,7 @@ let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
 let globalBoxCount=0, globalImgCount=0;
 
-let virtualGrid={ cardWidth:230, cardHeight:355, gap:20, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:230, cardHeight:320, gap:20, cols:1, bufferRows:3 };
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
@@ -2576,7 +2576,7 @@ function updateGridLayout() {
     const baseWidth=230*(scale/100);
     virtualGrid.cols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(baseWidth+virtualGrid.gap)));
     virtualGrid.cardWidth=(containerWidth-(virtualGrid.cols-1)*virtualGrid.gap)/virtualGrid.cols;
-    virtualGrid.cardHeight=virtualGrid.cardWidth+256;
+    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 5/4) + 36;
 
     const totalRows=Math.ceil(currentFiltered.length/virtualGrid.cols);
     container.style.height=`${(totalRows*virtualGrid.cardHeight)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
