@@ -329,7 +329,7 @@
 
         .preview-wrapper { position: relative; flex-shrink: 0; }
         .preview-container {
-            width: 100%; aspect-ratio: 4 / 5; overflow: hidden; position: relative; cursor: pointer;
+            width: 100%; aspect-ratio: 3 / 4; overflow: hidden; position: relative; cursor: pointer;
             background: rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center;
             transition: var(--transition);
         }
@@ -399,6 +399,14 @@
         .card-prompt-overlay {
             font-size: 0.68rem; color: rgba(255,255,255,0.85); overflow: hidden; text-overflow: ellipsis;
             white-space: nowrap; cursor: pointer;
+        }
+        .card-tags-row {
+            display: flex; gap: 4px; flex-wrap: wrap; padding: 2px 6px 4px;
+            max-height: 44px; overflow: hidden;
+        }
+        .card-tags-row .tag {
+            background: var(--primary); color: #fff; padding: 1px 6px;
+            border-radius: var(--br-sm); font-size: 0.65rem; font-weight: 600;
         }
         .card-bottom-tags {
             display: flex; gap: 3px; flex-wrap: wrap; overflow: hidden; max-height: 20px;
@@ -1332,7 +1340,7 @@ let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
 let globalBoxCount=0, globalImgCount=0;
 
-let virtualGrid={ cardWidth:230, cardHeight:320, gap:20, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:230, cardHeight:375, gap:20, cols:1, bufferRows:3 };
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
@@ -2576,7 +2584,7 @@ function updateGridLayout() {
     const baseWidth=230*(scale/100);
     virtualGrid.cols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(baseWidth+virtualGrid.gap)));
     virtualGrid.cardWidth=(containerWidth-(virtualGrid.cols-1)*virtualGrid.gap)/virtualGrid.cols;
-    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 5/4) + 36;
+    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + 64;
 
     const totalRows=Math.ceil(currentFiltered.length/virtualGrid.cols);
     container.style.height=`${(totalRows*virtualGrid.cardHeight)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
@@ -2899,7 +2907,12 @@ function createCardElement(box,index) {
     };
 
     const count=imageCount.get(box.id)||0;
-    card.innerHTML=`<div class="preview-wrapper"></div>`;
+    card.innerHTML=`
+        <div class="preview-wrapper"></div>
+        <div class="card-tags-row">
+            ${(box.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}
+        </div>
+    `;
 
     renderCardImages(card, box);
     return card;
@@ -2971,7 +2984,6 @@ async function renderCardImages(card, box) {
                 </div>
                 <div class="card-bottom-overlay">
                     <div class="card-prompt-overlay" title="${escapeHtml(currentImgRemark||'')}">${escapeHtml(currentImgRemark||'')}</div>
-                    <div class="card-bottom-tags">${tagsHTML}</div>
                 </div>
                 <button class="nav-arrow right-arrow">▶</button>
             </div>`;
@@ -2996,7 +3008,9 @@ async function renderCardImages(card, box) {
     if(!thumbBar && count>0){
         thumbBar=document.createElement('div');
         thumbBar.className='thumbnails-bar';
-        pw.after(thumbBar);
+        const tagsRow=card.querySelector('.card-tags-row');
+        if(tagsRow) tagsRow.before(thumbBar);
+        else pw.after(thumbBar);
     }
     if(thumbBar && count>0){
         thumbBar.innerHTML=buildThumbBar(viewIdx,count);
