@@ -1692,6 +1692,7 @@ async function localPut(store, data){
     meta.name=box.name||meta.name;
     meta.tags=[...new Set([...(meta.tags||[]),...(box.tags||[])])];
     if(!meta.remark&&box.remark) meta.remark=box.remark;
+    if(box.viewIndex!==undefined) meta.viewIndex=box.viewIndex;
     meta.modelId=modelId;
 
     // Handle images — write new image files, remove orphaned ones
