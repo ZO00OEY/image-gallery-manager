@@ -384,7 +384,7 @@
         .nav-arrow.right-arrow { right: 4px; }
         .nav-arrow:hover { background: var(--primary); }
 
-        .preview-actions { position: absolute; top: 8px; right: 8px; display: none; z-index: 10; gap: 6px; }
+        .preview-actions { position: absolute; bottom: 6px; right: 6px; display: none; z-index: 10; gap: 4px; }
         .preview-container:hover .preview-actions { display: flex; }
         .img-action-btn {
             width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer;
@@ -417,16 +417,15 @@
         .tag.system { background: #e0f2fe; color: #0284c7; }
         .theme-night .tag.system { background: rgba(2,132,199,0.15); color: #7dd3fc; }
 
-        .item-card-footer {
-            display: flex; justify-content: center; align-items: center; padding: 8px;
-            border-top: 1px solid var(--border-color);
+        .item-prompt-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 4px;
+            padding: 3px 8px; min-height: 20px; flex-shrink: 0;
         }
-        .card-edit-btn {
-            width: 30px; height: 30px; border: 1.5px solid var(--border-color); border-radius: var(--br-xs);
-            background: var(--card-bg); color: var(--text-light); cursor: pointer; display: flex;
-            align-items: center; justify-content: center; font-size: 0.8rem; transition: var(--transition);
+        .item-prompt-text {
+            font-size: 0.7rem; color: var(--text-light); overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; flex: 1; cursor: pointer;
         }
-        .card-edit-btn:hover { border-color: var(--primary-light); color: var(--primary); transform: translateY(-2px); }
+        .item-prompt-actions { display: flex; gap: 3px; flex-shrink: 0; }
 
         .floating-actions { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
         .floating-btn {
@@ -908,34 +907,39 @@
 
     <!-- Edit Card Modal -->
     <div class="modal-overlay" id="editCardModal">
-        <div class="modal" style="max-width:600px; max-height:90vh;">
-            <div class="modal-header"><div class="modal-title">✏️ 编辑卡片盒</div><div style="display:flex; gap:8px; align-items:center;"><button class="btn btn-outline" onclick="deleteCard(editingBoxId)" style="color:var(--error); border-color:var(--error); padding:4px 12px; font-size:0.8rem;">🗑️ 删除</button><button class="modal-close" onclick="hideModal('editCardModal')">×</button></div></div>
+        <div class="modal" style="max-width:680px; max-height:90vh;">
+            <div class="modal-header"><div class="modal-title">✏️ 编辑卡片盒</div><button class="modal-close" onclick="hideModal('editCardModal')">×</button></div>
             <div class="modal-body" style="overflow-y:auto;">
-                <div class="fullscreen-card-info" style="margin-bottom:10px;">
-                    <div class="fullscreen-card-name" id="editCardTime" style="font-size:0.75rem; color:var(--text-light);"></div>
+                <div id="editCardTime" style="font-size:0.75rem; color:var(--text-light); margin-bottom:8px;"></div>
+                <div style="display:flex; gap:16px;">
+                    <!-- Left: box info -->
+                    <div style="flex:1; min-width:0;">
+                        <label style="font-weight:bold; display:block; margin-bottom:3px; font-size:0.85rem;">卡片盒名称</label>
+                        <input type="text" id="editCardName" class="input-text" style="margin-bottom:8px;">
+                        <label style="font-weight:bold; display:block; margin-bottom:3px; font-size:0.85rem;">🏷️ 标签</label>
+                        <input type="text" id="editCardTags" class="input-text" style="margin-bottom:4px;" placeholder="标签A, 标签B" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.value+=', ';}">
+                        <div class="tag-suggestions" id="editCardTagsSuggestions" style="margin-bottom:4px;"></div>
+                        <div style="font-size:0.7rem; color:var(--text-light);">修改名称后自动按序重命名全部图片</div>
+                    </div>
+                    <!-- Right: image prompts -->
+                    <div style="flex:1; min-width:0;">
+                        <label style="font-weight:bold; display:block; margin-bottom:3px; font-size:0.85rem;">正面提示词</label>
+                        <textarea id="editCardRemark" class="input-text" style="min-height:60px; resize:vertical; margin-bottom:6px; font-size:0.8rem;" placeholder="正面提示词..."></textarea>
+                        <label style="font-weight:bold; display:block; margin-bottom:3px; font-size:0.85rem;">负面提示词</label>
+                        <textarea id="editCardNegative" class="input-text" style="min-height:40px; resize:vertical; margin-bottom:6px; font-size:0.8rem;" placeholder="负面提示词..."></textarea>
+                        <label style="font-weight:bold; display:block; margin-bottom:3px; font-size:0.85rem;">采样步数</label>
+                        <input type="text" id="editCardSteps" class="input-text" style="margin-bottom:6px; font-size:0.85rem;" placeholder="Steps / 采样参数...">
+                        <label style="font-weight:bold; display:block; margin-bottom:3px; font-size:0.85rem;">工作流</label>
+                        <textarea id="editCardWorkflow" class="input-text" style="min-height:50px; resize:vertical; font-size:0.8rem;" placeholder="ComfyUI 工作流 JSON..."></textarea>
+                    </div>
                 </div>
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">卡片盒名称 <span style="font-size:0.7rem; color:var(--text-light);">（修改后自动按序重命名全部图片）</span></label>
-                <input type="text" id="editCardName" class="input-text" style="margin-bottom:10px;">
-
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">🏷️ 标签 (逗号分隔)</label>
-                <input type="text" id="editCardTags" class="input-text" style="margin-bottom:5px;" placeholder="标签A, 标签B" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.value+=', ';}">
-                <div class="tag-suggestions" id="editCardTagsSuggestions"></div>
-
-                <label style="font-weight:bold; display:block; margin-bottom:5px; margin-top:12px;">正面提示词</label>
-                <textarea id="editCardRemark" class="input-text" style="min-height:70px; resize:vertical; margin-bottom:8px;" placeholder="当前图片的正面提示词..."></textarea>
-
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">负面提示词</label>
-                <textarea id="editCardNegative" class="input-text" style="min-height:50px; resize:vertical; margin-bottom:8px;" placeholder="当前图片的负面提示词..."></textarea>
-
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">采样步数</label>
-                <input type="text" id="editCardSteps" class="input-text" style="margin-bottom:8px;" placeholder="Steps / 采样参数...">
-
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">工作流</label>
-                <textarea id="editCardWorkflow" class="input-text" style="min-height:60px; resize:vertical;" placeholder="ComfyUI 工作流 JSON..."></textarea>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="hideModal('editCardModal')">取消</button>
-                <button class="btn btn-primary" onclick="saveEditCard()">保存</button>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <button class="btn btn-outline" onclick="deleteCard(editingBoxId)" style="color:var(--error); border-color:var(--error);">🗑️ 删除卡片盒</button>
+                <span>
+                    <button class="btn btn-outline" onclick="hideModal('editCardModal')">取消</button>
+                    <button class="btn btn-primary" onclick="saveEditCard()">保存</button>
+                </span>
             </div>
         </div>
     </div>
@@ -2848,17 +2852,11 @@ function createCardElement(box,index) {
     const count=imageCount.get(box.id)||0;
     card.innerHTML=`
         <div class="preview-wrapper"></div>
+        <div class="item-prompt-row"></div>
         <div class="item-tags">
             ${(box.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}
         </div>
-        <div class="item-card-footer">
-            <button class="card-edit-btn" title="编辑卡片">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-        </div>
     `;
-
-    card.querySelector('.card-edit-btn').onclick=e=>{ e.stopPropagation(); openEditCard(box.id); };
 
     renderCardImages(card, box);
     return card;
@@ -2906,9 +2904,10 @@ async function renderCardImages(card, box) {
             <div class="preview-container" data-action="uploadImg">
                 <span class="preview-placeholder" style="font-size:1.5rem;">+ 追加图片</span>
             </div>`;
-    } else {
-        const pencilSVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-        const xSVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    }
+    const pencilSVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    const xSVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    if(count>0 && !isAddPage){
         previewHTML=`
             <div class="preview-container">
                 <button class="nav-arrow left-arrow" ${viewIdx===0?'style="display:none;"':''}>◀</button>
@@ -2916,15 +2915,10 @@ async function renderCardImages(card, box) {
                 <div class="preview-overlay"></div>
                 <div class="card-info-overlay">
                     <div class="card-name-overlay" title="${escapeHtml(box.name)}">${escapeHtml(box.name)}</div>
-                    <div class="card-prompt-overlay">${escapeHtml(currentImgRemark||'')}</div>
                 </div>
                 <div class="card-img-count-overlay">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     ${count}
-                </div>
-                <div class="preview-actions">
-                    <button class="img-action-btn" data-action="editImg" title="编辑当前图片">${pencilSVG}</button>
-                    <button class="img-action-btn del" data-action="delImg" title="删除当前图片">${xSVG}</button>
                 </div>
                 <button class="nav-arrow right-arrow">▶</button>
             </div>`;
@@ -2944,14 +2938,23 @@ async function renderCardImages(card, box) {
     }
 
     pw.innerHTML=previewHTML;
-    // Thumbnails go after tags, before footer
+    // Update prompt row below image
+    const promptRow=card.querySelector('.item-prompt-row');
+    if(promptRow){
+        promptRow.innerHTML=`
+            <span class="item-prompt-text" title="${escapeHtml(currentImgRemark||'')}">${escapeHtml(currentImgRemark||'')}</span>
+            <span class="item-prompt-actions">
+                <button class="img-action-btn" data-action="editImg" title="编辑当前图片" style="width:22px;height:22px;">${pencilSVG}</button>
+                <button class="img-action-btn del" data-action="delImg" title="删除当前图片" style="width:22px;height:22px;">${xSVG}</button>
+            </span>`;
+    }
+    // Thumbnails go after tags
     const tagsEl=card.querySelector('.item-tags');
     let thumbBar=card.querySelector('.thumbnails-bar');
     if(!thumbBar && count>0){
         thumbBar=document.createElement('div');
         thumbBar.className='thumbnails-bar';
         if(tagsEl) tagsEl.after(thumbBar);
-        else card.querySelector('.item-card-footer').before(thumbBar);
     }
     if(thumbBar && count>0){
         thumbBar.innerHTML=buildThumbBar(viewIdx,count);
