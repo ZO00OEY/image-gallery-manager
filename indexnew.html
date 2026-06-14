@@ -400,21 +400,7 @@
             font-size: 0.68rem; color: rgba(255,255,255,0.85); overflow: hidden; text-overflow: ellipsis;
             white-space: nowrap; cursor: pointer;
         }
-        .card-tags-row {
-            display: flex; gap: 4px; flex-wrap: wrap; padding: 2px 6px 4px;
-            max-height: 44px; overflow: hidden;
-        }
-        .card-tags-row .tag {
-            background: var(--primary); color: #fff; padding: 1px 6px;
-            border-radius: var(--br-sm); font-size: 0.65rem; font-weight: 600;
-        }
-        .card-bottom-tags {
-            display: flex; gap: 3px; flex-wrap: wrap; overflow: hidden; max-height: 20px;
-        }
-        .card-bottom-tags .tag {
-            background: var(--primary); color: #fff; padding: 1px 5px;
-            border-radius: var(--br-sm); font-size: 0.62rem; font-weight: 600;
-        }
+        .card-bottom-tags { display: none; }
 
         /* SFW mode */
         .sfw-mode .item-card.nsfw .preview-image { filter: blur(28px) brightness(0.85); }
@@ -2584,7 +2570,8 @@ function updateGridLayout() {
     const baseWidth=230*(scale/100);
     virtualGrid.cols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(baseWidth+virtualGrid.gap)));
     virtualGrid.cardWidth=(containerWidth-(virtualGrid.cols-1)*virtualGrid.gap)/virtualGrid.cols;
-    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + 64;
+    const tagBarOn=document.getElementById('tagChipsBar').style.display==='flex';
+    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + (tagBarOn?88:48);
 
     const totalRows=Math.ceil(currentFiltered.length/virtualGrid.cols);
     container.style.height=`${(totalRows*virtualGrid.cardHeight)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
@@ -2907,12 +2894,7 @@ function createCardElement(box,index) {
     };
 
     const count=imageCount.get(box.id)||0;
-    card.innerHTML=`
-        <div class="preview-wrapper"></div>
-        <div class="card-tags-row">
-            ${(box.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}
-        </div>
-    `;
+    card.innerHTML=`<div class="preview-wrapper"></div>`;
 
     renderCardImages(card, box);
     return card;
@@ -3008,9 +2990,7 @@ async function renderCardImages(card, box) {
     if(!thumbBar && count>0){
         thumbBar=document.createElement('div');
         thumbBar.className='thumbnails-bar';
-        const tagsRow=card.querySelector('.card-tags-row');
-        if(tagsRow) tagsRow.before(thumbBar);
-        else pw.after(thumbBar);
+        pw.after(thumbBar);
     }
     if(thumbBar && count>0){
         thumbBar.innerHTML=buildThumbBar(viewIdx,count);
@@ -3684,6 +3664,7 @@ function toggleTagBar(){
     const on=document.getElementById('tagBarToggle').checked;
     document.getElementById('tagChipsBar').style.display=on?'flex':'none';
     localStorage.setItem('ipm_tagBar',on?'1':'0');
+    updateGridLayout(); renderItems(false);
 }
 
 function toggleSfwMode(){
