@@ -4341,39 +4341,15 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     await loadModels();
     await loadBoxes();
 
-    // ─── Initialize local storage ────────────
-    const restored=await restoreLocalFolder();
-    if(restored){
-        localRestored=true;
-        await loadExistingLocalData(localRootHandle);
-    }else{
-        // No saved folder — ask user to select one
-        let handle=await selectLocalFolder(false);
-        if(handle){
-            localRestored=true;
-            setStorageMode('local');
-            await loadExistingLocalData(handle);
-        }else{
-            showToast('未选择本地文件夹，部分功能不可用');
-        }
-    }
-
-
-    // Restore scale before first render
+    // ─── Restore all persisted state BEFORE first render ──
     const savedScale=localStorage.getItem('ipm_scale');
     if(savedScale) document.getElementById('cardScaleSlider').value=savedScale;
 
-    // Restore tag bar before first render so card tags show correctly
     if(localStorage.getItem('ipm_tagBar')==='1'){
         document.getElementById('tagBarToggle').checked=true;
         document.getElementById('tagChipsBar').style.display='flex';
     }
 
-    renderModelTabs();
-    updateStatsAndTags();
-    renderItems(true);
-
-    // Restore theme
     if(localStorage.getItem('ipm_night')==='1'){
         isNight=true;
         document.body.classList.add('theme-night');
@@ -4383,11 +4359,26 @@ document.addEventListener('DOMContentLoaded',async ()=>{
         if(railEl) railEl.innerHTML=icon;
         if(panelEl) panelEl.innerHTML=icon;
     }
-    // Restore SFW mode (default: SFW on = blur nsfw)
+
     if(localStorage.getItem('ipm_sfw')==='1'){
         document.getElementById('sfwToggle').checked=true;
     } else {
         document.body.classList.add('sfw-mode');
+    }
+
+    // ─── Initialize local storage ────────────
+    const restored=await restoreLocalFolder();
+    if(restored){
+        localRestored=true;
+        await loadExistingLocalData(localRootHandle);
+    }else{
+        let handle=await selectLocalFolder(false);
+        if(handle){
+            localRestored=true;
+            await loadExistingLocalData(handle);
+        }else{
+            showToast('未选择本地文件夹，部分功能不可用');
+        }
     }
     // Event listeners
     window.addEventListener('scroll',onScroll,{passive:true});
