@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图库与提示词管理</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
 
@@ -3270,6 +3269,10 @@ async function doExport() {
     if(!subHandle){ showToast('未找到图库数据'); return; }
 
     showModal('progressModal');
+    document.getElementById('progressTitle').innerText='加载编辑器...';
+    document.getElementById('progressText').innerText='正在准备...';
+    const JSZip=await ensureJSZip();
+
     document.getElementById('progressTitle').innerText='打包导出中...';
     document.getElementById('progressFill').style.width='0%';
     document.getElementById('progressText').innerText='读取文件...';
@@ -3319,6 +3322,17 @@ async function doExport() {
     }
 }
 
+let _JSZip=null;
+async function ensureJSZip(){
+    if(_JSZip) return _JSZip;
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    document.head.appendChild(s);
+    await new Promise((resolve,reject)=>{ s.onload=resolve; s.onerror=reject; });
+    _JSZip=JSZip;
+    return _JSZip;
+}
+
 let pendingImportData=null;
 let pendingConflicts=[];
 let pendingImportFilters=null;
@@ -3343,6 +3357,7 @@ async function handleZipImport(event){
 
         if(isZip){
             // Read ZIP and extract to temp structure
+            const JSZip=await ensureJSZip();
             const buf=await file.arrayBuffer();
             const zip=await JSZip.loadAsync(buf);
             // Find gallery_settings.json
@@ -4337,14 +4352,13 @@ document.addEventListener('DOMContentLoaded',async ()=>{
         await loadExistingLocalData(localRootHandle);
     }else{
         // No saved folder — ask user to select one
-        let handle=null;
-        while(!handle){
-            handle=await selectLocalFolder(true);
-        }
+        let handle=await selectLocalFolder(false);
         if(handle){
             localRestored=true;
             setStorageMode('local');
             await loadExistingLocalData(handle);
+        }else{
+            showToast('未选择本地文件夹，部分功能不可用');
         }
     }
 
