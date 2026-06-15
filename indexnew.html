@@ -1065,6 +1065,68 @@
         </div>
     </div>
 
+    <!-- Batch Action Bar -->
+    <div id="batchActionBar">
+        <span id="batchSelectText" style="font-weight:bold;">已选择 0 项</span>
+        <button class="btn btn-primary" onclick="openBatchEditModal()">✏️ 批量编辑</button>
+        <button class="btn btn-primary" onclick="openBatchTransferModal()">↔️ 批量转移</button>
+        <button class="btn btn-primary" onclick="executeBatchCopy()">📋 批量复制</button>
+        <button class="btn btn-danger" onclick="executeBatchDelete()">🗑️ 删除所选</button>
+        <button class="btn btn-outline" id="selectAllBtn" onclick="selectAllBatch()">☑️ 全选</button>
+        <button class="btn btn-outline" onclick="toggleBatchMode()">取消</button>
+    </div>
+
+    <!-- New Model Modal -->
+    <div class="modal-overlay" id="modelModal">
+        <div class="modal">
+            <div class="modal-header"><div class="modal-title">新建模型标签</div><button class="modal-close" onclick="hideModal('modelModal')">×</button></div>
+            <div class="modal-body">
+                <input type="text" id="newModelName" class="input-text" placeholder="例如: SDXL, Pony, Flux...">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('modelModal')">取消</button>
+                <button class="btn btn-primary" onclick="createModel()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Edit Modal -->
+    <div class="modal-overlay" id="batchEditModal">
+        <div class="modal" style="max-width:500px;">
+            <div class="modal-header"><div class="modal-title">批量编辑</div><button class="modal-close" onclick="hideModal('batchEditModal')">×</button></div>
+            <div class="modal-body">
+                <select id="batchActionSelect" class="input-text" style="margin-bottom:12px;">
+                    <option value="add-tags">批量添加标签</option>
+                    <option value="remove-tags">批量移除标签</option>
+                </select>
+                <div id="batchTagDiv">
+                    <input type="text" id="batchTagInput" class="input-text" placeholder="输入标签，逗号分隔" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.value+=', ';}">
+                </div>
+                <p style="font-size:0.85rem; color:var(--text-light); margin-top:10px;">将影响 <span id="batchAffectCount" style="color:var(--primary);font-weight:bold;">0</span> 个卡片盒。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('batchEditModal')">取消</button>
+                <button class="btn btn-primary" onclick="executeBatchEdit()">确认执行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Transfer Modal -->
+    <div class="modal-overlay" id="batchTransferModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header"><div class="modal-title">↔️ 批量转移</div><button class="modal-close" onclick="hideModal('batchTransferModal')">×</button></div>
+            <div class="modal-body">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">目标模型</label>
+                <select id="batchTransferModel" class="input-text"></select>
+                <p style="font-size:0.85rem; color:var(--text-light); margin-top:10px;">将移动 <span id="batchTransferCount" style="color:var(--primary);font-weight:bold;">0</span> 个卡片盒。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('batchTransferModal')">取消</button>
+                <button class="btn btn-primary" onclick="executeBatchTransfer()">确认转移</button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
 <script>
@@ -1201,54 +1263,12 @@ function formatTime(ts) {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// ─── IndexedDB ──────────────────────────────
-const DB_NAME='ImagePromptManagerDB';
-const DB_VERSION=4;
-const STORE_MODELS='models';
-const STORE_BOXES='boxes';
-const STORE_IMAGES='images';
+// ─── Config DB (persists directory handle) ────
 const CONFIG_DB_NAME='ImagePromptManagerConfig';
 const LOCAL_SUBFOLDER='图库数据';
-let db;
-let storageMode='indexeddb'; // 'indexeddb' | 'local'
 let localRootHandle=null;   // FileSystemDirectoryHandle
 let localRestored=false;    // true if local handle was restored on startup
 
-function initDB() {
-    return new Promise((resolve,reject)=>{
-        const req=indexedDB.open(DB_NAME,DB_VERSION);
-        req.onupgradeneeded=e=>{
-            const d=e.target.result;
-            if(!d.objectStoreNames.contains(STORE_MODELS)) d.createObjectStore(STORE_MODELS,{keyPath:'id'});
-            if(!d.objectStoreNames.contains(STORE_BOXES)) { const st=d.createObjectStore(STORE_BOXES,{keyPath:'id'}); st.createIndex('modelId','modelId',{unique:false}); }
-            if(!d.objectStoreNames.contains(STORE_IMAGES)) { const st=d.createObjectStore(STORE_IMAGES,{keyPath:'id'}); st.createIndex('boxId','boxId',{unique:false}); }
-        };
-        req.onsuccess=e=>{ db=e.target.result; resolve(); };
-        req.onerror=()=>{ console.error('DB init error'); resolve(); };
-    });
-}
-
-function idbGet(store,id) {
-    return new Promise(res=>{ db.transaction([store]).objectStore(store).get(id).onsuccess=e=>res(e.target.result); });
-}
-function idbPut(store,data) {
-    return new Promise(res=>{ db.transaction([store],'readwrite').objectStore(store).put(data).onsuccess=res; });
-}
-function idbDelete(store,id) {
-    return new Promise(res=>{ db.transaction([store],'readwrite').objectStore(store).delete(id).onsuccess=res; });
-}
-function idbGetAll(store) {
-    return new Promise(res=>{ db.transaction([store]).objectStore(store).getAll().onsuccess=e=>res(e.target.result||[]); });
-}
-function idbGetByIndex(store,indexName,value) {
-    return new Promise(res=>{ db.transaction([store]).objectStore(store).index(indexName).getAll(value).onsuccess=e=>res(e.target.result||[]); });
-}
-async function idbDeleteAll(store) {
-    const all=await idbGetAll(store);
-    for(const item of all) await idbDelete(store,item.id);
-}
-
-// ─── Config DB (stores directory handle) ─────
 async function openConfigDB(){
     return new Promise((resolve,reject)=>{
         const req=indexedDB.open(CONFIG_DB_NAME,1);
@@ -1289,35 +1309,18 @@ async function clearRootHandle(){
     try{ await configDelete('rootHandle'); }catch(e){}
 }
 
-// ─── Storage Mode ─────────────────────────────
-function setStorageMode(mode){
-    storageMode=mode;
-    localStorage.setItem('ipm_storageMode',mode);
-}
-function getStorageMode(){
-    return localStorage.getItem('ipm_storageMode')||null;
-}
+// ─── Dispatch Layer (always routes to local file system) ──
+const STORE_MODELS='models';
+const STORE_BOXES='boxes';
+const STORE_IMAGES='images';
+const DB_NAME='ImagePromptManagerDB'; // kept for reset cleanup
 
-// ─── Dispatch Layer ───────────────────────────
-function dbGet(store,id){
-    return storageMode==='local'?localGet(store,id):idbGet(store,id);
-}
-function dbPut(store,data){
-    return storageMode==='local'?localPut(store,data):idbPut(store,data);
-}
-function dbDelete(store,id){
-    return storageMode==='local'?localDelete(store,id):idbDelete(store,id);
-}
-function dbGetAll(store){
-    return storageMode==='local'?localGetAll(store):idbGetAll(store);
-}
-function dbGetByIndex(store,indexName,value){
-    return storageMode==='local'?localGetByIndex(store,indexName,value):idbGetByIndex(store,indexName,value);
-}
-async function dbDeleteAll(store){
-    if(storageMode==='local') return await localDeleteAll(store);
-    return await idbDeleteAll(store);
-}
+function dbGet(store,id){ return localGet(store,id); }
+function dbPut(store,data){ return localPut(store,data); }
+function dbDelete(store,id){ return localDelete(store,id); }
+function dbGetAll(store){ return localGetAll(store); }
+function dbGetByIndex(store,indexName,value){ return localGetByIndex(store,indexName,value); }
+async function dbDeleteAll(store){ return await localDeleteAll(store); }
 
 // ─── Data Model ─────────────────────────────
 // MODELS: { modelId: { id, name } } — stored in STORE_MODELS
@@ -4294,10 +4297,8 @@ function resetAll(){
             localRootHandle=null;
             try{ await clearRootHandle(); }catch(e){}
             try{ indexedDB.deleteDatabase(CONFIG_DB_NAME); }catch(e){}
-            try{ db.close(); }catch(e){}
             const req=indexedDB.deleteDatabase(DB_NAME);
             req.onsuccess=()=>{
-                localStorage.removeItem('ipm_storageMode');
                 localStorage.removeItem('gallery_app_settings');
                 localStorage.removeItem('ipm_lastModel');
                 location.reload();
@@ -4336,14 +4337,11 @@ function resetAll(){
 }
 
 document.addEventListener('DOMContentLoaded',async ()=>{
-    await initDB();
     loadSettings();
     await loadModels();
     await loadBoxes();
 
-    // ─── Storage mode initialization ──────────
-    // Always use local storage
-    setStorageMode('local');
+    // ─── Initialize local storage ────────────
     const restored=await restoreLocalFolder();
     if(restored){
         localRestored=true;
