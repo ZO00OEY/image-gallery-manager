@@ -4081,14 +4081,34 @@ async function scanLocalFolderStructure(handle){
             for await(const [boxName, boxEntry] of modelDir.entries()){
                 if(boxEntry.kind!=='directory') continue;
                 if(boxName.startsWith('.')||boxName.startsWith('_')) continue;
-                try{
-                    const meta=await readJSON(boxEntry,'_meta.json');
-                    if(meta&&meta.id){
-                        if(!boxIndex[modelId]) boxIndex[modelId]={};
-                        boxIndex[modelId][meta.id]=boxName;
-                        hasBox=true;
+                // Check if this folder has images; if yes it's a valid box
+                let hasImage=false, imgCount=0;
+                for await(const [name, fe] of boxEntry.entries()){
+                    if(fe.kind==='file' && name!=='_meta.json' && guessMimeType(name).startsWith('image/')){
+                        hasImage=true; imgCount++;
+                        if(imgCount>=3) break;
                     }
-                }catch(e){}
+                }
+                if(!hasImage) continue; // skip empty folders
+                let meta=await readJSON(boxEntry,'_meta.json');
+                const boxId=meta&&meta.id?meta.id:('box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+                // If no meta, initialize one with orphan images
+                if(!meta){
+                    const imageNames=[];
+                    for await(const [name, fe] of boxEntry.entries()){
+                        if(fe.kind==='file' && name!=='_meta.json') imageNames.push(name);
+                    }
+                    meta={id:boxId, name:boxName, tags:[], remark:'', createdAt:Date.now(), modelId, viewIndex:0, imageCount:0, images:{}};
+                    // Extract prompts from first image as demo
+                    for(const imgName of imageNames){
+                        meta.images[imgName]={remark:'', positivePrompt:'', negativePrompt:'', steps:'', workflow:null};
+                    }
+                    meta.imageCount=imageNames.length;
+                    await writeJSON(boxEntry,'_meta.json',meta);
+                }
+                if(!boxIndex[modelId]) boxIndex[modelId]={};
+                boxIndex[modelId][boxId]=boxName;
+                hasBox=true;
             }
             if(hasBox){ models[modelId]={id:modelId, name:entryName, sortIndex:modelIdx-1}; }
         }
@@ -4102,48 +4122,59 @@ async function loadExistingLocalData(handle){
     const subHandle=await getOrCreateSubfolder(handle);
     if(!subHandle) return false;
     let settings=await readJSON(subHandle,'gallery_settings.json');
-    const hasData=settings&&settings.boxIndex&&
-        Object.values(settings.boxIndex).some(m=>Object.keys(m).length>0);
-    if(hasData){
-        // Quick validation: remove phantom boxIndex entries
-        let cleaned=false;
-        for(const modelId of Object.keys(settings.boxIndex||{})){
-            const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-            let modelDir;
-            try{ modelDir=await subHandle.getDirectoryHandle(modelName); }catch(e){ delete settings.boxIndex[modelId]; cleaned=true; continue; }
-            for(const boxId of Object.keys(settings.boxIndex[modelId]||{})){
-                const folderName=settings.boxIndex[modelId][boxId];
-                try{ await modelDir.getDirectoryHandle(folderName); }catch(e){ delete settings.boxIndex[modelId][boxId]; cleaned=true; }
-            }
-            if(Object.keys(settings.boxIndex[modelId]).length===0){ delete settings.boxIndex[modelId]; cleaned=true; }
-        }
-        if(cleaned) await writeJSON(subHandle,'gallery_settings.json',settings);
-        await reloadData();
-                showToast('已加载本地图库数据');
-        return true;
-    }
-    // No settings — scan folder for existing structure
+
+    // Always scan the actual folder structure
     const scanned=await scanLocalFolderStructure(handle);
-    if(Object.keys(scanned.boxIndex).length>0){
+    const scannedHasData=Object.keys(scanned.boxIndex).length>0;
+
+    if(scannedHasData){
         settings=settings||{version:1, copyFilterPatterns:[]};
+        // Merge: scanned structure wins (actual files), fill in metadata from settings
+        for(const [mid, m] of Object.entries(settings.models||{})){
+            if(!scanned.models[mid]){ scanned.models[mid]=m; }
+        }
+        for(const [mid, boxes] of Object.entries(settings.boxIndex||{})){
+            if(!scanned.boxIndex[mid]) scanned.boxIndex[mid]=boxes;
+            else{
+                for(const [bid, fname] of Object.entries(boxes)){
+                    if(!scanned.boxIndex[mid][bid]) scanned.boxIndex[mid][bid]=fname;
+                }
+            }
+        }
+        // Remove phantom boxes (dir no longer exists)
+        let cleaned=false;
+        for(const modelId of Object.keys(scanned.boxIndex||{})){
+            const modelName=scanned.models[modelId]?scanned.models[modelId].name:modelId;
+            let modelDir;
+            try{ modelDir=await subHandle.getDirectoryHandle(modelName); }catch(e){ delete scanned.boxIndex[modelId]; cleaned=true; continue; }
+            for(const boxId of Object.keys(scanned.boxIndex[modelId]||{})){
+                const folderName=scanned.boxIndex[modelId][boxId];
+                try{ await modelDir.getDirectoryHandle(folderName); }catch(e){ delete scanned.boxIndex[modelId][boxId]; cleaned=true; }
+            }
+            if(Object.keys(scanned.boxIndex[modelId]).length===0){ delete scanned.boxIndex[modelId]; cleaned=true; }
+        }
+
         settings.models=scanned.models;
         settings.boxIndex=scanned.boxIndex;
         settings.currentModelId=settings.currentModelId||Object.keys(scanned.models)[0]||null;
         await writeJSON(subHandle,'gallery_settings.json',settings);
+
         const modelCount=Object.keys(scanned.models).length;
         const boxCount=Object.values(scanned.boxIndex).reduce((s,m)=>s+Object.keys(m).length,0);
         await reloadData();
-                let imgCount=0; imageCount.forEach(v=>imgCount+=v);
+        let imgCount=0; imageCount.forEach(v=>imgCount+=v);
+        if(!settings.currentModelId) settings.currentModelId=currentModelId;
         showToast('已识别本地图库：'+modelCount+' 个模型，'+boxCount+' 个盒子，'+imgCount+' 张图片');
         return true;
     }
-    // Truly empty
+
+    // Truly empty — initialize fresh
     await writeJSON(subHandle,'gallery_settings.json',{
         version:1, models:{...MODELS}, boxIndex:{},
         currentModelId, copyFilterPatterns:appSettings.copyFilterPatterns||[]
     });
     await reloadData();
-        return false;
+    return false;
 }
 
 async function updateFolderPathDisplay(){
