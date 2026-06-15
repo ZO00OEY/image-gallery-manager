@@ -1309,6 +1309,26 @@ async function clearRootHandle(){
     try{ await configDelete('rootHandle'); }catch(e){}
 }
 
+// ─── UI Preferences (IndexedDB-backed, survives file://) ────
+const uiPrefs=new Map(); // in-memory cache, synced with IndexedDB
+async function initUIPrefs(){
+    const keys=['ipm_scale','ipm_tagBar','ipm_night','ipm_sfw','ipm_lastModel'];
+    for(const k of keys){
+        try{
+            const rec=await configGet('ui_'+k);
+            if(rec) uiPrefs.set(k, rec.value);
+        }catch(e){}
+    }
+}
+function getPref(key, fallback=null){
+    return uiPrefs.has(key)?uiPrefs.get(key):fallback;
+}
+function setPref(key, value){
+    uiPrefs.set(key, value);
+    // fire-and-forget write-through to IndexedDB
+    configPut('ui_'+key, {value}).catch(()=>{});
+}
+
 // ─── Dispatch Layer (always routes to local file system) ──
 const STORE_MODELS='models';
 const STORE_BOXES='boxes';
@@ -1828,7 +1848,7 @@ async function loadModels() {
         // Assign sortIndex to models that don't have one
         let idx=0;
         Object.values(MODELS).forEach(m=>{ if(m.sortIndex===undefined) m.sortIndex=idx++; });
-        const lastId=localStorage.getItem('ipm_lastModel');
+        const lastId=getPref('ipm_lastModel');
         currentModelId=(lastId&&MODELS[lastId])?lastId:Object.keys(MODELS)[0];
     } else {
         initDefaultModels();
@@ -2134,7 +2154,7 @@ function modelDragEnd(){
 async function switchModel(modelId) {
     if(currentModelId===modelId) return;
     currentModelId=modelId;
-    localStorage.setItem('ipm_lastModel',modelId);
+    setPref('ipm_lastModel',modelId);
     document.getElementById('searchInput').value='';
     selectedFilterTags=[];
     renderTagChips();
@@ -3251,7 +3271,7 @@ async function deleteModel(e,id) {
     saveModels();
     if(currentModelId===id){
         currentModelId=Object.keys(MODELS)[0];
-        localStorage.setItem('ipm_lastModel',currentModelId);
+        setPref('ipm_lastModel',currentModelId);
     }
     renderModelTabs();
     await loadBoxes();
@@ -3695,21 +3715,21 @@ function toggleTheme() {
     const panelEl=document.getElementById('panelThemeIcon');
     if(railEl) railEl.innerHTML=icon;
     if(panelEl) panelEl.innerHTML=icon;
-    localStorage.setItem('ipm_night',isNight?'1':'0');
+    setPref('ipm_night',isNight?'1':'0');
     renderItems(true);
 }
 
 function toggleTagBar(){
     const on=document.getElementById('tagBarToggle').checked;
     document.getElementById('tagChipsBar').style.display=on?'flex':'none';
-    localStorage.setItem('ipm_tagBar',on?'1':'0');
+    setPref('ipm_tagBar',on?'1':'0');
     updateGridLayout(); renderItems(true);
 }
 
 function toggleSfwMode(){
     const on=document.getElementById('sfwToggle').checked;
     document.body.classList.toggle('sfw-mode',!on);
-    localStorage.setItem('ipm_sfw',on?'1':'0');
+    setPref('ipm_sfw',on?'1':'0');
 }
 
 // ─── Scroll Handler ─────────────────────────
@@ -4331,7 +4351,7 @@ function resetAll(){
             const req=indexedDB.deleteDatabase(DB_NAME);
             req.onsuccess=()=>{
                 localStorage.removeItem('gallery_app_settings');
-                localStorage.removeItem('ipm_lastModel');
+                setPref('ipm_lastModel',null);
                 location.reload();
             };
             req.onerror=()=>{ showToast('重置失败'); };
@@ -4368,20 +4388,22 @@ function resetAll(){
 }
 
 document.addEventListener('DOMContentLoaded',async ()=>{
+    // Load UI prefs from IndexedDB first (survives file://)
+    await initUIPrefs();
     loadSettings();
     await loadModels();
     await loadBoxes();
 
     // ─── Restore all persisted state BEFORE first render ──
-    const savedScale=localStorage.getItem('ipm_scale');
+    const savedScale=getPref('ipm_scale');
     if(savedScale) document.getElementById('cardScaleSlider').value=savedScale;
 
-    if(localStorage.getItem('ipm_tagBar')==='1'){
+    if(getPref('ipm_tagBar')==='1'){
         document.getElementById('tagBarToggle').checked=true;
         document.getElementById('tagChipsBar').style.display='flex';
     }
 
-    if(localStorage.getItem('ipm_night')==='1'){
+    if(getPref('ipm_night')==='1'){
         isNight=true;
         document.body.classList.add('theme-night');
         const icon=iconSun;
@@ -4391,7 +4413,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
         if(panelEl) panelEl.innerHTML=icon;
     }
 
-    if(localStorage.getItem('ipm_sfw')==='1'){
+    if(getPref('ipm_sfw')==='1'){
         document.getElementById('sfwToggle').checked=true;
     } else {
         document.body.classList.add('sfw-mode');
@@ -4417,14 +4439,14 @@ document.addEventListener('DOMContentLoaded',async ()=>{
 
     document.getElementById('searchInput').addEventListener('input',()=>renderItems(true));
     document.getElementById('sortSelect').addEventListener('change',()=>renderItems(true));
-    document.getElementById('cardScaleSlider').addEventListener('input',()=>{ localStorage.setItem('ipm_scale',document.getElementById('cardScaleSlider').value); updateGridLayout(); renderItems(false); });
+    document.getElementById('cardScaleSlider').addEventListener('input',()=>{ setPref('ipm_scale',document.getElementById('cardScaleSlider').value); updateGridLayout(); renderItems(false); });
 
     window.stepScale=function(delta){
         const slider=document.getElementById('cardScaleSlider');
         let val=parseInt(slider.value)+delta;
         val=Math.max(50,Math.min(150,val));
         slider.value=val;
-        localStorage.setItem('ipm_scale',val);
+        setPref('ipm_scale',val);
         updateGridLayout(); renderItems(false);
     };
 
