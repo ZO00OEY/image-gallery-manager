@@ -4234,7 +4234,7 @@ async function runHealthCheck(){
     let html='<div style="line-height:1.8;">';
     html+='<p>📊 JSON 内共 <b>'+report.jsonTotal+'</b> 张图片</p>';
     if(report.missingFiles.length>0) html+='<p style="color:var(--error);">⚠️ '+report.missingFiles.length+' 张文件丢失</p>';
-    if(report.orphanFiles.length>0) html+='<p style="color:var(--accent);">📄 '+report.orphanFiles.length+' 张孤儿文件</p>';
+    if(report.orphanFiles.length>0) html+='<p style="color:var(--accent);">📄 '+report.orphanFiles.length+' 张孤儿文件（将导入并提取提示词）</p>';
     if(report.hashDups.length>0) html+='<p style="color:var(--primary);">🔄 '+report.hashDups.length+' 张哈希重复</p>';
     if(report.boxIssues.length>0) html+='<p style="color:var(--error);">📦 '+report.boxIssues.length+' 个无效盒子</p>';
     if(report.missingFiles.length===0&&report.orphanFiles.length===0&&report.hashDups.length===0&&report.boxIssues.length===0){
@@ -4256,14 +4256,50 @@ async function runHealthCheck(){
 
 async function autoFixHealth(report, settings, subHandle){
     let fixed=0, boxCleaned=0;
-    // Remove orphan files
+    // Import orphan files: add to _meta.json (don't delete!)
+    const orphanBoxes=new Map();
     for(const f of report.orphanFiles){
+        const key=f.modelId+'/'+f.boxId;
+        if(!orphanBoxes.has(key)) orphanBoxes.set(key, []);
+        orphanBoxes.get(key).push(f);
+    }
+    for(const [key, files] of orphanBoxes){
         try{
-            const modelName=settings.models[f.modelId]?settings.models[f.modelId].name:f.modelId;
+            const parts=key.split('/');
+            const modelId=parts[0];
+            const boxId=parts[1];
+            const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
             const modelDir=await subHandle.getDirectoryHandle(modelName);
-            const boxDir=await modelDir.getDirectoryHandle(f.folderName);
-            await removeEntrySafe(boxDir, f.fileName);
-            fixed++;
+            const boxDir=await modelDir.getDirectoryHandle(files[0].folderName);
+            const meta=await readJSON(boxDir,'_meta.json');
+            if(!meta||!meta.images) continue;
+            let metaChanged=false;
+            for(const f of files){
+                if(meta.images[f.fileName]) continue;
+                const bytes=await readFileBytes(boxDir, f.fileName);
+                const imgMeta={remark:'', positivePrompt:'', negativePrompt:'', steps:'', workflow:null};
+                // Extract PNG metadata if applicable
+                if(bytes&&bytes.length>8&&bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71){
+                    try{
+                        const chunks=extractPngTextChunks(bytes);
+                        const remark=chunks.join('\n\n');
+                        if(remark){
+                            const parts=parsePromptParts(remark);
+                            imgMeta.remark=remark;
+                            imgMeta.positivePrompt=parts.positive;
+                            imgMeta.negativePrompt=parts.negative;
+                            imgMeta.steps=parts.steps;
+                        }
+                    }catch(e){}
+                }
+                meta.images[f.fileName]=imgMeta;
+                metaChanged=true;
+                fixed++;
+            }
+            if(metaChanged){
+                meta.imageCount=Object.keys(meta.images).length;
+                await writeJSON(boxDir,'_meta.json',meta);
+            }
         }catch(e){}
     }
     // Remove missing entries from meta + hash dups
