@@ -69,9 +69,11 @@
             border-right: 1px solid var(--border-color);
             background: var(--glass-bg);
             display: flex; flex-direction: column; align-items: center; gap: 6px;
-            transition: opacity 0.2s ease, transform 0.28s ease;
+            transition: background-color 0.28s ease, border-color 0.28s ease;
         }
-        body.sidebar-open .nav-rail { opacity: 0; transform: translateX(-12px); pointer-events: none; }
+        body.sidebar-open .nav-rail { background: transparent; border-right-color: transparent; }
+        body.sidebar-open #railSettings,
+        body.sidebar-open #railTheme { visibility: hidden; }
         .rail-spacer { flex: 1; min-height: 8px; }
         .rail-button {
             position: relative; width: 44px; height: 44px; padding: 0; border: 0;
@@ -79,8 +81,11 @@
             display: grid; place-items: center; cursor: pointer;
             transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
         }
+        .rail-logo { z-index: 3; transition: color 0.18s ease, background 0.18s ease, transform 0.34s cubic-bezier(.22,.78,.25,1); }
+        body.sidebar-open .rail-logo { transform: translateX(var(--panel-width, 220px)); }
         .rail-button:hover, .rail-button.active { color: var(--accent); background: var(--primary-bg); }
         .rail-button:active { transform: scale(0.94); }
+        body.sidebar-open .rail-logo:active { transform: translateX(var(--panel-width, 220px)) scale(0.94); }
         .rail-button[data-tooltip]::after {
             content: attr(data-tooltip);
             position: absolute; left: calc(100% + 10px); top: 50%; z-index: 2;
@@ -94,8 +99,8 @@
 
         /* Sidebar panel — slides in from left */
         .sidebar-panel {
-            position: fixed; inset: 0 auto 0 0; z-index: 42;
-            width: var(--panel-width, 220px); max-width: calc(100vw - 18px);
+            position: fixed; inset: 0 auto 0 0; z-index: 37;
+            width: calc(62px + var(--panel-width, 220px)); max-width: calc(100vw - 18px);
             padding: 12px 10px 10px;
             border-right: 1px solid var(--border-color);
             background: var(--glass-bg); backdrop-filter: blur(5px);
@@ -105,9 +110,15 @@
             display: flex; flex-direction: column;
             box-shadow: 12px 0 34px rgba(0,0,0,0.05);
         }
+        .sidebar-panel-head,
+        .sidebar-panel-body,
+        .sidebar-panel-foot { transform: translateX(-12px); opacity: 0; transition: transform 0.28s cubic-bezier(.22,.78,.25,1), opacity 0.18s ease; }
+        body.sidebar-open .sidebar-panel-head,
+        body.sidebar-open .sidebar-panel-body,
+        body.sidebar-open .sidebar-panel-foot { transform: translateX(0); opacity: 1; }
         .sidebar-panel-head {
-            min-height: 48px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 4px; flex-shrink: 0;
+            min-height: 48px; display: flex; align-items: center; justify-content: flex-start;
+            padding: 0 4px 0 74px; flex-shrink: 0;
         }
         .sidebar-panel-title {
             display: flex; align-items: center; gap: 10px;
@@ -119,16 +130,17 @@
             display: grid; place-items: center; cursor: pointer;
             transition: color 0.18s, background 0.18s;
         }
+        .sidebar-panel-close { display: none; }
         .sidebar-panel-close:hover { color: var(--primary); background: var(--primary-bg); }
         .sidebar-panel-body {
-            flex: 1; min-height: 0; overflow-y: auto; padding: 14px 4px;
+            flex: 1; min-height: 0; overflow-y: auto; padding: 14px 4px 14px 74px;
             scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
         }
         .sidebar-panel-foot {
-            flex-shrink: 0; padding-top: 8px;
+            flex-shrink: 0;
             border-top: 1px solid var(--border-color);
             display: flex; align-items: center; justify-content: flex-end; gap: 2px;
-            min-height: 44px; padding: 0 4px 4px;
+            min-height: 54px; padding: 12px 4px 4px 74px;
         }
         .sidebar-foot-btn {
             width: 38px; height: 38px; padding: 0; border: 0; border-radius: 10px;
@@ -159,6 +171,8 @@
         .btn-side.danger:hover { background: rgba(230,57,70,0.1); }
         .btn-side.active { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); font-weight: 700; }
         .btn-side-danger { color: var(--error) !important; }
+        #panelMenuView .btn-side { min-height: 44px; padding-left: 14px !important; }
+        #panelMenuView .btn-side svg { display: none; }
 
         .main-content {
             flex: 1; margin-left: 62px; padding: 20px 30px;
@@ -780,6 +794,9 @@
             </div>
         </div>
         <div class="sidebar-panel-foot">
+            <button class="sidebar-foot-btn" id="panelSettings" title="设置" onclick="openPanelDetail('sec_settings')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6 1.7 1.7 0 00-.4 1.1V21h-4v-.1A1.7 1.7 0 008.6 19.4a1.7 1.7 0 00-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-.6-1 1.7 1.7 0 00-1.1-.4H3v-4h.1A1.7 1.7 0 004.6 8.6a1.7 1.7 0 00-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-.6 1.7 1.7 0 00.4-1.1V3h4v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0019.4 9c.15.37.37.7.65.98.28.28.66.43 1.05.42h.1v4h-.1a1.7 1.7 0 00-1.7.6z"/></svg>
+            </button>
             <button class="sidebar-foot-btn" id="panelTheme" title="切换主题" onclick="toggleTheme()">
                 <svg id="panelThemeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
             </button>
@@ -1268,6 +1285,8 @@ const CONFIG_DB_NAME='ImagePromptManagerConfig';
 const LOCAL_SUBFOLDER='图库数据';
 let localRootHandle=null;   // FileSystemDirectoryHandle
 let localRestored=false;    // true if local handle was restored on startup
+let pendingRootHandle=null; // persisted handle waiting for a user permission gesture
+let localWriteGranted=false; // cache write permission for the remembered root handle
 
 async function openConfigDB(){
     return new Promise((resolve,reject)=>{
@@ -1373,8 +1392,27 @@ let currentFiltered=[];
 function sanitizeFileName(name){
     return name.replace(/[<>:"/\\|?*]/g,'_').replace(/\s+/g,' ').trim()||'untitled';
 }
+async function ensureWritePermission(handle){
+    if(localWriteGranted) return true;
+    const target=localRootHandle||handle;
+    if(!target||!target.queryPermission||!target.requestPermission) return true;
+    try{
+        const ok=await target.queryPermission({mode:'readwrite'});
+        if(ok==='granted'){
+            localWriteGranted=true;
+            return true;
+        }
+        const req=await target.requestPermission({mode:'readwrite'});
+        localWriteGranted=req==='granted';
+        return localWriteGranted;
+    }catch(e){ return false; }
+}
 async function ensureDir(parentHandle, name){
-    try{ return await parentHandle.getDirectoryHandle(name,{create:true}); }catch(e){ return null; }
+    try{ return await parentHandle.getDirectoryHandle(name); }catch(e){}
+    try{
+        await ensureWritePermission(parentHandle);
+        return await parentHandle.getDirectoryHandle(name,{create:true});
+    }catch(e){ return null; }
 }
 async function readJSON(handle, fileName){
     try{
@@ -1386,6 +1424,7 @@ async function readJSON(handle, fileName){
 }
 async function writeJSON(handle, fileName, data){
     try{
+        await ensureWritePermission(handle);
         const fh=await handle.getFileHandle(fileName,{create:true});
         const writable=await fh.createWritable();
         await writable.write(JSON.stringify(data,null,2));
@@ -1402,6 +1441,7 @@ async function readFileBytes(handle, fileName){
 }
 async function writeFileBytes(handle, fileName, bytes){
     try{
+        await ensureWritePermission(handle);
         const fh=await handle.getFileHandle(fileName,{create:true});
         const writable=await fh.createWritable();
         await writable.write(bytes);
@@ -1410,12 +1450,15 @@ async function writeFileBytes(handle, fileName, bytes){
     }catch(e){ return false; }
 }
 async function removeEntrySafe(handle, name){
-    try{ await handle.removeEntry(name); }catch(e){}
+    try{ await ensureWritePermission(handle); await handle.removeEntry(name); }catch(e){}
 }
 function guessMimeType(fileName){
     const ext=(fileName.split('.').pop()||'').toLowerCase();
     const map={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif',bmp:'image/bmp'};
     return map[ext]||'image/png';
+}
+function isImageFileName(fileName){
+    return /\.(png|jpe?g|webp|gif|bmp)$/i.test(fileName||'');
 }
 function dataUrlToBytes(dataUrl){
     const idx=dataUrl.indexOf(',');
@@ -1504,7 +1547,7 @@ async function scanLocalDiscrepancies(handle, settings){
             if(!meta||!meta.images){ report.boxIssues.push({modelId,boxId,folderName,issue:'meta_missing'}); continue; }
             // Collect listed files and meta entries
             const listedFiles=new Set();
-            try{ for await(const [name] of boxDir.entries()){ if(name!=='_meta.json') listedFiles.add(name); } }catch(e){}
+            try{ for await(const [name] of boxDir.entries()){ if(name!=='_meta.json'&&isImageFileName(name)) listedFiles.add(name); } }catch(e){}
             const metaFiles=new Set(Object.keys(meta.images));
             report.jsonTotal+=metaFiles.size;
             // Missing: in meta but not on disk
@@ -1658,6 +1701,7 @@ async function localPut(store, data){
             }
         }
         settings.models=newModels;
+        settings.currentModelId=currentModelId;
         await writeJSON(dataHandle,'gallery_settings.json',settings);
         return;
     }
@@ -1848,8 +1892,11 @@ async function loadModels() {
         // Assign sortIndex to models that don't have one
         let idx=0;
         Object.values(MODELS).forEach(m=>{ if(m.sortIndex===undefined) m.sortIndex=idx++; });
+        const settings=await localGetSettings();
+        const settingsId=settings&&settings.currentModelId;
         const lastId=getPref('ipm_lastModel');
-        currentModelId=(lastId&&MODELS[lastId])?lastId:Object.keys(MODELS)[0];
+        currentModelId=(lastId&&MODELS[lastId])?lastId:
+            (settingsId&&MODELS[settingsId])?settingsId:Object.keys(MODELS)[0];
     } else {
         initDefaultModels();
     }
@@ -2059,7 +2106,7 @@ function extractJpegCom(bytes) {
 
 function extractImageRemark(file) {
     return new Promise((resolve)=>{
-        if(!file.type.match('image.*')) { resolve({remark:null,workflow:null}); return; }
+        if(file.type && !file.type.match('image.*') && !isImageFileName(file.name)) { resolve({remark:null,workflow:null}); return; }
         const reader=new FileReader();
         reader.onload=function(e){
             try {
@@ -2155,6 +2202,7 @@ async function switchModel(modelId) {
     if(currentModelId===modelId) return;
     currentModelId=modelId;
     setPref('ipm_lastModel',modelId);
+    saveModels();
     document.getElementById('searchInput').value='';
     selectedFilterTags=[];
     renderTagChips();
@@ -4055,25 +4103,52 @@ async function selectLocalFolder(skipConfirm){
         const handle=await window.showDirectoryPicker({mode:'readwrite'});
         const subHandle=await getOrCreateSubfolder(handle);
         if(!subHandle) return null;
+        localRootHandle=handle;
+        localWriteGranted=true;
         await saveRootHandle(handle);
         return handle;
     }catch(e){ return null; }
 }
 
-async function restoreLocalFolder(){
+async function restoreLocalFolder(requestPermissionNow=false){
     if(localRestored) return true;
-    const handle=await loadRootHandle();
+    const handle=pendingRootHandle||await loadRootHandle();
     if(!handle) return false;
     try{
-        const ok=await handle.queryPermission({mode:'readwrite'});
-        if(ok!=='granted'){
-            const req=await handle.requestPermission({mode:'readwrite'});
-            if(req!=='granted') return false;
+        const ok=await handle.queryPermission({mode:'read'});
+        if(ok==='granted'){
+            localRootHandle=handle;
+            localWriteGranted=false;
+            pendingRootHandle=null;
+            localRestored=true;
+            return true;
         }
-        localRootHandle=handle;
-        localRestored=true;
-        return true;
+        pendingRootHandle=handle;
+        if(requestPermissionNow){
+            const req=await handle.requestPermission({mode:'read'});
+            if(req!=='granted') return false;
+            localRootHandle=handle;
+            localWriteGranted=false;
+            pendingRootHandle=null;
+            localRestored=true;
+            return true;
+        }
     }catch(e){ return false; }
+    return false;
+}
+
+async function promptRestoreLocalFolder(){
+    return await new Promise(resolve=>{
+        showStyledConfirm('继续使用上次文件夹',
+            '<p>已记住上次选择的图库文件夹，但浏览器需要你点击一次来重新授权访问。</p><p>确认后会继续使用原路径，不需要重新选择文件夹。</p>',
+            '继续使用上次文件夹','重新选择',
+            async()=>{
+                const ok=await restoreLocalFolder(true);
+                resolve(ok);
+            },
+            ()=>resolve(false)
+        );
+    });
 }
 
 async function getFolderDisplayPath(){
@@ -4087,56 +4162,187 @@ async function getFolderDisplayPath(){
 
 
 // ─── Local Data Discovery ────────────────────
-async function scanLocalFolderStructure(handle){
-    const models={}; const boxIndex={}; let modelIdx=0;
+function makeUniqueId(prefix, usedIds){
+    let id;
+    do{ id=prefix+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); }while(usedIds.has(id));
+    usedIds.add(id);
+    return id;
+}
+
+async function collectImageFileNames(dirHandle){
+    const names=[];
+    try{
+        for await(const [name, entry] of dirHandle.entries()){
+            if(entry.kind==='file' && name!=='_meta.json' && isImageFileName(name)) names.push(name);
+        }
+    }catch(e){}
+    return names;
+}
+
+async function buildImageMetaFromFileHandle(dirHandle, fileName){
+    const fallback={remark:'', positivePrompt:'', negativePrompt:'', steps:'', workflow:null};
+    try{
+        const fh=await dirHandle.getFileHandle(fileName);
+        const file=await fh.getFile();
+        const extracted=await extractImageRemark(file);
+        const remark=extracted&&extracted.remark?extracted.remark:'';
+        const workflow=extracted&&extracted.workflow?extracted.workflow:null;
+        const prompts=resolvePrompts(remark, workflow);
+        return {
+            remark,
+            positivePrompt:prompts.positive||'',
+            negativePrompt:prompts.negative||'',
+            steps:prompts.steps||'',
+            workflow
+        };
+    }catch(e){
+        return fallback;
+    }
+}
+
+async function importLooseModelImages(modelDir, modelId, modelName, boxIdByModelAndFolder, usedBoxIds){
+    const imageNames=await collectImageFileNames(modelDir);
+    if(imageNames.length===0) return null;
+    const folderBase='散图';
+    let folderName=folderBase, suffix=2;
+    while(true){
+        try{ await modelDir.getDirectoryHandle(folderName); folderName=folderBase+' '+(suffix++); }
+        catch(e){ break; }
+    }
+    const boxDir=await ensureDir(modelDir, folderName);
+    if(!boxDir) return null;
+    for(const imgName of imageNames){
+        try{
+            const fh=await modelDir.getFileHandle(imgName);
+            const file=await fh.getFile();
+            await writeFileBytes(boxDir, imgName, new Uint8Array(await file.arrayBuffer()));
+            await removeEntrySafe(modelDir, imgName);
+        }catch(e){}
+    }
+    let boxId=boxIdByModelAndFolder.get(modelId+'\n'+folderName);
+    if(!boxId) boxId=makeUniqueId('box', usedBoxIds);
+    else usedBoxIds.add(boxId);
+    const images={};
+    for(const imgName of imageNames){
+        images[imgName]=await buildImageMetaFromFileHandle(boxDir, imgName);
+    }
+    await writeJSON(boxDir,'_meta.json',{
+        id:boxId,
+        name:modelName+' 散图',
+        tags:[],
+        remark:'',
+        createdAt:Date.now(),
+        modelId,
+        viewIndex:0,
+        imageCount:imageNames.length,
+        images
+    });
+    return {boxId, folderName};
+}
+
+async function scanLocalFolderStructure(handle, existingSettings=null, allowWrites=true){
+    const models={}; const boxIndex={}; let modelIdx=0, scannedModelOrder=0;
     const dataHandle=await getOrCreateSubfolder(handle);
     if(!dataHandle) return {models,boxIndex};
+    const existingModels=existingSettings&&existingSettings.models?existingSettings.models:{};
+    const existingBoxIndex=existingSettings&&existingSettings.boxIndex?existingSettings.boxIndex:{};
+    const usedModelIds=new Set(Object.keys(existingModels));
+    const usedBoxIds=new Set();
+    for(const boxes of Object.values(existingBoxIndex)){
+        Object.keys(boxes||{}).forEach(id=>usedBoxIds.add(id));
+    }
+    const modelIdByName=new Map();
+    const existingModelEntries=Object.entries(existingModels)
+        .sort((a,b)=>((a[1]&&a[1].sortIndex!==undefined)?a[1].sortIndex:999999)-((b[1]&&b[1].sortIndex!==undefined)?b[1].sortIndex:999999));
+    for(const [id,m] of existingModelEntries){
+        if(m&&m.name&&!modelIdByName.has(m.name)) modelIdByName.set(m.name,id);
+    }
+    const boxIdByModelAndFolder=new Map();
+    for(const [modelId, boxes] of Object.entries(existingBoxIndex)){
+        for(const [boxId, folderName] of Object.entries(boxes||{})){
+            boxIdByModelAndFolder.set(modelId+'\n'+folderName, boxId);
+        }
+    }
     try{
         for await(const [entryName, entry] of dataHandle.entries()){
             if(entry.kind!=='directory') continue;
             if(entryName.startsWith('.')||entryName.startsWith('_')) continue;
-            const modelId='model_'+(++modelIdx);
+            let modelId=modelIdByName.get(entryName);
+            if(!modelId){
+                do{ modelId='model_'+(++modelIdx); }while(usedModelIds.has(modelId));
+                usedModelIds.add(modelId);
+            }
             const modelDir=entry;
             let hasBox=false;
+            const looseBox=allowWrites?await importLooseModelImages(modelDir, modelId, entryName, boxIdByModelAndFolder, usedBoxIds):null;
+            if(looseBox){
+                if(!boxIndex[modelId]) boxIndex[modelId]={};
+                boxIndex[modelId][looseBox.boxId]=looseBox.folderName;
+                hasBox=true;
+            }
             for await(const [boxName, boxEntry] of modelDir.entries()){
                 if(boxEntry.kind!=='directory') continue;
                 if(boxName.startsWith('.')||boxName.startsWith('_')) continue;
-                // Check if this folder has images; if yes it's a valid box
-                let hasImage=false, imgCount=0;
-                for await(const [name, fe] of boxEntry.entries()){
-                    if(fe.kind==='file' && name!=='_meta.json' && guessMimeType(name).startsWith('image/')){
-                        hasImage=true; imgCount++;
-                        if(imgCount>=3) break;
+                let meta=await readJSON(boxEntry,'_meta.json');
+                const imageNames=await collectImageFileNames(boxEntry);
+                if(imageNames.length===0) continue; // skip empty folders
+                let boxId=(meta&&meta.id)||boxIdByModelAndFolder.get(modelId+'\n'+boxName);
+                if(!boxId) boxId=makeUniqueId('box', usedBoxIds);
+                else usedBoxIds.add(boxId);
+                let metaChanged=false;
+                if(!meta){
+                    meta={id:boxId, name:boxName, tags:[], remark:'', createdAt:Date.now(), modelId, viewIndex:0, imageCount:0, images:{}};
+                    metaChanged=true;
+                }
+                if(!meta.images) { meta.images={}; metaChanged=true; }
+                if(meta.modelId!==modelId||meta.id!==boxId){
+                    meta.id=boxId;
+                    meta.modelId=modelId;
+                    metaChanged=true;
+                }
+                if(!meta.name){ meta.name=boxName; metaChanged=true; }
+                if(!Array.isArray(meta.tags)){ meta.tags=[]; metaChanged=true; }
+                const actualImageSet=new Set(imageNames);
+                for(const oldName of Object.keys(meta.images)){
+                    if(!actualImageSet.has(oldName)){
+                        delete meta.images[oldName];
+                        metaChanged=true;
                     }
                 }
-                if(!hasImage) continue; // skip empty folders
-                let meta=await readJSON(boxEntry,'_meta.json');
-                const boxId=meta&&meta.id?meta.id:('box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
-                // If no meta, initialize one with orphan images
-                if(!meta){
-                    const imageNames=[];
-                    for await(const [name, fe] of boxEntry.entries()){
-                        if(fe.kind==='file' && name!=='_meta.json') imageNames.push(name);
+                for(const imgName of imageNames){
+                    if(!meta.images[imgName]){
+                        meta.images[imgName]=await buildImageMetaFromFileHandle(boxEntry, imgName);
+                        metaChanged=true;
                     }
-                    meta={id:boxId, name:boxName, tags:[], remark:'', createdAt:Date.now(), modelId, viewIndex:0, imageCount:0, images:{}};
-                    // Extract prompts from first image as demo
-                    for(const imgName of imageNames){
-                        meta.images[imgName]={remark:'', positivePrompt:'', negativePrompt:'', steps:'', workflow:null};
-                    }
+                }
+                if(meta.imageCount!==imageNames.length){
                     meta.imageCount=imageNames.length;
+                    metaChanged=true;
+                }
+                if(metaChanged&&allowWrites){
                     await writeJSON(boxEntry,'_meta.json',meta);
                 }
                 if(!boxIndex[modelId]) boxIndex[modelId]={};
                 boxIndex[modelId][boxId]=boxName;
                 hasBox=true;
             }
-            if(hasBox){ models[modelId]={id:modelId, name:entryName, sortIndex:modelIdx-1}; }
+            if(hasBox){
+                const existingModel=existingModels[modelId]||{};
+                models[modelId]={
+                    ...existingModel,
+                    id:modelId,
+                    name:entryName,
+                    sortIndex:existingModel.sortIndex!==undefined?existingModel.sortIndex:scannedModelOrder
+                };
+                scannedModelOrder++;
+            }
         }
     }catch(e){}
     return {models, boxIndex};
 }
 
-async function loadExistingLocalData(handle){
+async function loadExistingLocalData(handle, options={}){
+    const allowWrites=options.allowWrites!==false;
     localRootHandle=handle;
     revokeAllBlobUrls();
     const subHandle=await getOrCreateSubfolder(handle);
@@ -4144,40 +4350,30 @@ async function loadExistingLocalData(handle){
     let settings=await readJSON(subHandle,'gallery_settings.json');
 
     // Always scan the actual folder structure
-    const scanned=await scanLocalFolderStructure(handle);
+    const scanned=await scanLocalFolderStructure(handle, settings, allowWrites);
     const scannedHasData=Object.keys(scanned.boxIndex).length>0;
 
     if(scannedHasData){
         settings=settings||{version:1, copyFilterPatterns:[]};
-        // Merge: scanned structure wins (actual files), fill in metadata from settings
-        for(const [mid, m] of Object.entries(settings.models||{})){
-            if(!scanned.models[mid]){ scanned.models[mid]=m; }
-        }
-        for(const [mid, boxes] of Object.entries(settings.boxIndex||{})){
-            if(!scanned.boxIndex[mid]) scanned.boxIndex[mid]=boxes;
-            else{
-                for(const [bid, fname] of Object.entries(boxes)){
-                    if(!scanned.boxIndex[mid][bid]) scanned.boxIndex[mid][bid]=fname;
-                }
-            }
-        }
-        // Remove phantom boxes (dir no longer exists)
-        let cleaned=false;
+        // Rebuild index from the actual folder tree. Existing settings are only
+        // used inside the scanner to preserve stable ids and sort order.
         for(const modelId of Object.keys(scanned.boxIndex||{})){
             const modelName=scanned.models[modelId]?scanned.models[modelId].name:modelId;
             let modelDir;
-            try{ modelDir=await subHandle.getDirectoryHandle(modelName); }catch(e){ delete scanned.boxIndex[modelId]; cleaned=true; continue; }
+            try{ modelDir=await subHandle.getDirectoryHandle(modelName); }catch(e){ delete scanned.boxIndex[modelId]; delete scanned.models[modelId]; continue; }
             for(const boxId of Object.keys(scanned.boxIndex[modelId]||{})){
                 const folderName=scanned.boxIndex[modelId][boxId];
-                try{ await modelDir.getDirectoryHandle(folderName); }catch(e){ delete scanned.boxIndex[modelId][boxId]; cleaned=true; }
+                try{ await modelDir.getDirectoryHandle(folderName); }catch(e){ delete scanned.boxIndex[modelId][boxId]; }
             }
-            if(Object.keys(scanned.boxIndex[modelId]).length===0){ delete scanned.boxIndex[modelId]; cleaned=true; }
+            if(Object.keys(scanned.boxIndex[modelId]).length===0){ delete scanned.boxIndex[modelId]; delete scanned.models[modelId]; }
         }
 
         settings.models=scanned.models;
         settings.boxIndex=scanned.boxIndex;
-        settings.currentModelId=settings.currentModelId||Object.keys(scanned.models)[0]||null;
-        await writeJSON(subHandle,'gallery_settings.json',settings);
+        if(!settings.currentModelId||!settings.models[settings.currentModelId]){
+            settings.currentModelId=Object.keys(scanned.models)[0]||null;
+        }
+        if(allowWrites) await writeJSON(subHandle,'gallery_settings.json',settings);
 
         const modelCount=Object.keys(scanned.models).length;
         const boxCount=Object.values(scanned.boxIndex).reduce((s,m)=>s+Object.keys(m).length,0);
@@ -4189,6 +4385,10 @@ async function loadExistingLocalData(handle){
     }
 
     // Truly empty — initialize fresh
+    if(!allowWrites){
+        await reloadData();
+        return false;
+    }
     await writeJSON(subHandle,'gallery_settings.json',{
         version:1, models:{...MODELS}, boxIndex:{},
         currentModelId, copyFilterPatterns:appSettings.copyFilterPatterns||[]
@@ -4204,6 +4404,7 @@ async function updateFolderPathDisplay(){
 
 async function reloadData(){
     await loadModels();
+    renderModelTabs();
     await loadBoxes();
     await refreshGlobalStats();
     updateStatsAndTags();
@@ -4212,6 +4413,13 @@ async function reloadData(){
 }
 
 async function reselectLocalFolder(){
+    if(pendingRootHandle){
+        const ok=await restoreLocalFolder(true);
+        if(ok){
+            await loadExistingLocalData(localRootHandle,{allowWrites:false});
+            return;
+        }
+    }
     const handle=await selectLocalFolder(false);
     if(!handle) return;
     revokeAllBlobUrls();
@@ -4276,23 +4484,7 @@ async function autoFixHealth(report, settings, subHandle){
             let metaChanged=false;
             for(const f of files){
                 if(meta.images[f.fileName]) continue;
-                const bytes=await readFileBytes(boxDir, f.fileName);
-                const imgMeta={remark:'', positivePrompt:'', negativePrompt:'', steps:'', workflow:null};
-                // Extract PNG metadata if applicable
-                if(bytes&&bytes.length>8&&bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71){
-                    try{
-                        const chunks=extractPngTextChunks(bytes);
-                        const remark=chunks.join('\n\n');
-                        if(remark){
-                            const parts=parsePromptParts(remark);
-                            imgMeta.remark=remark;
-                            imgMeta.positivePrompt=parts.positive;
-                            imgMeta.negativePrompt=parts.negative;
-                            imgMeta.steps=parts.steps;
-                        }
-                    }catch(e){}
-                }
-                meta.images[f.fileName]=imgMeta;
+                meta.images[f.fileName]=await buildImageMetaFromFileHandle(boxDir, f.fileName);
                 metaChanged=true;
                 fixed++;
             }
@@ -4382,6 +4574,7 @@ function resetAll(){
             }
             revokeAllBlobUrls();
             localRootHandle=null;
+            localWriteGranted=false;
             try{ await clearRootHandle(); }catch(e){}
             try{ indexedDB.deleteDatabase(CONFIG_DB_NAME); }catch(e){}
             const req=indexedDB.deleteDatabase(DB_NAME);
@@ -4456,10 +4649,13 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     }
 
     // ─── Initialize local storage ────────────
-    const restored=await restoreLocalFolder();
+    let restored=await restoreLocalFolder();
     if(restored){
         localRestored=true;
-        await loadExistingLocalData(localRootHandle);
+        await loadExistingLocalData(localRootHandle,{allowWrites:false});
+    }else if(pendingRootHandle){
+        showToast('浏览器需要重新授权上次文件夹，可在储存管理中重连');
+        await reloadData();
     }else{
         let handle=await selectLocalFolder(false);
         if(handle){
