@@ -968,16 +968,16 @@
                                 </svg>
                             </button>
                         </div>
-                        <button class="btn-side sidebar-action-btn" onclick="debugInspectLocalMode()" title="只检查旧本地文件夹模式的数据结构，显示识别到的根目录、索引、模型、卡片和空目录，不会导入或修改数据。">
+                        <button class="btn-side sidebar-action-btn" onclick="debugInspectLocalMode()" title="检查本地模式压缩包或目录的数据结构，不会导入或修改数据。">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="7"/>
                                 <path d="M20 20l-4-4"/>
                                 <path d="M8.5 11h5"/>
                                 <path d="M11 8.5v5"/>
                             </svg>
-                            <span>检查本地模式目录</span>
+                            <span>检查本地压缩包/目录</span>
                         </button>
-                        <button class="btn-side sidebar-action-btn" onclick="debugImportLocalModeData()" title="从旧本地文件夹模式读取数据，并导入到当前浏览器数据库。适合把本地模式保存的图库迁移回数据库主库。">
+                        <button class="btn-side sidebar-action-btn" onclick="debugImportLocalModeData()" title="从本地模式压缩包或目录读取数据，并导入到当前浏览器数据库。">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 3v12"/>
                                 <path d="M7 10l5 5 5-5"/>
@@ -985,9 +985,9 @@
                                 <path d="M5 17v4"/>
                                 <path d="M19 17v4"/>
                             </svg>
-                            <span>读取本地模式数据</span>
+                            <span>读取本地压缩包/目录</span>
                         </button>
-                        <button class="btn-side sidebar-action-btn" onclick="exportCurrentDBToLocalFiles()" title="把当前浏览器数据库中的模型、卡片、图片和提示词导出为文件备份。">
+                        <button class="btn-side sidebar-action-btn" onclick="exportCurrentDBToZip()" title="把当前浏览器数据库中的模型、卡片、图片和提示词导出为压缩包备份。">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 21V9"/>
                                 <path d="M7 14l5-5 5 5"/>
@@ -5206,19 +5206,23 @@ function showLocalDebugReport(report){
     html+='<p>实际扫描：模型 <b>'+report.scannedModels+'</b>，卡片 <b>'+report.scannedBoxes+'</b>，图片文件 <b>'+report.imageFiles+'</b></p>';
     if(report.looseModelImages.length>0){
         html+='<p style="color:var(--accent);">模型根目录散图：'+report.looseModelImages.map(x=>escapeHtml(x.modelName)+' '+x.count+' 张').join('，')+'</p>';
-        html+='<p style="color:var(--text-light); font-size:0.82rem;">读取本地模式数据时，这些散图会作为对应模型下的“散图”卡片导入。</p>';
+        html+='<p style="color:var(--text-light); font-size:0.82rem;">读取本地压缩包/目录时，这些散图会作为对应模型下的“散图”卡片导入。</p>';
     }
     if(report.emptyModels.length>0){
         html+='<p style="color:var(--error);">空模型目录：'+report.emptyModels.map(escapeHtml).join('，')+'</p>';
     }
     html+='</div>';
-    document.getElementById('storageModeTitle').innerText='本地模式目录检查';
+    document.getElementById('storageModeTitle').innerText='本地目录检查结果';
     document.getElementById('storageModeBody').innerHTML=html;
     document.getElementById('storageModeFooter').innerHTML='<button class="btn btn-primary" onclick="hideModal(\'storageModeModal\')">关闭</button>';
     showModal('storageModeModal');
 }
 
-async function debugInspectLocalMode(){
+function debugInspectLocalMode(){
+    chooseLocalCompatSource('inspect');
+}
+
+async function debugInspectLocalModeDirectory(){
     if(!window.showDirectoryPicker){ showToast('当前浏览器不支持本地文件夹读取'); return; }
     try{
         const handle=await window.showDirectoryPicker({mode:'read'});
@@ -5292,6 +5296,314 @@ async function compareLocalImportWithDB(settings, report, dataHandle, folderRepo
     return result;
 }
 
+function chooseLocalCompatSource(action){
+    const isImport=action==='import';
+    document.getElementById('storageModeTitle').innerText=isImport?'读取本地压缩包/目录':'检查本地压缩包/目录';
+    document.getElementById('storageModeBody').innerHTML=
+        '<div style="line-height:1.75; color:var(--text-main); font-size:0.92rem;">'+
+        '<p style="margin:0 0 10px;">请选择要处理的本地数据来源。</p>'+
+        '<p style="margin:0; color:var(--text-light); font-size:0.86rem;">压缩包是默认备份格式；目录用于兼容旧的本地文件夹结构。</p>'+
+        '</div>';
+    document.getElementById('storageModeFooter').innerHTML=
+        '<button class="btn btn-primary" id="btnCompatZip">选择压缩包</button>'+
+        '<button class="btn btn-outline" id="btnCompatDir">选择目录</button>'+
+        '<button class="btn btn-outline" id="btnCompatCancel">取消</button>';
+    showModal('storageModeModal');
+    document.getElementById('btnCompatZip').onclick=()=>{ hideModal('storageModeModal'); openLocalCompatZip(action); };
+    document.getElementById('btnCompatDir').onclick=()=>{ hideModal('storageModeModal'); isImport?debugImportLocalModeDirectory():debugInspectLocalModeDirectory(); };
+    document.getElementById('btnCompatCancel').onclick=()=>hideModal('storageModeModal');
+}
+
+function openLocalCompatZip(action){
+    const input=document.createElement('input');
+    input.type='file';
+    input.accept='.zip,application/zip';
+    input.style.display='none';
+    input.onchange=async()=>{
+        const file=input.files&&input.files[0];
+        input.remove();
+        if(!file) return;
+        if(action==='import') await debugImportLocalModeZip(file);
+        else await debugInspectLocalModeZip(file);
+    };
+    document.body.appendChild(input);
+    input.click();
+}
+
+async function parseLocalModeZipFile(file, options={}){
+    const readImages=!!options.readImages;
+    const progress=options.progress||null;
+    const JSZip=await ensureJSZip();
+    const zip=await JSZip.loadAsync(await file.arrayBuffer());
+    const settingsFile=zip.file('gallery_settings.json');
+    if(!settingsFile) throw new Error('压缩包里没有 gallery_settings.json');
+    const settings=JSON.parse(await settingsFile.async('text'));
+    const importModels=settings.models||{};
+    const importFilters=settings.copyFilterPatterns||[];
+    const importBoxes={};
+    const report={jsonTotal:0, actualFiles:0, missingFiles:[], modelCount:0, boxCount:0};
+    let done=0;
+    const boxRefs=[];
+    for(const modelId of Object.keys(settings.boxIndex||{})){
+        const modelName=(importModels[modelId]||{}).name||modelId;
+        report.modelCount++;
+        for(const boxId of Object.keys(settings.boxIndex[modelId]||{})){
+            boxRefs.push({modelId,modelName,boxId,folderName:settings.boxIndex[modelId][boxId]});
+        }
+    }
+    for(const ref of boxRefs){
+        if(!importBoxes[ref.modelId]) importBoxes[ref.modelId]={boxes:[],images:{}};
+        const metaPath=ref.modelName+'/'+ref.folderName+'/_meta.json';
+        const metaFile=zip.file(metaPath);
+        if(!metaFile){ done++; continue; }
+        const meta=JSON.parse(await metaFile.async('text'));
+        const {images:imgMap,...box}=meta;
+        const actualBoxId=box.id||ref.boxId;
+        box.id=actualBoxId;
+        importBoxes[ref.modelId].boxes.push(box);
+        importBoxes[ref.modelId].images[actualBoxId]=[];
+        report.boxCount++;
+        for(const imgName of Object.keys(imgMap||{})){
+            report.jsonTotal++;
+            const imgPath=ref.modelName+'/'+ref.folderName+'/'+imgName;
+            const imgFile=zip.file(imgPath);
+            if(!imgFile){
+                report.missingFiles.push({modelId:ref.modelId,boxId:ref.boxId,folderName:ref.folderName,fileName:imgName});
+                continue;
+            }
+            report.actualFiles++;
+            if(readImages){
+                const imgBuf=await imgFile.async('arraybuffer');
+                const bytes=new Uint8Array(imgBuf);
+                importBoxes[ref.modelId].images[actualBoxId].push({
+                    name:imgName,
+                    dataUrl:bytesToDataUrl(bytes,guessMimeType(imgName)),
+                    ...(imgMap[imgName]||{})
+                });
+                if(progress) progress({done:report.actualFiles,total:report.jsonTotal||report.actualFiles,modelName:ref.modelName,boxName:box.name||ref.folderName});
+            }
+        }
+        done++;
+        if(!readImages&&progress) progress({done,total:boxRefs.length,modelName:ref.modelName,boxName:box.name||ref.folderName});
+    }
+    return {settings,importModels,importBoxes,importFilters,report};
+}
+
+async function comparePackageWithDB(importBoxes){
+    const result={dbImages:0,newImages:0,duplicateImages:0,isEmpty:true};
+    const dbImages=await dbGetAll(STORE_IMAGES);
+    const existingHashes=new Set();
+    for(const rec of dbImages){
+        for(const img of rec.images||[]){
+            result.dbImages++;
+            const hash=await hashFromDataUrl(img.dataUrl||'');
+            if(hash) existingHashes.add(hash);
+        }
+    }
+    result.isEmpty=result.dbImages===0;
+    if(result.isEmpty) return result;
+    for(const modelData of Object.values(importBoxes||{})){
+        for(const imgs of Object.values(modelData.images||{})){
+            for(const img of imgs||[]){
+                const hash=await hashFromDataUrl(img.dataUrl||'');
+                if(hash&&existingHashes.has(hash)) result.duplicateImages++;
+                else result.newImages++;
+            }
+        }
+    }
+    return result;
+}
+
+async function importPackageToDB(pkg, options={}){
+    const dedupe=options.dedupe!==false;
+    const progress=options.progress||null;
+    const notify=event=>{ if(progress) progress(event); };
+    const savedModels=await dbGet(STORE_MODELS,'main');
+    MODELS=savedModels&&savedModels.data?{...savedModels.data}:{...MODELS};
+    const existingBoxes=await dbGetAll(STORE_BOXES);
+    const usedModelIds=new Set(Object.keys(MODELS));
+    const usedBoxIds=new Set(existingBoxes.map(b=>b.id));
+    const modelIdByName=new Map();
+    for(const [id,m] of Object.entries(MODELS)){
+        if(m&&m.name&&!modelIdByName.has(m.name)) modelIdByName.set(m.name,id);
+    }
+    const boxesByModelAndName=new Map();
+    for(const box of existingBoxes) boxesByModelAndName.set((box.modelId||'')+'\n'+(box.name||''),box);
+    let nextSort=Object.values(MODELS).reduce((max,m)=>Math.max(max,(m&&m.sortIndex!==undefined)?m.sortIndex:-1),-1)+1;
+    const modelStats=[];
+    let totalImages=0,totalBoxes=0;
+    for(const [modelId,modelData] of Object.entries(pkg.importBoxes||{})){
+        const modelName=(pkg.importModels[modelId]||{}).name||modelId;
+        const boxCount=(modelData.boxes||[]).length;
+        const imageCount=(modelData.boxes||[]).reduce((s,b)=>s+((modelData.images[b.id]||[]).length),0);
+        if(boxCount>0){ modelStats.push({id:modelId,name:modelName,boxCount,imageCount}); totalBoxes+=boxCount; totalImages+=imageCount; }
+    }
+    notify({phase:'init',models:modelStats,totalBoxes,totalImages});
+    const uniqueImageName=(baseName, usedNames)=>{
+        const dot=(baseName||'').lastIndexOf('.');
+        const base=sanitizeFileName(dot>0?baseName.slice(0,dot):(baseName||'image'));
+        const ext=dot>0?baseName.slice(dot):'.png';
+        let candidate=base+ext, n=2;
+        while(usedNames.has(candidate)) candidate=base+'_'+(n++)+ext;
+        usedNames.add(candidate);
+        return candidate;
+    };
+    let modelCount=0,boxCount=0,imgCount=0,duplicateSkipped=0,renamedImages=0;
+    for(const [importModelId,modelData] of Object.entries(pkg.importBoxes||{})){
+        const modelName=(pkg.importModels[importModelId]||{}).name||importModelId;
+        notify({phase:'model-start',modelId:importModelId,modelName});
+        let targetModelId=modelIdByName.get(modelName);
+        if(!targetModelId){
+            targetModelId=usedModelIds.has(importModelId)?makeUniqueId('model',usedModelIds):importModelId;
+            usedModelIds.add(targetModelId);
+            MODELS[targetModelId]={...(pkg.importModels[importModelId]||{}),id:targetModelId,name:modelName,sortIndex:nextSort++};
+            modelIdByName.set(modelName,targetModelId);
+            modelCount++;
+        }
+        for(const box of modelData.boxes||[]){
+            notify({phase:'box-start',modelId:importModelId,boxId:box.id,boxName:box.name});
+            const incoming=(modelData.images&&modelData.images[box.id])||[];
+            const existingBox=boxesByModelAndName.get(targetModelId+'\n'+(box.name||''));
+            if(existingBox){
+                const rec=await dbGet(STORE_IMAGES,existingBox.id);
+                const mergedImages=rec&&Array.isArray(rec.images)?[...rec.images]:[];
+                const usedNames=new Set(mergedImages.map(img=>img.name||''));
+                const existingHashes=new Set();
+                if(dedupe){
+                    for(const img of mergedImages){
+                        const hash=await hashFromDataUrl(img.dataUrl||'');
+                        if(hash) existingHashes.add(hash);
+                    }
+                }
+                for(const img of incoming){
+                    const hash=dedupe?await hashFromDataUrl(img.dataUrl||''):null;
+                    if(hash&&existingHashes.has(hash)){
+                        duplicateSkipped++;
+                        notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
+                        continue;
+                    }
+                    const nextImg={...img};
+                    if(usedNames.has(nextImg.name||'')){
+                        nextImg.name=uniqueImageName(nextImg.name||'image.png',usedNames);
+                        renamedImages++;
+                    }else usedNames.add(nextImg.name||'');
+                    if(hash) existingHashes.add(hash);
+                    mergedImages.push(nextImg);
+                    imgCount++;
+                    notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:nextImg.name});
+                }
+                const mergedTags=Array.from(new Set([...(existingBox.tags||[]),...(box.tags||[])]));
+                await dbPut(STORE_BOXES,{...existingBox,tags:mergedTags,imageCount:mergedImages.length});
+                await dbPut(STORE_IMAGES,{id:existingBox.id,boxId:existingBox.id,images:mergedImages});
+                boxCount++;
+            }else{
+                let targetBoxId=usedBoxIds.has(box.id)?makeUniqueId('box',usedBoxIds):box.id;
+                usedBoxIds.add(targetBoxId);
+                const cleanBox={...box,id:targetBoxId,modelId:targetModelId,imageCount:incoming.length};
+                await dbPut(STORE_BOXES,cleanBox);
+                await dbPut(STORE_IMAGES,{id:targetBoxId,boxId:targetBoxId,images:incoming});
+                boxesByModelAndName.set(targetModelId+'\n'+(cleanBox.name||''),cleanBox);
+                boxCount++;
+                imgCount+=incoming.length;
+                for(const img of incoming) notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
+            }
+            notify({phase:'box-done',modelId:importModelId,boxId:box.id,boxName:box.name});
+        }
+        notify({phase:'model-done',modelId:importModelId,modelName});
+    }
+    if(pkg.importFilters&&pkg.importFilters.length>0){
+        const existing=new Set(appSettings.copyFilterPatterns||[]);
+        for(const p of pkg.importFilters){
+            if(!existing.has(p)){ appSettings.copyFilterPatterns.push(p); existing.add(p); }
+        }
+        saveSettings();
+    }
+    if(!currentModelId||!MODELS[currentModelId]) currentModelId=Object.keys(MODELS)[0]||null;
+    await dbPut(STORE_MODELS,{id:'main',data:MODELS});
+    if(currentModelId) setPref('ipm_lastModel',currentModelId);
+    notify({phase:'done'});
+    await reloadData();
+    return {modelCount,boxCount,imgCount,duplicateSkipped,renamedImages};
+}
+
+async function debugInspectLocalModeZip(file){
+    try{
+        showModal('progressModal');
+        document.getElementById('progressTitle').innerText='检查本地压缩包...';
+        document.getElementById('progressFill').style.width='0%';
+        document.getElementById('progressText').innerText='读取索引...';
+        const pkg=await parseLocalModeZipFile(file,{readImages:false,progress:e=>{
+            const pct=e.total?Math.round(e.done/e.total*100):0;
+            document.getElementById('progressFill').style.width=pct+'%';
+            document.getElementById('progressText').innerText='检查 '+e.done+'/'+e.total;
+        }});
+        hideModal('progressModal');
+        const r=pkg.report;
+        document.getElementById('storageModeTitle').innerText='本地压缩包检查结果';
+        document.getElementById('storageModeBody').innerHTML=
+            '<div style="line-height:1.8;">'+
+            '<p>压缩包：<b>'+escapeHtml(file.name)+'</b></p>'+
+            '<p>模型：<b>'+r.modelCount+'</b> 个</p>'+
+            '<p>卡片盒：<b>'+r.boxCount+'</b> 个</p>'+
+            '<p>索引图片：<b>'+r.jsonTotal+'</b> 条</p>'+
+            '<p>实际可读取图片：<b>'+r.actualFiles+'</b> 张</p>'+
+            '<p>压缩包内缺失图片：<b style="color:'+(r.missingFiles.length?'var(--error)':'inherit')+'">'+r.missingFiles.length+'</b> 条</p>'+
+            '</div>';
+        document.getElementById('storageModeFooter').innerHTML='<button class="btn btn-primary" onclick="hideModal(\'storageModeModal\')">关闭</button>';
+        showModal('storageModeModal');
+    }catch(e){
+        hideModal('progressModal');
+        showToast('检查失败：'+(e&&e.message?e.message:e));
+    }
+}
+
+async function debugImportLocalModeZip(file){
+    try{
+        showModal('progressModal');
+        document.getElementById('progressTitle').innerText='读取本地压缩包...';
+        document.getElementById('progressFill').style.width='0%';
+        document.getElementById('progressText').innerText='检查索引...';
+        const preview=await parseLocalModeZipFile(file,{readImages:false,progress:e=>{
+            const pct=e.total?Math.round(e.done/e.total*100):0;
+            document.getElementById('progressFill').style.width=pct+'%';
+            document.getElementById('progressText').innerText='检查 '+e.done+'/'+e.total;
+        }});
+        hideModal('progressModal');
+        const r=preview.report;
+        const doImport=async()=>{
+            showModal('progressModal');
+            setImportBusy(true);
+            document.getElementById('progressTitle').innerText='读取本地压缩包...';
+            document.getElementById('progressFill').style.width='0%';
+            document.getElementById('progressText').innerText='解出图片...';
+            try{
+                const pkg=await parseLocalModeZipFile(file,{readImages:true,progress:e=>{
+                    const pct=e.total?Math.round(e.done/e.total*45):0;
+                    document.getElementById('progressFill').style.width=pct+'%';
+                    document.getElementById('progressText').innerText='解出图片 '+e.done+'/'+e.total+'：'+(e.modelName||'');
+                }});
+                await importPackageToDB(pkg,{dedupe:true,progress:handleLocalImportProgress});
+                showToast('已读取压缩包并合并到当前图库');
+            }catch(e){
+                showToast('读取失败：'+(e&&e.message?e.message:e));
+            }finally{
+                setImportBusy(false);
+                hideModal('progressModal');
+            }
+        };
+        let html='<div class="import-preview">';
+        html+='<div class="import-flow">';
+        html+='<div class="import-step"><div class="import-step-index">1</div><div><div class="import-step-title">检查本地压缩包</div><div class="import-step-text">模型 <span class="num">'+r.modelCount+'</span> 个，卡片盒 <span class="num">'+r.boxCount+'</span> 个；索引图片 <span class="num">'+r.jsonTotal+'</span> 条，实际可读取 <span class="num">'+r.actualFiles+'</span> 张</div></div></div>';
+        html+='<div class="import-step"><div class="import-step-index">2</div><div><div class="import-step-title">准备合并到当前图库</div><div class="import-step-text">导入时会解出压缩包里的图片，并按模型、卡片盒与当前浏览器图库合并；相同图片会按内容去重。</div></div></div>';
+        if(r.missingFiles.length>0) html+='<div class="import-step"><div class="import-step-index">!</div><div><div class="import-step-title">压缩包内存在缺失图片</div><div class="import-step-text">有 <span class="num danger">'+r.missingFiles.length+'</span> 条索引记录在压缩包里找不到对应图片，导入时会跳过。</div></div></div>';
+        html+='</div></div>';
+        showStyledConfirm(r.missingFiles.length?'本地压缩包存在差异':'确认读取本地压缩包',html,'读取','取消',doImport);
+    }catch(e){
+        hideModal('progressModal');
+        showToast('读取失败：'+(e&&e.message?e.message:e));
+    }
+}
+
 function showLocalCompatInfo(){
     document.getElementById('storageModeTitle').innerText='兼容模式说明';
     document.getElementById('storageModeBody').innerHTML=
@@ -5316,7 +5628,11 @@ function showLocalCompatInfo(){
     showModal('storageModeModal');
 }
 
-async function debugImportLocalModeData(){
+function debugImportLocalModeData(){
+    chooseLocalCompatSource('import');
+}
+
+async function debugImportLocalModeDirectory(){
     if(!window.showDirectoryPicker){ showToast('当前浏览器不支持本地文件夹读取'); return; }
     try{
         const handle=await window.showDirectoryPicker({mode:'read'});
@@ -5458,6 +5774,132 @@ async function makeUniqueImageFileName(boxDir, image, index, existingNames){
     return candidate;
 }
 
+function makeUniqueBackupName(baseName, existingNames, fallback='untitled'){
+    const cleaned=sanitizeFileName(baseName||fallback)||fallback;
+    let candidate=cleaned, n=2;
+    while(existingNames.has(candidate)) candidate=cleaned+' '+(n++);
+    existingNames.add(candidate);
+    return candidate;
+}
+
+function makeUniqueBackupImageName(image, index, existingNames){
+    const raw=getImageFileName(image,index);
+    const dot=raw.lastIndexOf('.');
+    const base=sanitizeFileName(dot>0?raw.slice(0,dot):raw)||('image_'+(index+1));
+    const ext=dot>0?raw.slice(dot):'.png';
+    let candidate=base+ext, n=2;
+    while(existingNames.has(candidate)) candidate=base+'_'+(n++)+ext;
+    existingNames.add(candidate);
+    return candidate;
+}
+
+async function exportCurrentDBToZip(){
+    try{
+        showModal('progressModal');
+        setImportBusy(true);
+        document.getElementById('progressTitle').innerText='导出数据...';
+        document.getElementById('progressFill').style.width='0%';
+        document.getElementById('progressText').innerText='准备压缩包...';
+        const JSZip=await ensureJSZip();
+        const zip=new JSZip();
+
+        const settings={version:1,models:{},boxIndex:{},currentModelId,copyFilterPatterns:appSettings.copyFilterPatterns||[]};
+        const boxes=await dbGetAll(STORE_BOXES);
+        const boxesByModel=new Map();
+        for(const box of boxes){
+            if(!boxesByModel.has(box.modelId)) boxesByModel.set(box.modelId,[]);
+            boxesByModel.get(box.modelId).push(box);
+        }
+        const modelEntries=Object.entries(MODELS).sort((a,b)=>((a[1].sortIndex??999999)-(b[1].sortIndex??999999)));
+        let totalImages=0;
+        for(const box of boxes) totalImages+=(box.imageCount||0);
+        let exportedImages=0, exportedBoxes=0;
+        const usedModelFolders=new Set();
+
+        for(const [modelId, model] of modelEntries){
+            const modelBoxes=boxesByModel.get(modelId)||[];
+            if(modelBoxes.length===0) continue;
+            const modelFolderName=makeUniqueBackupName(model.name||modelId,usedModelFolders,modelId);
+            settings.models[modelId]={...model,id:modelId,name:modelFolderName};
+            settings.boxIndex[modelId]={};
+            const usedBoxFolders=new Set();
+
+            for(const box of modelBoxes){
+                const folderName=makeUniqueBackupName(box.name||box.id,usedBoxFolders,box.id);
+                settings.boxIndex[modelId][box.id]=folderName;
+                const zipPath=modelFolderName+'/'+folderName+'/';
+                const imgRec=await dbGet(STORE_IMAGES,box.id);
+                const images=imgRec&&Array.isArray(imgRec.images)?imgRec.images:[];
+                const metaImages={};
+                const usedImageNames=new Set();
+
+                for(let i=0;i<images.length;i++){
+                    const img=images[i];
+                    const bytes=await imageDataToBytes(img.dataUrl||'');
+                    if(!bytes) continue;
+                    const imgName=makeUniqueBackupImageName(img,i,usedImageNames);
+                    zip.file(zipPath+imgName,bytes);
+                    metaImages[imgName]={
+                        remark:img.remark||'',
+                        positivePrompt:img.positivePrompt||'',
+                        negativePrompt:img.negativePrompt||'',
+                        steps:img.steps||'',
+                        workflow:img.workflow||null
+                    };
+                    exportedImages++;
+                    const pct=totalImages?Math.round(exportedImages/totalImages*70):70;
+                    document.getElementById('progressFill').style.width=pct+'%';
+                    document.getElementById('progressText').innerText='写入图片 '+exportedImages+'/'+totalImages+'：'+(model.name||modelId)+' / '+(box.name||folderName);
+                }
+
+                const meta={
+                    ...box,
+                    id:box.id,
+                    modelId,
+                    name:box.name||folderName,
+                    tags:Array.isArray(box.tags)?box.tags:[],
+                    remark:box.remark||'',
+                    createdAt:box.createdAt||Date.now(),
+                    viewIndex:box.viewIndex||0,
+                    imageCount:Object.keys(metaImages).length,
+                    images:metaImages
+                };
+                zip.file(zipPath+'_meta.json',JSON.stringify(meta,null,2));
+                exportedBoxes++;
+            }
+
+            if(Object.keys(settings.boxIndex[modelId]).length===0){
+                delete settings.boxIndex[modelId];
+                delete settings.models[modelId];
+            }
+        }
+
+        zip.file('gallery_settings.json',JSON.stringify(settings,null,2));
+        document.getElementById('progressTitle').innerText='生成压缩包...';
+        document.getElementById('progressText').innerText='正在压缩...';
+        const blob=await zip.generateAsync({type:'blob'},meta=>{
+            const pct=70+Math.round((meta.percent||0)*0.3);
+            document.getElementById('progressFill').style.width=pct+'%';
+            document.getElementById('progressText').innerText='压缩 '+Math.round(meta.percent||0)+'%';
+        });
+        const dateStr=new Date().toISOString().slice(0,10);
+        const zipName='图库备份_'+dateStr+'.zip';
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;
+        a.download=zipName;
+        a.click();
+        URL.revokeObjectURL(url);
+        hideModal('progressModal');
+        showToast('已导出压缩包：'+Object.keys(settings.models).length+' 个模型，'+exportedBoxes+' 个卡片，'+exportedImages+' 张图片');
+    }catch(e){
+        hideModal('progressModal');
+        showToast('导出失败：'+(e&&e.message?e.message:e));
+    }finally{
+        setImportBusy(false);
+    }
+}
+
 async function exportCurrentDBToLocalFiles(){
     if(!window.showDirectoryPicker){ showToast('当前浏览器不支持本地文件夹写入'); return; }
     let oldRoot=localRootHandle, oldWrite=localWriteGranted;
@@ -5574,6 +6016,7 @@ async function exportCurrentDBToLocalFiles(){
 window.debugInspectLocalMode=debugInspectLocalMode;
 window.showLocalCompatInfo=showLocalCompatInfo;
 window.debugImportLocalModeData=debugImportLocalModeData;
+window.exportCurrentDBToZip=exportCurrentDBToZip;
 window.exportCurrentDBToLocalFiles=exportCurrentDBToLocalFiles;
 
 async function reloadData(){
