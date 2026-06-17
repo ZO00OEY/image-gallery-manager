@@ -22,8 +22,8 @@
             --shadow-sm: 0 4px 15px rgba(0,0,0,0.08);
             --shadow-md: 0 8px 24px rgba(0,0,0,0.15);
             --sidebar-width: 260px;
-            --rail-width: 58px;
-            --rail-shift: -6px;
+            --rail-width: 66px;
+            --rail-shift: 0px;
             --br-lg: 24px; --br-md: 16px; --br-sm: 12px; --br-xs: 8px;
             --transition: all 0.2s ease;
         }
@@ -67,7 +67,7 @@
         /* Nav rail — narrow icon column */
         .nav-rail {
             position: fixed; inset: 0 auto 0 0; z-index: 38;
-            width: var(--rail-width); padding: 16px 6px;
+            width: var(--rail-width); padding: 16px 10px;
             border-right: 1px solid var(--border-color);
             background: var(--glass-bg);
             display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -233,84 +233,146 @@
         #panelMenuView .btn-side svg { display: none; }
 
         .main-content {
-            flex: 1; margin-left: var(--rail-width); padding: 20px 30px;
-            display: flex; flex-direction: column; gap: 20px; min-width: 0;
+            flex: 1; margin-left: var(--rail-width); padding: 18px 28px 28px;
+            display: flex; flex-direction: column; gap: 18px; min-width: 0;
             transition: margin-left 0.34s cubic-bezier(.22,.78,.25,1);
             transition: margin-left 0.3s ease;
         }
 
         .model-tabs-container {
-            display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0;
-            padding-bottom: 0; margin-bottom: 0;
+            display: flex; align-items: flex-end; flex-wrap: wrap; gap: 2px;
+            width: fit-content; max-width: 100%;
+            padding: 0 0 0 8px; margin-bottom: -18px; overflow: visible;
+            position: relative; z-index: 3;
+            scrollbar-width: thin; scrollbar-color: rgba(255,107,157,0.24) transparent;
         }
+        .model-tabs-container::-webkit-scrollbar { height: 4px; }
+        .model-tabs-container::-webkit-scrollbar-thumb { background: rgba(255,107,157,0.24); border-radius: 999px; }
         .model-tab {
-            padding: 9px 18px; background: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            border-bottom: 0;
-            border-radius: 10px 10px 0 0;
-            font-weight: 600; font-size: 0.9rem; color: var(--text-light);
-            cursor: pointer; transition: color 0.15s, background 0.15s, border-color 0.15s;
+            padding: 8px 13px; background: #fff;
+            border: 1px solid rgba(255,107,157,0.1);
+            border-radius: 3px 3px 0 0;
+            font-weight: 700; font-size: 0.84rem; color: var(--text-light);
+            cursor: pointer; transition: color 0.18s, background 0.18s, border-color 0.18s, transform 0.18s, box-shadow 0.18s;
             display: flex; align-items: center; gap: 6px;
-            margin-right: -1px; position: relative; z-index: 1;
+            margin-right: 0; position: relative; z-index: 1;
             white-space: nowrap; line-height: 1.3;
         }
-        .model-tab:hover { color: var(--primary); background: var(--card-bg); z-index: 3; }
+        .model-tab:hover {
+            color: var(--primary); background: #fff; z-index: 3;
+            border-color: rgba(255,107,157,0.24); transform: translateY(-1px);
+        }
         .model-tab.active {
             background: var(--primary); color: #fff;
-            border-bottom: 2px solid var(--primary);
-            z-index: 2;
+            border-color: var(--primary);
+            border-radius: 3px 3px 0 0;
+            z-index: 4; transform: translateY(-3px);
+            box-shadow: 0 7px 16px rgba(255,107,157,0.18);
         }
         .model-tab-action {
-            display: inline-flex; align-items: center; justify-content: center;
+            display: none; align-items: center; justify-content: center;
             width: 18px; height: 18px; border-radius: 50%; font-size: 0.7rem;
             transition: background-color 0.2s; opacity: 0.5;
         }
-        .model-tab:hover .model-tab-action { opacity: 1; }
-        .model-tab-action:hover { background: rgba(0,0,0,0.1); }
+        .model-tab.editing .model-tab-action { display: inline-flex; opacity: 0.85; }
+        .model-tab.editing:hover .model-tab-action { opacity: 1; }
+        .model-tab-action:hover { background: rgba(255,107,157,0.12); }
+        .model-tab-name-input {
+            width: 96px; max-width: 140px; height: 22px; padding: 0 4px;
+            border: 1px solid rgba(255,255,255,0.52);
+            background: rgba(255,255,255,0.18); color: inherit;
+            font: inherit; font-weight: 800; outline: none;
+        }
         .model-tab.dragging { opacity: 0.4; cursor: grabbing; }
-        .model-tab.drag-over { border-left-color: var(--primary); box-shadow: 0 0 6px rgba(255,107,157,0.3); }
+        .model-tab.drag-over { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,107,157,0.13); }
         .add-model-btn {
-            padding: 9px 12px; border-radius: 10px 10px 0 0; font-size: 1.2rem;
-            margin-left: 6px; margin-right: 0; border-bottom: 0;
+            width: 34px; height: 34px; padding: 0; border-radius: 3px 3px 0 0; font-size: 1.1rem;
+            margin-left: 3px; margin-right: 0; justify-content: center;
         }
 
         .header-bar {
-            display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-            padding: 10px 20px; background: var(--glass-bg);
-            border-radius: 0 0 var(--br-sm) var(--br-sm);
-            box-shadow: var(--shadow-sm); transition: background-color 0.3s ease;
+            display: flex; gap: 0; flex-wrap: wrap; align-items: center;
+            padding: 12px 18px; background: rgba(255,255,255,0.82);
+            border: 1px solid rgba(255,107,157,0.12);
+            border-left: 0;
+            border-radius: 0 2px 2px 0;
+            position: relative; z-index: 2;
+            box-shadow: 0 10px 26px rgba(255,107,157,0.08);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
-        .search-box { flex: 1.5; min-width: 160px; position: relative; }
+        .header-bar::before {
+            content: '';
+            position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+            border-radius: 0;
+            background: linear-gradient(to bottom, rgba(255,107,157,0.14), rgba(255,107,157,0.58), rgba(255,107,157,0.14));
+        }
+        .hstat {
+            display: inline-flex; align-items: baseline; gap: 5px;
+            min-height: 32px; padding: 0 9px; white-space: nowrap;
+        }
+        .hstat-label { color: var(--text-light); font-size: 0.78rem; font-weight: 700; }
+        .hstat-value {
+            color: var(--primary); font-size: 1.18rem; line-height: 1; font-weight: 850;
+            letter-spacing: 0;
+        }
+        .header-sep {
+            width: 1px; height: 26px; margin: 0 14px;
+            background: rgba(255,107,157,0.22);
+        }
+        .search-box {
+            flex: 1.5; min-width: 180px; position: relative;
+            padding-right: 14px; margin-right: 12px;
+            border-right: 1px solid rgba(255,107,157,0.2);
+        }
         .search-box input {
-            width: 100%; padding: 7px 14px 7px 32px; border: 2px solid var(--primary-light);
-            border-radius: var(--br-lg); background: var(--card-bg); color: var(--text-main);
-            font-size: 0.82rem; transition: var(--transition);
+            width: 100%; height: 34px; padding: 0 13px 0 34px;
+            border: 1px solid rgba(255,107,157,0.18);
+            border-radius: 3px; background: rgba(255,255,255,0.58); color: var(--text-main);
+            font-size: 0.84rem; transition: var(--transition);
         }
-        .search-box input:focus { outline: none; border-color: var(--primary); }
-        .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 0.8rem; }
+        .search-box input:focus {
+            outline: none; border-color: rgba(255,107,157,0.58);
+            background: #fff; box-shadow: 0 0 0 3px rgba(255,107,157,0.07);
+        }
+        .search-icon {
+            position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+            color: var(--primary); font-size: 0.8rem; width: 16px; height: 16px;
+            display: grid; place-items: center; opacity: 0.82;
+        }
 
         .filter-control {
-            display: flex; align-items: center; background: var(--card-bg); padding: 3px 10px;
-            border-radius: var(--br-md); border: 2px solid var(--primary-light); height: 32px; gap: 5px;
-            transition: background-color 0.3s ease;
+            display: flex; align-items: center; background: transparent; padding: 4px 12px;
+            border-radius: 0; border: 0; border-left: 1px solid rgba(255,107,157,0.2);
+            height: 34px; gap: 7px;
+            transition: background-color 0.3s ease, border-color 0.18s, box-shadow 0.18s;
+        }
+        .filter-control:hover {
+            background: rgba(255,107,157,0.055);
+            box-shadow: none;
         }
         .filter-control input, .filter-control select {
             border: none; background: transparent; color: var(--text-main);
             font-size: 0.78rem; font-weight: 600; outline: none;
         }
-        .filter-label { color: var(--primary); font-weight: 700; font-size: 0.75rem; white-space: nowrap; }
-        .scale-slider { width: 60px; accent-color: var(--primary); }
+        .filter-label {
+            color: var(--primary); font-weight: 800; font-size: 0.74rem; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .filter-label svg { width: 15px; height: 15px; stroke-width: 2; }
+        .scale-slider { width: 72px; accent-color: var(--primary); }
         .scale-step-btn {
-            width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--primary-light);
-            background: transparent; color: var(--primary); cursor: pointer; font-size: 0.75rem;
+            width: 20px; height: 20px; border-radius: 2px; border: 1px solid rgba(255,107,157,0.22);
+            background: rgba(255,255,255,0.48); color: var(--primary); cursor: pointer; font-size: 0.75rem;
             font-weight: 700; display: flex; align-items: center; justify-content: center;
             padding: 0; line-height: 1; transition: 0.15s; flex-shrink: 0;
         }
         .scale-step-btn:hover { background: var(--primary-bg); border-color: var(--primary); }
-        .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .toggle-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex: 0 0 auto; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border-color); border-radius: 20px; transition: 0.3s; }
-        .toggle-slider::before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: rgba(255,107,157,0.14); border-radius: 2px; transition: 0.3s; }
+        .toggle-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 2px; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .toggle-switch input:checked+.toggle-slider { background: var(--primary); }
         .toggle-switch input:checked+.toggle-slider::before { transform: translateX(16px); }
 
@@ -328,7 +390,7 @@
         .tag-cloud-item:hover { background: var(--primary-bg); color: var(--primary); transform: translateY(-2px); }
 
         .tag-chips-bar {
-            display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0; margin-top: -6px;
+            display: flex; gap: 6px; flex-wrap: wrap; padding: 0 2px; margin-top: -8px;
             min-height: 20px;
         }
         .tag-filter-chip {
@@ -787,6 +849,36 @@
         .progress-model-row.active { border-color: var(--primary-light); background: var(--primary-bg); }
         .progress-model-row.done .progress-model-name { color: var(--primary); }
 
+        .theme-night .model-tabs-container,
+        .theme-night .header-bar {
+            background: rgba(24,19,22,0.78);
+            border-color: rgba(255,107,157,0.16);
+            box-shadow: 0 16px 38px rgba(0,0,0,0.28);
+        }
+        .theme-night .model-tab,
+        .theme-night .filter-control,
+        .theme-night .search-box input,
+        .theme-night .scale-step-btn {
+            background: rgba(255,255,255,0.045);
+            border-color: rgba(255,255,255,0.07);
+        }
+        .theme-night .model-tab:hover,
+        .theme-night .search-box input:focus {
+            background: rgba(255,255,255,0.08);
+        }
+        .theme-night .model-tab.active {
+            background: rgba(24,19,22,0.92);
+            border-color: rgba(255,107,157,0.16);
+        }
+        @media (max-width: 900px) {
+            .main-content { padding: 14px 14px 24px; gap: 14px; }
+            .model-tabs-container { width: 100%; }
+            .header-bar { padding: 10px; gap: 8px; }
+            .search-box { flex: 1 1 100%; max-width: none !important; order: 2; padding-right: 0; margin-right: 0; border-right: 0; }
+            .filter-control { height: 34px; border-left: 0; padding: 4px 8px; }
+            .hstat { padding: 0 4px; }
+        }
+
         textarea.input-text { resize: vertical; min-height: 60px; }
 
         .tag-suggestions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
@@ -1023,12 +1115,20 @@
             <span class="hstat"><span class="hstat-label">标签</span><span class="hstat-value" style="color:var(--accent)" id="statsWithImg">0</span></span>
             <span class="hstat"><span class="hstat-label">图片</span><span class="hstat-value" style="color:var(--primary-dark)" id="statsTotalImgs">0</span></span>
             <span class="header-sep"></span>
-            <div class="search-box" style="max-width:160px;">
-                <span class="search-icon">🔍</span>
+            <div class="search-box" style="max-width:230px;">
+                <span class="search-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"/>
+                        <path d="M20 20l-4-4"/>
+                    </svg>
+                </span>
                 <input type="text" id="searchInput" placeholder="搜索...">
             </div>
             <div class="filter-control">
-                <span class="filter-label">⬇️ 排序</span>
+                <span class="filter-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v14"/><path d="M5 15l3 3 3-3"/><path d="M16 4h4"/><path d="M14 10h6"/><path d="M12 16h8"/></svg>
+                    排序
+                </span>
                 <select id="sortSelect">
                     <option value="time-desc" selected>最新创建</option>
                     <option value="time-asc">最早创建</option>
@@ -1037,7 +1137,10 @@
                 </select>
             </div>
             <div class="filter-control">
-                <span class="filter-label">📐 缩放</span>
+                <span class="filter-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 16l4-10 4 10"/><path d="M8 12h4"/><path d="M17 8v8"/><path d="M14 11l3-3 3 3"/><path d="M14 13l3 3 3-3"/></svg>
+                    缩放
+                </span>
                 <button class="scale-step-btn" onclick="stepScale(-10)" title="缩小10%">−</button>
                 <input type="range" id="cardScaleSlider" class="scale-slider" min="50" max="150" value="100">
                 <button class="scale-step-btn" onclick="stepScale(10)" title="放大10%">+</button>
@@ -2553,32 +2656,67 @@ function extractImageRemark(file) {
 
 // ─── Model Tabs ─────────────────────────────
 let dragModelId=null;
+let editingModelTabId=null;
 function renderModelTabs() {
     const c=document.getElementById('modelTabs'); c.innerHTML='';
     const sorted=Object.values(MODELS).sort((a,b)=>(a.sortIndex||0)-(b.sortIndex||0));
     sorted.forEach((m,idx)=>{
+        const isEditing=editingModelTabId===m.id;
         const btn=document.createElement('button');
-        btn.className=`model-tab ${m.id===currentModelId?'active':''}`;
-        btn.draggable=true;
+        btn.className=`model-tab ${m.id===currentModelId?'active':''} ${isEditing?'editing':''}`;
+        btn.draggable=!isEditing;
         btn.dataset.modelId=m.id;
         btn.dataset.sortIdx=idx;
-        btn.innerHTML=`
+        btn.innerHTML=isEditing?`
+            <input class="model-tab-name-input" value="${escapeHtml(m.name)}" aria-label="模型名称">
+            <span class="model-tab-action" onmousedown="event.preventDefault()" onclick="deleteModel(event,'${m.id}')" title="删除">×</span>
+        `:`
             <span style="pointer-events:none;">${escapeHtml(m.name)}</span>
-            <span class="model-tab-action" onclick="renameModel(event,'${m.id}')" title="重命名">✏️</span>
-            <span class="model-tab-action" onclick="deleteModel(event,'${m.id}')" title="删除">✖</span>
         `;
-        btn.onclick=e=>{ if(!e.target.classList.contains('model-tab-action')) switchModel(m.id); };
+        btn.onclick=e=>{ if(!isEditing&&!e.target.classList.contains('model-tab-action')) switchModel(m.id); };
+        btn.ondblclick=e=>{ e.stopPropagation(); startInlineModelEdit(m.id); };
         btn.addEventListener('dragstart',modelDragStart);
         btn.addEventListener('dragover',modelDragOver);
         btn.addEventListener('dragleave',modelDragLeave);
         btn.addEventListener('drop',modelDrop);
         btn.addEventListener('dragend',modelDragEnd);
         c.appendChild(btn);
+        if(isEditing){
+            const input=btn.querySelector('.model-tab-name-input');
+            const finish=save=>{
+                if(editingModelTabId!==m.id) return;
+                const next=input.value.trim();
+                editingModelTabId=null;
+                if(save&&next&&next!==m.name){
+                    MODELS[m.id].name=next;
+                    saveModels();
+                    renderModelTabs();
+                    showToast('已重命名');
+                    return;
+                }
+                renderModelTabs();
+            };
+            input.focus();
+            input.select();
+            input.onclick=e=>e.stopPropagation();
+            input.ondblclick=e=>e.stopPropagation();
+            input.onblur=()=>finish(true);
+            input.onkeydown=e=>{
+                if(e.key==='Enter'){ e.preventDefault(); finish(true); }
+                if(e.key==='Escape'){ e.preventDefault(); finish(false); }
+            };
+        }
     });
     const addBtn=document.createElement('button');
     addBtn.className='model-tab add-model-btn'; addBtn.innerText='+';
     addBtn.onclick=()=>showModal('modelModal');
     c.appendChild(addBtn);
+}
+
+function startInlineModelEdit(id){
+    editingModelTabId=id;
+    if(currentModelId!==id) switchModel(id);
+    else renderModelTabs();
 }
 
 function modelDragStart(e){
@@ -3481,13 +3619,17 @@ async function renderCardImages(card, box) {
 
     // Build thumbnails bar
     function buildThumbBar(activeIdx, total) {
-        const MAX=8;
+        const MAX=7;
         let html='';
-        const end=Math.min(total, MAX);
-        for(let i=0;i<end;i++){
+        let start=0;
+        if(total>MAX && activeIdx>=MAX){
+            start=Math.max(0, activeIdx-3);
+            start=Math.min(start, total-MAX);
+        }
+        const end=Math.min(total, start+MAX);
+        for(let i=start;i<end;i++){
             html+=`<img src="${getImageUrl(images[i])}" class="thumb-box ${i===activeIdx?'active':''}" data-idx="${i}">`;
         }
-        if(total>MAX) html+=`<div class="thumb-box" data-idx="${MAX}" title="还有 ${total-MAX} 张">+${total-MAX}</div>`;
         html+=`<div class="thumb-box" data-idx="${total}" title="添加新图">+</div>`;
         return html;
     }
