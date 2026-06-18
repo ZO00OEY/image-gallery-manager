@@ -361,7 +361,10 @@
             display: inline-flex; align-items: center; gap: 4px;
         }
         .filter-label svg { width: 15px; height: 15px; stroke-width: 2; }
-        .scale-slider { width: 72px; accent-color: var(--primary); }
+        .column-count-value {
+            min-width: 32px; text-align: center; font-weight: 800; color: var(--text-main);
+            font-size: 0.78rem; user-select: none;
+        }
         .scale-step-btn {
             width: 20px; height: 20px; border-radius: 2px; border: 1px solid rgba(255,107,157,0.22);
             background: rgba(255,255,255,0.48); color: var(--primary); cursor: pointer; font-size: 0.75rem;
@@ -976,16 +979,6 @@
                 <div class="sidebar-section" data-panel="sec_data" style="display:none;">
                     <div id="globalStats" style="font-size:0.78rem; color:var(--text-light); padding:4px 8px 2px; line-height:1.6;"></div>
                     <div id="localFolderPath" style="font-size:0.78rem; color:var(--text-light); padding:0 8px 8px; word-break:break-all; border-bottom:1px solid var(--border-color); margin-bottom:6px; line-height:1.6;"></div>
-                    <button class="btn-side" onclick="runHealthCheck()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="7"/>
-                            <path d="M20 20l-4-4"/>
-                            <path d="M8.5 11h5"/>
-                            <path d="M11 8.5v5"/>
-                        </svg>
-                        <span>健康检查</span>
-                    </button>
-                    <div style="border-top:1px solid var(--border-color); margin:8px 4px;"></div>
                     <button class="btn-side" onclick="exportData()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 3v12"/>
@@ -1136,14 +1129,19 @@
                     <option value="name-desc">名称降序</option>
                 </select>
             </div>
-            <div class="filter-control">
+            <div class="filter-control" id="columnCountControl" title="滚轮调整列数">
                 <span class="filter-label">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 16l4-10 4 10"/><path d="M8 12h4"/><path d="M17 8v8"/><path d="M14 11l3-3 3 3"/><path d="M14 13l3 3 3-3"/></svg>
-                    缩放
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 17L17 4l3 3L7 20l-3-3z"/>
+                        <path d="M7 14l2 2"/>
+                        <path d="M10 11l2 2"/>
+                        <path d="M13 8l2 2"/>
+                    </svg>
+                    列数
                 </span>
-                <button class="scale-step-btn" onclick="stepScale(-10)" title="缩小10%">−</button>
-                <input type="range" id="cardScaleSlider" class="scale-slider" min="50" max="150" value="100">
-                <button class="scale-step-btn" onclick="stepScale(10)" title="放大10%">+</button>
+                <button class="scale-step-btn" onclick="stepColumns(-1)" title="减少一列">−</button>
+                <span class="column-count-value" id="columnCountLabel">5列</span>
+                <button class="scale-step-btn" onclick="stepColumns(1)" title="增加一列">+</button>
             </div>
             <div class="filter-control">
                 <span class="filter-label">NSFW</span>
@@ -1208,15 +1206,6 @@
             </div>
         </div>
     </div>
-<!-- Health Check Modal -->
-    <div class="modal-overlay" id="healthCheckModal">
-        <div class="modal" style="max-width:520px;">
-            <div class="modal-header"><div class="modal-title">健康检查</div><button class="modal-close" onclick="hideModal('healthCheckModal')">×</button></div>
-            <div class="modal-body" id="healthCheckBody"></div>
-            <div class="modal-footer" id="healthCheckFooter"></div>
-        </div>
-    </div>
-
     <!-- Prompt Fix Modal -->
     <div class="modal-overlay" id="promptFixModal">
         <div class="modal" style="max-width:500px;">
@@ -1723,7 +1712,7 @@ async function clearRootHandle(){
 // ─── UI Preferences (IndexedDB-backed, survives file://) ────
 const uiPrefs=new Map(); // in-memory cache, synced with IndexedDB
 async function initUIPrefs(){
-    const keys=['ipm_scale','ipm_tagBar','ipm_night','ipm_sfw','ipm_lastModel'];
+    const keys=['ipm_columns','ipm_scale','ipm_tagBar','ipm_night','ipm_sfw','ipm_lastModel'];
     for(const k of keys){
         try{
             const rec=await configGet('ui_'+k);
@@ -3209,15 +3198,53 @@ function updateGridLayout() {
     const containerWidth=(container.clientWidth||(window.innerWidth-sidebarWidth-60));
     if(containerWidth<100) return;
 
-    const scale=parseInt(document.getElementById('cardScaleSlider').value)||100;
-    const baseWidth=230*(scale/100);
-    virtualGrid.cols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(baseWidth+virtualGrid.gap)));
+    const requestedCols=getColumnCount();
+    const minCardWidth=110;
+    const maxSafeCols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(minCardWidth+virtualGrid.gap)));
+    virtualGrid.cols=Math.max(1,Math.min(requestedCols,maxSafeCols));
     virtualGrid.cardWidth=(containerWidth-(virtualGrid.cols-1)*virtualGrid.gap)/virtualGrid.cols;
     const tagBarOn=document.getElementById('tagChipsBar').style.display==='flex';
     virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + (tagBarOn?88:48);
 
     const totalRows=Math.ceil(currentFiltered.length/virtualGrid.cols);
     container.style.height=`${(totalRows*virtualGrid.cardHeight)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
+    const label=document.getElementById('columnCountLabel');
+    if(label) label.textContent=virtualGrid.cols+'列';
+}
+
+function getColumnCount(){
+    const saved=parseInt(getPref('ipm_columns','5'));
+    return Math.max(1,Math.min(8,Number.isFinite(saved)?saved:5));
+}
+
+function setColumnCount(value, preserveFocus=true){
+    const next=Math.max(1,Math.min(8,parseInt(value)||5));
+    const prev=getColumnCount();
+    if(next===prev){
+        const label=document.getElementById('columnCountLabel');
+        if(label) label.textContent=next+'列';
+        return;
+    }
+    const container=document.getElementById('itemsContainer');
+    let focusIdx=null;
+    if(preserveFocus&&container&&currentFiltered.length>0&&virtualGrid.cols>0){
+        const containerTop=container.getBoundingClientRect().top+window.scrollY;
+        const centerY=window.scrollY+(window.innerHeight/2);
+        const row=Math.max(0,Math.floor((centerY-containerTop)/(virtualGrid.cardHeight+virtualGrid.gap)));
+        const col=Math.min(virtualGrid.cols-1,Math.max(0,Math.floor(virtualGrid.cols/2)));
+        focusIdx=Math.min(currentFiltered.length-1,row*virtualGrid.cols+col);
+    }
+    setPref('ipm_columns',next);
+    const label=document.getElementById('columnCountLabel');
+    if(label) label.textContent=next+'列';
+    updateGridLayout();
+    renderItems(false);
+    if(focusIdx!==null&&container){
+        const containerTop=container.getBoundingClientRect().top+window.scrollY;
+        const newRow=Math.floor(focusIdx/virtualGrid.cols);
+        const target=containerTop+(newRow*(virtualGrid.cardHeight+virtualGrid.gap))-(window.innerHeight/2)+(virtualGrid.cardHeight/2);
+        window.scrollTo({top:Math.max(0,target)});
+    }
 }
 
 let selectedFilterTags=[];
@@ -3899,7 +3926,7 @@ async function deleteModel(e,id) {
 
 // ─── Data Export/Import ─────────────────────
 function exportData() {
-    doExport();
+    exportCurrentDBToZip();
 }
 
 async function doExport() {
@@ -3981,98 +4008,123 @@ async function handleZipImport(event){
     if(!file) return;
     event.target.value='';
 
-    if(!localRootHandle){ showToast('未连接本地储存'); return; }
-    const subHandle=await getOrCreateSubfolder(localRootHandle);
-    if(!subHandle){ showToast('未找到图库数据'); return; }
-
     showModal('progressModal');
-    document.getElementById('progressTitle').innerText='读取文件...';
+    document.getElementById('progressTitle').innerText='读取备份文件...';
     document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='解析中...';
+    document.getElementById('progressText').innerText='检查索引...';
 
     try{
-        const isZip=file.name.endsWith('.zip');
-        let importModels={}, importBoxes={}, importFilters=[];
+        const isZip=file.name.toLowerCase().endsWith('.zip');
+        let previewPkg=null;
 
         if(isZip){
-            // Read ZIP and extract to temp structure
-            const JSZip=await ensureJSZip();
-            const buf=await file.arrayBuffer();
-            const zip=await JSZip.loadAsync(buf);
-            // Find gallery_settings.json
-            const settingsFile=zip.file('gallery_settings.json');
-            if(!settingsFile){ throw new Error('ZIP 中未找到 gallery_settings.json'); }
-            const settingsText=await settingsFile.async('text');
-            const settings=JSON.parse(settingsText);
-            importModels=settings.models||{};
-            importFilters=settings.copyFilterPatterns||[];
-
-            // Build box index and read meta files
-            importBoxes={};
-            let totalFiles=0, processed=0;
-            const zipFiles=[];
-            zip.forEach((path, f)=>{ if(!f.dir) zipFiles.push(path); });
-            totalFiles=zipFiles.length;
-
-            for(const modelId of Object.keys(settings.boxIndex||{})){
-                importBoxes[modelId]={boxes:[],images:{}};
-                for(const boxId of Object.keys(settings.boxIndex[modelId])){
-                    const folderName=settings.boxIndex[modelId][boxId];
-                    const metaPath=folderName+'/_meta.json';
-                    // Find meta path — it's modelName/folderName/_meta.json
-                    const modelName=(importModels[modelId]||{}).name||modelId;
-                    const fullMetaPath=modelName+'/'+folderName+'/_meta.json';
-                    const metaFile=zip.file(fullMetaPath);
-                    if(metaFile){
-                        const metaText=await metaFile.async('text');
-                        const meta=JSON.parse(metaText);
-                        const {images:imgMap,...box}=meta;
-                        importBoxes[modelId].boxes.push(box);
-                        const imgList=[];
-                        if(imgMap){
-                            for(const imgName of Object.keys(imgMap)){
-                                const imgPath=modelName+'/'+folderName+'/'+imgName;
-                                const imgFile=zip.file(imgPath);
-                                if(imgFile){
-                                    const imgBuf=await imgFile.async('arraybuffer');
-                                    const bytes=new Uint8Array(imgBuf);
-                                    const mime=guessMimeType(imgName);
-                                    const dataUrl=bytesToDataUrl(bytes,mime);
-                                    imgList.push({name:imgName, dataUrl, ...imgMap[imgName]});
-                                }
-                            }
-                        }
-                        importBoxes[modelId].images[boxId]=imgList;
-                    }
-                    processed++;
-                    document.getElementById('progressFill').style.width=Math.round(processed/totalFiles*100)+'%';
-                    document.getElementById('progressText').innerText='读取: '+processed+'/'+totalFiles;
-                }
-            }
+            previewPkg=await parseLocalModeZipFile(file,{readImages:false,progress:e=>{
+                const pct=e.total?Math.round(e.done/e.total*100):0;
+                document.getElementById('progressFill').style.width=pct+'%';
+                document.getElementById('progressText').innerText='检查 '+e.done+'/'+e.total;
+            }});
         }else{
-            // JSON import — parse and convert
             const text=await file.text();
             const data=JSON.parse(text);
             if(!data.models||!data.boxes){ throw new Error('无效的备份文件'); }
-            importModels=data.models;
-            importFilters=data.copyFilterPatterns||[];
-            importBoxes=data.boxes;
+            previewPkg={
+                settings:null,
+                importModels:data.models||{},
+                importBoxes:data.boxes||{},
+                importFilters:data.copyFilterPatterns||[],
+                report:summarizeImportPackage(data.models||{},data.boxes||{})
+            };
         }
 
-        // Scan existing local data for comparison
-        document.getElementById('progressTitle').innerText='对比本地数据...';
-        const existingSettings=await readJSON(subHandle,'gallery_settings.json');
-        const report=await scanImportDiscrepancies(subHandle, existingSettings, importModels, importBoxes);
         hideModal('progressModal');
-
-        // Show discrepancy report
-        pendingImportData={importModels, importBoxes, importFilters, isZip};
-        showImportReport(report);
+        await showDBImportReport(file, previewPkg, isZip);
 
     }catch(e){
         hideModal('progressModal');
-        showToast('导入失败: '+e.message);
+        showToast('导入失败：'+(e&&e.message?e.message:e));
     }
+}
+
+function summarizeImportPackage(importModels, importBoxes){
+    const report={modelCount:0,boxCount:0,jsonTotal:0,actualFiles:0,missingFiles:[]};
+    for(const [modelId,modelData] of Object.entries(importBoxes||{})){
+        const boxes=modelData.boxes||[];
+        if(boxes.length>0) report.modelCount++;
+        report.boxCount+=boxes.length;
+        for(const box of boxes){
+            const imgs=(modelData.images&&modelData.images[box.id])||[];
+            report.jsonTotal+=imgs.length;
+            report.actualFiles+=imgs.length;
+        }
+    }
+    return report;
+}
+
+async function getCurrentDBImageTotal(){
+    const records=await dbGetAll(STORE_IMAGES);
+    let total=0;
+    for(const rec of records) total+=(rec.images||[]).length;
+    return total;
+}
+
+async function showDBImportReport(file, previewPkg, isZip){
+    const r=previewPkg.report||summarizeImportPackage(previewPkg.importModels,previewPkg.importBoxes);
+    const currentImages=await getCurrentDBImageTotal();
+    const modelCount=Object.keys(MODELS||{}).length;
+    const currentBoxes=await dbGetAll(STORE_BOXES);
+    const doImport=async()=>{
+        const dedupe=!!(document.getElementById('chkDbImportDedupe')&&document.getElementById('chkDbImportDedupe').checked);
+        showModal('progressModal');
+        setImportBusy(true);
+        document.getElementById('progressTitle').innerText='导入备份数据...';
+        document.getElementById('progressFill').style.width='0%';
+        document.getElementById('progressText').innerText='准备中...';
+        try{
+            let pkg=previewPkg;
+            if(isZip){
+                document.getElementById('progressText').innerText='解出图片...';
+                pkg=await parseLocalModeZipFile(file,{readImages:true,progress:e=>{
+                    const pct=e.total?Math.round(e.done/e.total*45):0;
+                    document.getElementById('progressFill').style.width=pct+'%';
+                    document.getElementById('progressText').innerText='解出图片 '+e.done+'/'+e.total+'：'+(e.modelName||'');
+                }});
+            }
+            const imported=await importPackageToDB(pkg,{dedupe,progress:handleLocalImportProgress});
+            const parts=['新增 '+(imported.imgCount||0)+' 张图片'];
+            if(imported.duplicateSkipped) parts.push('跳过重复 '+imported.duplicateSkipped+' 张');
+            if(imported.renamedImages) parts.push('重命名 '+imported.renamedImages+' 张');
+            showToast('导入完成：'+parts.join('，'));
+        }catch(e){
+            showToast('导入失败：'+(e&&e.message?e.message:e));
+        }finally{
+            setImportBusy(false);
+            hideModal('progressModal');
+        }
+    };
+
+    let html='<div class="import-preview">';
+    html+='<div class="import-flow">';
+    html+='<div class="import-step"><div class="import-step-index">1</div><div>'+
+        '<div class="import-step-title">读取待导入备份</div>'+
+        '<div class="import-step-text">文件 <span class="num">'+escapeHtml(file.name)+'</span>；模型 <span class="num">'+r.modelCount+'</span> 个，卡片盒 <span class="num">'+r.boxCount+'</span> 个，图片 <span class="num">'+r.actualFiles+'</span> 张</div>'+
+        '</div></div>';
+    html+='<div class="import-step"><div class="import-step-index">2</div><div>'+
+        '<div class="import-step-title">比较当前浏览器图库</div>'+
+        '<div class="import-step-text">当前图库已有模型 <span class="num">'+modelCount+'</span> 个，卡片盒 <span class="num">'+currentBoxes.length+'</span> 个，图片 <span class="num">'+currentImages+'</span> 张。导入时会按模型名和卡片盒名合并。</div>'+
+        '</div></div>';
+    if((r.missingFiles||[]).length>0){
+        html+='<div class="import-step"><div class="import-step-index">!</div><div>'+
+            '<div class="import-step-title">备份内存在缺失图片</div>'+
+            '<div class="import-step-text">有 <span class="num danger">'+r.missingFiles.length+'</span> 条图片记录找不到对应文件，导入时会跳过。</div>'+
+            '</div></div>';
+    }
+    html+='</div>';
+    html+='<div class="import-actions">';
+    html+='<label class="import-action"><input type="checkbox" id="chkDbImportDedupe" checked><span><span class="import-action-title">去除重复图片</span><span class="import-action-note">与当前图库内容相同的图片会跳过，只保留一张</span></span></label>';
+    html+='</div>';
+    html+='<p class="import-footnote">1. 新模型、新卡片盒和新图片会合并进当前浏览器图库。<br>2. 同一个卡片盒里遇到同名但内容不同的图片，会自动重命名后保留。<br>3. 用于导入的备份文件不会被改动。</p>';
+    html+='</div>';
+    showStyledConfirm('确认导入备份数据',html,'导入','取消',doImport);
 }
 
 async function scanImportDiscrepancies(subHandle, existingSettings, importModels, importBoxes){
@@ -6186,133 +6238,6 @@ async function reselectLocalFolder(){
 }
 
 // ─── Health Check ────────────────────────────
-async function runHealthCheck(){
-    if(!localRootHandle){ showToast('未连接本地储存'); return; }
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='健康检查中...';
-    const subHandle=await getOrCreateSubfolder(localRootHandle);
-    if(!subHandle){ hideModal('progressModal'); return; }
-    const settings=await readJSON(subHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex){ hideModal('progressModal'); showToast('未找到图库数据'); return; }
-
-    const report=await scanLocalDiscrepancies(subHandle, settings);
-    hideModal('progressModal');
-
-    let html='<div style="line-height:1.8;">';
-    html+='<p>📊 JSON 内共 <b>'+report.jsonTotal+'</b> 张图片</p>';
-    if(report.missingFiles.length>0) html+='<p style="color:var(--error);">⚠️ '+report.missingFiles.length+' 张文件丢失</p>';
-    if(report.orphanFiles.length>0) html+='<p style="color:var(--accent);">📄 '+report.orphanFiles.length+' 张孤儿文件（将导入并提取提示词）</p>';
-    if(report.hashDups.length>0) html+='<p style="color:var(--primary);">🔄 '+report.hashDups.length+' 张哈希重复</p>';
-    if(report.boxIssues.length>0) html+='<p style="color:var(--error);">📦 '+report.boxIssues.length+' 个无效盒子</p>';
-    if(report.missingFiles.length===0&&report.orphanFiles.length===0&&report.hashDups.length===0&&report.boxIssues.length===0){
-        html+='<p style="color:var(--primary);">✅ 数据完全一致，无异常。</p>';
-    }
-    html+='</div>';
-
-    document.getElementById('healthCheckBody').innerHTML=html;
-    const hasIssues=report.missingFiles.length>0||report.orphanFiles.length>0||report.hashDups.length>0||report.boxIssues.length>0;
-    document.getElementById('healthCheckFooter').innerHTML=hasIssues?
-        '<button class="btn btn-outline" onclick="hideModal(\'healthCheckModal\')">关闭</button>'+
-        '<button class="btn btn-primary" id="btnAutoFix">自动修复</button>':
-        '<button class="btn btn-primary" onclick="hideModal(\'healthCheckModal\')">关闭</button>';
-    showModal('healthCheckModal');
-    if(hasIssues){
-        document.getElementById('btnAutoFix').onclick=()=>autoFixHealth(report, settings, subHandle);
-    }
-}
-
-async function autoFixHealth(report, settings, subHandle){
-    let fixed=0, boxCleaned=0;
-    // Import orphan files: add to _meta.json (don't delete!)
-    const orphanBoxes=new Map();
-    for(const f of report.orphanFiles){
-        const key=f.modelId+'/'+f.boxId;
-        if(!orphanBoxes.has(key)) orphanBoxes.set(key, []);
-        orphanBoxes.get(key).push(f);
-    }
-    for(const [key, files] of orphanBoxes){
-        try{
-            const parts=key.split('/');
-            const modelId=parts[0];
-            const boxId=parts[1];
-            const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-            const modelDir=await subHandle.getDirectoryHandle(modelName);
-            const boxDir=await modelDir.getDirectoryHandle(files[0].folderName);
-            const meta=await readJSON(boxDir,'_meta.json');
-            if(!meta||!meta.images) continue;
-            let metaChanged=false;
-            for(const f of files){
-                if(meta.images[f.fileName]) continue;
-                meta.images[f.fileName]=await buildImageMetaFromFileHandle(boxDir, f.fileName);
-                metaChanged=true;
-                fixed++;
-            }
-            if(metaChanged){
-                meta.imageCount=Object.keys(meta.images).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }
-        }catch(e){}
-    }
-    // Remove missing entries from meta + hash dups
-    const processedBoxes=new Set();
-    for(const item of [...report.missingFiles, ...report.hashDups]){
-        const key=item.modelId+'/'+item.boxId;
-        if(processedBoxes.has(key)) continue;
-        processedBoxes.add(key);
-        try{
-            const modelName=settings.models[item.modelId]?settings.models[item.modelId].name:item.modelId;
-            const modelDir=await subHandle.getDirectoryHandle(modelName);
-            const boxDir=await modelDir.getDirectoryHandle(item.folderName);
-            const meta=await readJSON(boxDir,'_meta.json');
-            if(!meta||!meta.images) continue;
-            let metaChanged=false;
-            // Remove missing files
-            for(const f of report.missingFiles){
-                if(f.modelId===item.modelId&&f.boxId===item.boxId&&meta.images[f.fileName]){
-                    delete meta.images[f.fileName];
-                    metaChanged=true;
-                    fixed++;
-                }
-            }
-            // Remove hash dups
-            for(const d of report.hashDups){
-                if(d.modelId===item.modelId&&d.boxId===item.boxId&&meta.images[d.fileName]){
-                    await removeEntrySafe(boxDir, d.fileName);
-                    delete meta.images[d.fileName];
-                    metaChanged=true;
-                    fixed++;
-                }
-            }
-            if(metaChanged){
-                meta.imageCount=Object.keys(meta.images).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }
-        }catch(e){}
-    }
-    // Remove phantom box entries
-    let settingsChanged=false;
-    for(const bi of report.boxIssues){
-        if(bi.issue==='model_dir_missing'){
-            delete settings.boxIndex[bi.modelId];
-            settingsChanged=true;
-            boxCleaned++;
-        }else if(bi.issue==='box_dir_missing'&&settings.boxIndex[bi.modelId]){
-            delete settings.boxIndex[bi.modelId][bi.boxId];
-            settingsChanged=true;
-            boxCleaned++;
-        }
-    }
-    if(settingsChanged) await writeJSON(subHandle,'gallery_settings.json',settings);
-
-    hideModal('healthCheckModal');
-    const parts=[];
-    if(boxCleaned>0) parts.push(boxCleaned+' 个无效盒子');
-    if(fixed>0) parts.push(fixed+' 张图片');
-    showToast(parts.length>0?'已清理 '+parts.join('、'):'未发现问题');
-    await reloadData();
-}
-
-// ─── Reset ────────────────────────────────────
 function resetAll(){
     function doReset(deleteLocal){
         (async()=>{
@@ -6385,8 +6310,9 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     await loadBoxes();
 
     // ─── Restore all persisted state BEFORE first render ──
-    const savedScale=getPref('ipm_scale');
-    if(savedScale) document.getElementById('cardScaleSlider').value=savedScale;
+    const savedColumns=getColumnCount();
+    const columnLabel=document.getElementById('columnCountLabel');
+    if(columnLabel) columnLabel.textContent=savedColumns+'列';
 
     if(getPref('ipm_tagBar')==='1'){
         document.getElementById('tagBarToggle').checked=true;
@@ -6417,15 +6343,16 @@ document.addEventListener('DOMContentLoaded',async ()=>{
 
     document.getElementById('searchInput').addEventListener('input',()=>renderItems(true));
     document.getElementById('sortSelect').addEventListener('change',()=>renderItems(true));
-    document.getElementById('cardScaleSlider').addEventListener('input',()=>{ setPref('ipm_scale',document.getElementById('cardScaleSlider').value); updateGridLayout(); renderItems(false); });
+    const columnControl=document.getElementById('columnCountControl');
+    if(columnControl){
+        columnControl.addEventListener('wheel',e=>{
+            e.preventDefault();
+            setColumnCount(getColumnCount()+(e.deltaY<0?-1:1));
+        },{passive:false});
+    }
 
-    window.stepScale=function(delta){
-        const slider=document.getElementById('cardScaleSlider');
-        let val=parseInt(slider.value)+delta;
-        val=Math.max(50,Math.min(150,val));
-        slider.value=val;
-        setPref('ipm_scale',val);
-        updateGridLayout(); renderItems(false);
+    window.stepColumns=function(delta){
+        setColumnCount(getColumnCount()+delta);
     };
 
     // Keyboard shortcuts
