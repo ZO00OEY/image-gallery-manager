@@ -271,17 +271,29 @@
         }
         .model-tab-action {
             display: none; align-items: center; justify-content: center;
-            width: 18px; height: 18px; border-radius: 50%; font-size: 0.7rem;
-            transition: background-color 0.2s; opacity: 0.5;
+            width: 20px; height: 20px; border-radius: 4px; font-size: 0.82rem;
+            background: rgba(255,255,255,0.92); color: var(--primary);
+            border: 1px solid rgba(255,255,255,0.72);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: background-color 0.2s, color 0.2s, transform 0.16s, box-shadow 0.16s; opacity: 0.5;
         }
         .model-tab.editing .model-tab-action { display: inline-flex; opacity: 0.85; }
         .model-tab.editing:hover .model-tab-action { opacity: 1; }
-        .model-tab-action:hover { background: rgba(255,107,157,0.12); }
+        .model-tab-action:hover {
+            background: #fff; color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
         .model-tab-name-input {
-            width: 96px; max-width: 140px; height: 22px; padding: 0 4px;
-            border: 1px solid rgba(255,255,255,0.52);
-            background: rgba(255,255,255,0.18); color: inherit;
+            width: 96px; max-width: 140px; height: 24px; padding: 0 6px;
+            border: 1px solid rgba(255,255,255,0.72);
+            background: rgba(255,255,255,0.92); color: var(--primary-dark);
             font: inherit; font-weight: 800; outline: none;
+            box-shadow: inset 0 0 0 1px rgba(255,107,157,0.06);
+        }
+        .model-tab-name-input:focus {
+            border-color: rgba(255,255,255,0.95);
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.22), inset 0 0 0 1px rgba(255,107,157,0.14);
         }
         .model-tab.dragging { opacity: 0.4; cursor: grabbing; }
         .model-tab.drag-over { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,107,157,0.13); }
@@ -308,14 +320,26 @@
             border-radius: 0;
             background: linear-gradient(to bottom, rgba(255,107,157,0.14), rgba(255,107,157,0.58), rgba(255,107,157,0.14));
         }
-        .hstat {
-            display: inline-flex; align-items: baseline; gap: 5px;
-            min-height: 32px; padding: 0 9px; white-space: nowrap;
+        .header-stats {
+            display: flex; align-items: center; gap: 9px;
+            min-width: 152px; padding: 0 14px 0 8px;
+            flex-shrink: 0; cursor: pointer; user-select: none;
         }
-        .hstat-label { color: var(--text-light); font-size: 0.78rem; font-weight: 700; }
-        .hstat-value {
-            color: var(--primary); font-size: 1.18rem; line-height: 1; font-weight: 850;
-            letter-spacing: 0;
+        .stat-main {
+            display: flex; align-items: baseline; gap: 9px;
+            white-space: nowrap; line-height: 1.15;
+            transition: transform 0.28s cubic-bezier(.2,.9,.24,1), opacity 0.2s ease;
+        }
+        .header-stats.is-flipping .stat-main {
+            transform: translateY(-5px); opacity: 0.55;
+        }
+        .stat-main-scope {
+            color: var(--primary); font-size: 0.9rem; font-weight: 850;
+        }
+        .stat-item { color: var(--text-light); font-size: 0.78rem; font-weight: 500; }
+        .stat-value {
+            color: var(--text-main); font-size: 0.92rem; line-height: 1; font-weight: 650;
+            letter-spacing: 0; margin-left: 3px;
         }
         .header-sep {
             width: 1px; height: 26px; margin: 0 14px;
@@ -446,9 +470,6 @@
             border-style: dashed; border-color: var(--primary-light);
         }
 
-        .hstat { display: flex; align-items: baseline; gap: 3px; white-space: nowrap; flex-shrink: 0; }
-        .hstat-label { font-size: 0.8rem; color: var(--text-light); font-weight: 600; }
-        .hstat-value { font-size: 1.35rem; font-weight: 700; color: var(--primary); }
         .header-sep { width: 1px; height: 18px; background: var(--border-color); margin: 0 6px; flex-shrink: 0; }
 
         .items-grid { position: relative; min-height: 200px; width: 100%; }
@@ -695,6 +716,74 @@
         .import-step-text .num.danger { color: var(--error); }
         .import-step-text .num.accent { color: var(--accent); }
 
+        .image-import-modal { max-width: 640px; }
+        .image-import-title {
+            display: inline-flex; align-items: center; gap: 10px;
+            color: var(--primary); font-size: 1.22rem; font-weight: 850;
+        }
+        .image-import-title svg { width: 23px; height: 23px; stroke-width: 1.75; }
+        .image-pick-grid { display: grid; gap: 8px; }
+        .image-pick-btn {
+            width: 100%; min-height: 58px; border: 1.5px dashed rgba(255,107,157,0.34);
+            border-radius: 4px; background: rgba(255,255,255,0.42); color: var(--primary);
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            font-size: 0.95rem; font-weight: 760; cursor: pointer;
+            transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+        }
+        .image-pick-btn:hover {
+            border-color: rgba(255,107,157,0.72); background: rgba(255,255,255,0.74);
+            transform: translateY(-1px);
+        }
+        .image-pick-btn svg, .import-field-icon { width: 18px; height: 18px; flex: 0 0 auto; }
+        .image-import-switch {
+            display: flex; align-items: center; justify-content: space-between; gap: 14px;
+            margin: 8px 0 14px; padding: 8px 11px;
+            border: 1px solid rgba(255,107,157,0.14); border-radius: 4px;
+            background: rgba(255,107,157,0.045);
+            color: var(--text-main); font-size: 0.84rem; line-height: 1.35;
+        }
+        .image-file-list {
+            max-height: 122px; overflow-y: auto; margin-bottom: 14px; padding: 8px 10px;
+            border: 1px solid rgba(255,107,157,0.12); border-radius: 4px;
+            background: rgba(255,255,255,0.38); color: var(--text-main);
+            font-size: 0.8rem; line-height: 1.55;
+        }
+        .image-file-list:empty { display: none; }
+        .import-form-grid { display: grid; gap: 13px; }
+        .import-field-label {
+            display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+            color: var(--text-main); font-size: 0.9rem; font-weight: 680;
+        }
+        .import-field-label small { color: var(--text-light); font-size: 0.78rem; font-weight: 500; }
+        .import-check-row {
+            display: flex; align-items: center; gap: 9px; cursor: pointer;
+            color: var(--text-main); font-size: 0.9rem; font-weight: 650;
+        }
+        .import-check-row input {
+            appearance: none; width: 17px; height: 17px; margin: 0;
+            border: 1.5px solid var(--primary-light); border-radius: 4px;
+            background: rgba(255,255,255,0.72); display: grid; place-items: center;
+        }
+        .import-check-row input:checked { background: var(--primary); border-color: var(--primary); }
+        .import-check-row input:checked::after {
+            content: ''; width: 7px; height: 4px;
+            border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+            transform: rotate(-45deg); margin-top: -1px;
+        }
+        .image-import-modal .input-text {
+            border-width: 1px; border-color: rgba(255,107,157,0.32);
+            border-radius: 4px; background: rgba(255,255,255,0.62);
+        }
+        .image-import-modal .input-text:focus {
+            border-color: rgba(255,107,157,0.68);
+            box-shadow: 0 0 0 3px rgba(255,107,157,0.06);
+        }
+        .image-import-footer { flex-wrap: wrap; gap: 9px; }
+        .image-import-footer .btn { border-radius: 4px; }
+        @media (max-width: 640px) {
+            .image-import-switch { align-items: flex-start; flex-direction: column; }
+        }
+
         .btn { padding: 10px 18px; border-radius: var(--br-sm); font-weight: 700; cursor: pointer; transition: var(--transition); border: none; font-size: 0.95rem; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
@@ -879,7 +968,7 @@
             .header-bar { padding: 10px; gap: 8px; }
             .search-box { flex: 1 1 100%; max-width: none !important; order: 2; padding-right: 0; margin-right: 0; border-right: 0; }
             .filter-control { height: 34px; border-left: 0; padding: 4px 8px; }
-            .hstat { padding: 0 4px; }
+            .header-stats { padding: 0 8px 0 4px; min-width: 148px; }
         }
 
         textarea.input-text { resize: vertical; min-height: 60px; }
@@ -920,7 +1009,7 @@
         <button class="rail-button" data-tooltip="导入图片" onclick="openUnifiedImport()">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         </button>
-        <button class="rail-button" data-tooltip="储存管理" data-section="sec_data" onclick="openPanelDetail('sec_data')">
+        <button class="rail-button" data-tooltip="数据管理" data-section="sec_data" onclick="openPanelDetail('sec_data')">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </button>
         <button class="rail-button" data-tooltip="标签" data-section="sec_tags" onclick="openPanelDetail('sec_tags')">
@@ -960,7 +1049,7 @@
                 </button>
                 <button class="btn-side" onclick="openPanelDetail('sec_data')" style="padding:10px 12px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-                    <span>储存管理</span>
+                    <span>数据管理</span>
                 </button>
                 <button class="btn-side" onclick="openPanelDetail('sec_tags')" style="padding:10px 12px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -977,36 +1066,63 @@
             <div id="panelDetailView" style="display:none;">
                 <!-- sec_data detail -->
                 <div class="sidebar-section" data-panel="sec_data" style="display:none;">
-                    <div id="globalStats" style="font-size:0.78rem; color:var(--text-light); padding:4px 8px 2px; line-height:1.6;"></div>
-                    <div id="localFolderPath" style="font-size:0.78rem; color:var(--text-light); padding:0 8px 8px; word-break:break-all; border-bottom:1px solid var(--border-color); margin-bottom:6px; line-height:1.6;"></div>
-                    <button class="btn-side" onclick="exportData()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 3v12"/>
-                            <path d="M7 10l5 5 5-5"/>
-                            <path d="M5 21h14"/>
-                            <path d="M5 17v4"/>
-                            <path d="M19 17v4"/>
-                        </svg>
-                        <span>导出数据</span>
-                    </button>
-                    <button class="btn-side" onclick="document.getElementById('importJsonInput').click()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 21V9"/>
-                            <path d="M7 14l5-5 5 5"/>
-                            <path d="M5 3h14"/>
-                            <path d="M5 3v4"/>
-                            <path d="M19 3v4"/>
-                        </svg>
-                        <span>导入数据</span>
-                    </button>
-                    <div style="border-top:1px solid var(--border-color); margin:8px 4px;"></div>
-                    <button class="btn-side" onclick="toggleBatchMode()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="5" width="15" height="15" rx="2"/>
-                            <path d="M8 12l2.4 2.4L16 9"/>
-                        </svg>
-                        <span>批量管理</span>
-                    </button>
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-title">基础</div>
+                        <button class="btn-side sidebar-action-btn" onclick="exportData()" title="把当前浏览器数据库导出为可恢复的压缩包备份。">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3v12"/>
+                                <path d="M7 10l5 5 5-5"/>
+                                <path d="M5 21h14"/>
+                                <path d="M5 17v4"/>
+                                <path d="M19 17v4"/>
+                            </svg>
+                            <span>导出压缩包</span>
+                        </button>
+                        <button class="btn-side sidebar-action-btn" onclick="debugImportLocalModeData()" title="从压缩包或文件夹读取数据，并导入到当前浏览器图库。">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 21V9"/>
+                                <path d="M7 14l5-5 5 5"/>
+                                <path d="M5 3h14"/>
+                                <path d="M5 3v4"/>
+                                <path d="M19 3v4"/>
+                            </svg>
+                            <span>读取压缩包/文件夹</span>
+                        </button>
+                        <div class="sidebar-group-title" style="margin-top:8px;">
+                            <span>检查</span>
+                            <span class="sidebar-group-kicker">压缩包/文件夹</span>
+                            <button class="sidebar-info-btn" onclick="showLocalCompatInfo()" title="查看本地数据管理说明">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="M12 10v6"/>
+                                    <path d="M12 7.2v.1"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <button class="btn-side sidebar-action-btn" onclick="debugInspectLocalMode()" title="检查本地压缩包或目录的数据结构，不会导入或修改数据。">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7"/>
+                                <path d="M20 20l-4-4"/>
+                                <path d="M8.5 11h5"/>
+                                <path d="M11 8.5v5"/>
+                            </svg>
+                            <span>检查压缩包/文件夹</span>
+                        </button>
+                    </div>
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-title">图库操作</div>
+                        <button class="btn-side sidebar-action-btn" onclick="toggleBatchMode()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="5" width="15" height="15" rx="2"/>
+                                <path d="M8 12l2.4 2.4L16 9"/>
+                            </svg>
+                            <span>批量管理</span>
+                        </button>
+                    </div>
+                    <div class="sidebar-group danger-group">
+                        <div class="sidebar-group-title">危险操作</div>
+                        <button class="btn-side danger" onclick="resetAll()"><span>重置所有数据</span></button>
+                    </div>
                 </div>
                 <!-- sec_tags detail -->
                 <div class="sidebar-section" data-panel="sec_tags" style="display:none;">
@@ -1041,51 +1157,8 @@
                 </div>
                 <!-- sec_settings detail -->
                 <div class="sidebar-section" data-panel="sec_settings" style="display:none;">
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-title">
-                            <span>兼容模式</span>
-                            <span class="sidebar-group-kicker">本地模式</span>
-                            <button class="sidebar-info-btn" onclick="showLocalCompatInfo()" title="查看兼容模式说明">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="9"/>
-                                    <path d="M12 10v6"/>
-                                    <path d="M12 7.2v.1"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <button class="btn-side sidebar-action-btn" onclick="debugInspectLocalMode()" title="检查本地模式压缩包或目录的数据结构，不会导入或修改数据。">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="7"/>
-                                <path d="M20 20l-4-4"/>
-                                <path d="M8.5 11h5"/>
-                                <path d="M11 8.5v5"/>
-                            </svg>
-                            <span>检查本地压缩包/目录</span>
-                        </button>
-                        <button class="btn-side sidebar-action-btn" onclick="debugImportLocalModeData()" title="从本地模式压缩包或目录读取数据，并导入到当前浏览器数据库。">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 3v12"/>
-                                <path d="M7 10l5 5 5-5"/>
-                                <path d="M5 21h14"/>
-                                <path d="M5 17v4"/>
-                                <path d="M19 17v4"/>
-                            </svg>
-                            <span>读取本地压缩包/目录</span>
-                        </button>
-                        <button class="btn-side sidebar-action-btn" onclick="exportCurrentDBToZip()" title="把当前浏览器数据库中的模型、卡片、图片和提示词导出为压缩包备份。">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 21V9"/>
-                                <path d="M7 14l5-5 5 5"/>
-                                <path d="M5 3h14"/>
-                                <path d="M5 3v4"/>
-                                <path d="M19 3v4"/>
-                            </svg>
-                            <span>导出数据</span>
-                        </button>
-                    </div>
-                    <div class="sidebar-group danger-group">
-                        <div class="sidebar-group-title">危险操作</div>
-                        <button class="btn-side danger" onclick="resetAll()"><span>重置所有数据</span></button>
+                    <div style="color:var(--text-light); font-size:0.84rem; line-height:1.7; padding:8px;">
+                        数据导入、导出、本地压缩包/目录检查已经移到“数据管理”中。这里之后保留给界面和偏好设置。
                     </div>
                 </div>
             </div>
@@ -1104,9 +1177,13 @@
         <div class="model-tabs-container" id="modelTabs"></div>
 
         <div class="header-bar">
-            <span class="hstat"><span class="hstat-label">卡片</span><span class="hstat-value" id="statsTotal">0</span></span>
-            <span class="hstat"><span class="hstat-label">标签</span><span class="hstat-value" style="color:var(--accent)" id="statsWithImg">0</span></span>
-            <span class="hstat"><span class="hstat-label">图片</span><span class="hstat-value" style="color:var(--primary-dark)" id="statsTotalImgs">0</span></span>
+            <div class="header-stats" id="headerStatsCycle" onclick="toggleHeaderStatsScope()" title="点击切换当前 / 全局统计">
+                <div class="stat-main">
+                    <span class="stat-main-scope" id="statsMainScope">当前</span>
+                    <span class="stat-item">卡片盒<span class="stat-value" id="statsActiveBoxes">0</span></span>
+                    <span class="stat-item">图片<span class="stat-value" id="statsActiveImages">0</span></span>
+                </div>
+            </div>
             <span class="header-sep"></span>
             <div class="search-box" style="max-width:230px;">
                 <span class="search-icon">
@@ -1177,32 +1254,74 @@
     </div>
 
     <!-- Unified Import Modal -->
-    <div class="modal-overlay" id="importModal">
-        <div class="modal" style="max-width:600px;">
-            <div class="modal-header"><div class="modal-title">📦 图片导入</div><button class="modal-close" onclick="hideModal('importModal')">×</button></div>
+    <div class="modal-overlay" id="importModal" onclick="if(event.target===this) hideModal('importModal')">
+        <div class="modal image-import-modal">
+            <div class="modal-header">
+                <div class="modal-title image-import-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        <path d="M8 13l2.2-2.2a1.2 1.2 0 011.7 0L16 15"/>
+                        <circle cx="8.5" cy="8.5" r="1.2"/>
+                    </svg>
+                    <span>图片导入</span>
+                </div>
+                <button class="modal-close" onclick="hideModal('importModal')">×</button>
+            </div>
             <div class="modal-body">
                 <input type="file" id="unifiedFileInput" multiple accept="image/*" style="display:none;" onchange="previewUnifiedFiles()">
-                <button class="btn btn-outline" style="width:100%; border-style:dashed; margin-bottom:12px;" onclick="document.getElementById('unifiedFileInput').click()">
-                    📂 选择图片文件
-                </button>
-                <div id="unifiedFileList" style="max-height:120px; overflow-y:auto; font-size:0.82rem; color:var(--text-main); margin-bottom:12px;"></div>
+                <div class="image-pick-grid">
+                    <button class="image-pick-btn" onclick="pickUnifiedImages()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                            <path d="M8 13l2-2 5 5"/>
+                            <circle cx="8.5" cy="8.5" r="1.2"/>
+                        </svg>
+                        <span>选择图片</span>
+                    </button>
+                </div>
+                <div class="image-import-switch">
+                    <strong>自动弹出导入窗口</strong>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="unifiedAutoPicker" onchange="setAutoOpenFilePicker(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="unifiedFileList" class="image-file-list"></div>
 
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">卡片盒名称（留空则自动生成）</label>
-                <input type="text" id="unifiedBoxName" class="input-text" placeholder="自动以文件名或公共前缀命名">
+                <div class="import-form-grid">
+                    <div>
+                        <label class="import-field-label">
+                            <svg class="import-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="5" width="16" height="14" rx="2"/>
+                                <path d="M8 9h8"/>
+                                <path d="M8 13h5"/>
+                            </svg>
+                            <span>卡片盒名称 <small>留空则自动生成</small></span>
+                        </label>
+                        <input type="text" id="unifiedBoxName" class="input-text" placeholder="自动以文件名、公共前缀或文件夹命名">
+                    </div>
 
-                <label style="font-weight:bold; display:block; margin-bottom:5px; margin-top:10px;">🏷️ 标签 (逗号分隔，可选)</label>
-                <input type="text" id="unifiedTags" class="input-text" placeholder="标签A, 标签B" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.value+=', ';}">
-                <div class="tag-suggestions" id="unifiedTagsSuggestions"></div>
+                    <div>
+                        <label class="import-field-label">
+                            <svg class="import-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.5 13.5l-7 7a2 2 0 01-2.8 0L3.5 13.3V4h9.3l7.7 7.7a1.3 1.3 0 010 1.8z"/>
+                                <path d="M7.5 7.5h.01"/>
+                            </svg>
+                            <span>标签 <small>逗号分隔，可选</small></span>
+                        </label>
+                        <input type="text" id="unifiedTags" class="input-text" placeholder="标签A, 标签B" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.value+=', ';}">
+                        <div class="tag-suggestions" id="unifiedTagsSuggestions"></div>
+                    </div>
 
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; margin-top:10px;">
-                    <input type="checkbox" id="unifiedExtractPng" checked style="transform:scale(1.2);">
-                    尝试从图片文件中自动提取提示词备注
-                </label>
+                    <label class="import-check-row">
+                        <input type="checkbox" id="unifiedExtractPng" checked>
+                        <span>自动提取图片里的提示词备注</span>
+                    </label>
+                </div>
             </div>
-            <div class="modal-footer" style="flex-wrap:wrap; gap:8px;">
-                <button class="btn btn-outline" onclick="hideModal('importModal')">取消</button>
-                <button class="btn btn-primary" onclick="executeUnifiedImport('single')">每张独立卡片盒</button>
-                <button class="btn btn-primary" onclick="executeUnifiedImport('group')">保存进同一卡片盒</button>
+            <div class="modal-footer image-import-footer">
+                <button class="btn btn-primary" onclick="executeUnifiedImport('single')">单张单独卡片盒</button>
+                <button class="btn btn-primary" onclick="executeUnifiedImport('group')">存入同一卡片盒</button>
             </div>
         </div>
     </div>
@@ -1330,7 +1449,7 @@
     <!-- Export Choice Modal -->
     <div class="modal-overlay" id="exportChoiceModal">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header"><div class="modal-title">💾 导出数据</div><button class="modal-close" onclick="hideModal('exportChoiceModal')">×</button></div>
+            <div class="modal-header"><div class="modal-title">💾 导出压缩包</div><button class="modal-close" onclick="hideModal('exportChoiceModal')">×</button></div>
             <div class="modal-body" style="text-align:center;">
                 <p style="color:var(--text-light); margin-bottom:20px;">请选择导出范围</p>
                 <button class="btn btn-primary" onclick="doExport(true)" style="width:100%; margin-bottom:12px;">导出全部模型</button>
@@ -1850,6 +1969,8 @@ let currentBoxes=[];       // boxes for current model
 let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
 let globalBoxCount=0, globalImgCount=0;
+let currentBoxCount=0, currentImgCount=0;
+let headerStatsScope='current';
 
 let virtualGrid={ cardWidth:230, cardHeight:375, gap:20, cols:1, bufferRows:3 };
 let activeCards=new Map();
@@ -2021,13 +2142,15 @@ async function resolveLocalDataHandle(parentHandle, options={}){
 async function computeFileHash(handle, fileName){
     const bytes=await readFileBytes(handle, fileName);
     if(!bytes) return null;
-    const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    return hashBytes(bytes);
 }
 async function hashFromDataUrl(dataUrl){
     if(!dataUrl||!dataUrl.startsWith('data:')) return null;
     const bytes=dataUrlToBytes(dataUrl);
     if(!bytes) return null;
+    return hashBytes(bytes);
+}
+async function hashBytes(bytes){
     const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
@@ -2643,6 +2766,41 @@ function extractImageRemark(file) {
     });
 }
 
+function extractImageRemarkFromBytes(bytes){
+    try {
+        const isJpeg=bytes[0]===0xFF && bytes[1]===0xD8;
+        const isPng=bytes[0]===137 && bytes[1]===80 && bytes[2]===78 && bytes[3]===71;
+        if(isJpeg){
+            const exif=extractExifUserComment(bytes);
+            if(exif) return {remark:exif,workflow:null};
+            const com=extractJpegCom(bytes);
+            return {remark:com,workflow:null};
+        }
+        if(isPng) return extractPngTextChunks(bytes);
+    }catch(e){}
+    return {remark:null,workflow:null};
+}
+
+function imageMetaNeedsPromptScan(meta){
+    if(!meta) return true;
+    return !(meta.remark||meta.positivePrompt||meta.negativePrompt||meta.steps||meta.workflow);
+}
+
+function mergeExtractedImageMeta(meta, extracted){
+    const base=meta||{};
+    const remark=base.remark||(extracted&&extracted.remark)||'';
+    const workflow=base.workflow||(extracted&&extracted.workflow)||null;
+    const prompts=resolvePrompts(remark, workflow);
+    return {
+        ...base,
+        remark,
+        positivePrompt:base.positivePrompt||prompts.positive||'',
+        negativePrompt:base.negativePrompt||prompts.negative||'',
+        steps:base.steps||prompts.steps||'',
+        workflow
+    };
+}
+
 // ─── Model Tabs ─────────────────────────────
 let dragModelId=null;
 let editingModelTabId=null;
@@ -2779,7 +2937,7 @@ function openPanelDetail(sectionId){
     document.querySelectorAll('#panelDetailView [data-panel]').forEach(el=>{ el.style.display='none'; });
     const target=document.querySelector('#panelDetailView [data-panel="'+sectionId+'"]');
     if(target) target.style.display='';
-    const titles={sec_data:'储存管理',sec_tags:'标签管理',sec_prompts:'提示词管理',sec_settings:'设置'};
+    const titles={sec_data:'数据管理',sec_tags:'标签管理',sec_prompts:'提示词管理',sec_settings:'设置'};
     document.getElementById('sidebarPanelTitle').innerText=titles[sectionId]||'图库管理器';
     setActiveRailSection(sectionId);
     document.body.classList.add('sidebar-open');
@@ -2875,27 +3033,54 @@ function openUnifiedImport(){
     document.getElementById('unifiedTags').value='';
     document.getElementById('unifiedFileList').innerHTML='';
     document.getElementById('unifiedExtractPng').checked=true;
+    const autoPicker=document.getElementById('unifiedAutoPicker');
+    if(autoPicker) autoPicker.checked=!!appSettings.autoOpenFilePicker;
     renderTagSuggestions('unifiedTagsSuggestions','unifiedTags');
     showModal('importModal');
-    setTimeout(()=>{ document.getElementById('unifiedFileInput').click(); },200);
+    if(appSettings.autoOpenFilePicker){
+        setTimeout(()=>{ pickUnifiedImages(); },200);
+    }
 }
 
-function previewUnifiedFiles(){
-    const files=document.getElementById('unifiedFileInput').files;
-    pendingUnifiedFiles=Array.from(files);
-    if(pendingUnifiedFiles.length===0) return;
+function pickUnifiedImages(){
+    document.getElementById('unifiedFileInput').click();
+}
+
+function setAutoOpenFilePicker(checked){
+    appSettings.autoOpenFilePicker=!!checked;
+    saveSettings();
+}
+
+function getImportRelativePath(file){
+    return file.webkitRelativePath||file.relativePath||file.name||'';
+}
+
+function inferUnifiedBoxName(files){
+    const names=files.map(f=>f.name.replace(/\.[^.]+$/,''));
+    const prefix=findCommonPrefix(names);
+    return prefix&&prefix.length>=2?prefix:'';
+}
+
+async function previewUnifiedFiles(){
+    const input=document.getElementById('unifiedFileInput');
+    const allFiles=Array.from(input.files||[]);
+    pendingUnifiedFiles=allFiles.filter(f=>f.type.match('image.*')||isImageFileName(f.name));
+    if(pendingUnifiedFiles.length===0){
+        document.getElementById('unifiedFileList').innerHTML='<div style="color:var(--text-light);">没有找到可导入的图片。</div>';
+        return;
+    }
     const list=document.getElementById('unifiedFileList');
-    let html='<div style="font-weight:700; margin-bottom:4px;">已选择 '+pendingUnifiedFiles.length+' 个文件：</div>';
+    let html='<div style="font-weight:650; margin-bottom:4px;">已选择 '+pendingUnifiedFiles.length+' 张图片</div>';
     const maxShow=20;
     for(let i=0;i<Math.min(pendingUnifiedFiles.length, maxShow);i++){
-        html+='<div style="font-size:0.78rem; padding:2px 0;">'+escapeHtml(pendingUnifiedFiles[i].name)+'</div>';
+        const rel=getImportRelativePath(pendingUnifiedFiles[i]);
+        html+='<div style="font-size:0.78rem; padding:2px 0;">'+escapeHtml(rel||pendingUnifiedFiles[i].name)+'</div>';
     }
     if(pendingUnifiedFiles.length>maxShow) html+='<div style="color:var(--text-light);">...及其他 '+(pendingUnifiedFiles.length-maxShow)+' 个文件</div>';
     list.innerHTML=html;
     if(!document.getElementById('unifiedBoxName').value){
-        const names=pendingUnifiedFiles.map(f=>f.name.replace(/\.[^.]+$/,''));
-        const prefix=findCommonPrefix(names);
-        if(prefix&&prefix.length>=2) document.getElementById('unifiedBoxName').value=prefix;
+        const inferred=inferUnifiedBoxName(pendingUnifiedFiles);
+        if(inferred) document.getElementById('unifiedBoxName').value=inferred;
     }
 }
 
@@ -2913,6 +3098,24 @@ async function executeUnifiedImport(mode){
 
     let totalImported=0;
 
+    async function enrichImportedImage(file, img){
+        if(!extractPng) return img;
+        try{
+            const extracted=await extractImageRemark(file);
+            const remark=(extracted&&extracted.remark)||'';
+            const workflow=(extracted&&extracted.workflow)||null;
+            if(remark || workflow){
+                const prompts=resolvePrompts(remark, workflow);
+                img.remark=remark;
+                img.positivePrompt=prompts.positive||'';
+                img.negativePrompt=prompts.negative||'';
+                img.steps=prompts.steps||'';
+                if(workflow) img.workflow=workflow;
+            }
+        }catch(e){}
+        return img;
+    }
+
     if(mode==='single'){
         for(let i=0;i<pendingUnifiedFiles.length;i++){
             const file=pendingUnifiedFiles[i];
@@ -2924,14 +3127,7 @@ async function executeUnifiedImport(mode){
             const boxId='box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
             const imgName=name+'_'+padImgNum(1);
             const images=[{name:imgName, dataUrl:compressed, remark:'', positivePrompt:'', negativePrompt:'', steps:''}];
-
-            if(extractPng&&file.type==='image/png'){
-                try{ const remark=await extractImageRemark(file); if(remark){
-                    const parts=parsePromptParts(remark);
-                    images[0].remark=remark; images[0].positivePrompt=parts.positive;
-                    images[0].negativePrompt=parts.negative; images[0].steps=parts.steps;
-                }}catch(e){}
-            }
+            await enrichImportedImage(file, images[0]);
 
             const box={id:boxId, name, tags, remark:'', createdAt:Date.now(), modelId:currentModelId, viewIndex:0, imageCount:1};
             await dbPut(STORE_BOXES,box);
@@ -2955,14 +3151,7 @@ async function executeUnifiedImport(mode){
             const compressed=await compressImage(dataURL);
             const imgName=name+'_'+padImgNum(i+1);
             const img={name:imgName, dataUrl:compressed, remark:'', positivePrompt:'', negativePrompt:'', steps:''};
-
-            if(extractPng&&file.type==='image/png'){
-                try{ const remark=await extractImageRemark(file); if(remark){
-                    const parts=parsePromptParts(remark);
-                    img.remark=remark; img.positivePrompt=parts.positive;
-                    img.negativePrompt=parts.negative; img.steps=parts.steps;
-                }}catch(e){}
-            }
+            await enrichImportedImage(file, img);
             images.push(img);
             totalImported++;
 
@@ -3806,23 +3995,52 @@ async function refreshGlobalStats(){
     }
     globalBoxCount=boxes;
     globalImgCount=imgs;
+    renderHeaderStats();
+}
+
+function renderHeaderStats(){
+    const mainScope=document.getElementById('statsMainScope');
+    const boxesEl=document.getElementById('statsActiveBoxes');
+    const imagesEl=document.getElementById('statsActiveImages');
+    if(!mainScope || !boxesEl || !imagesEl) return;
+
+    const isCurrent=headerStatsScope==='current';
+    mainScope.innerText=isCurrent?'当前':'全局';
+    boxesEl.innerText=isCurrent?currentBoxCount:globalBoxCount;
+    imagesEl.innerText=isCurrent?currentImgCount:globalImgCount;
+}
+
+function setHeaderStatsScope(scope){
+    if(scope!=='current' && scope!=='global') return;
+    const wrap=document.getElementById('headerStatsCycle');
+    headerStatsScope=scope;
+    if(wrap){
+        wrap.classList.remove('is-flipping');
+        void wrap.offsetWidth;
+        wrap.classList.add('is-flipping');
+        setTimeout(()=>wrap.classList.remove('is-flipping'),180);
+    }
+    renderHeaderStats();
+}
+
+function toggleHeaderStatsScope(){
+    setHeaderStatsScope(headerStatsScope==='current'?'global':'current');
 }
 
 function updateStatsAndTags() {
     const total=currentBoxes.length;
     let totalImgs=0;
-    const allTags=new Set();
     currentBoxes.forEach(b=>{
         const c=imageCount.get(b.id)||0;
         totalImgs+=c;
-        (b.tags||[]).forEach(t=>allTags.add(t));
     });
-    document.getElementById('statsTotal').innerText=total;
-    document.getElementById('statsWithImg').innerText=allTags.size;
-    document.getElementById('statsTotalImgs').innerText=totalImgs;
+    currentBoxCount=total;
+    currentImgCount=totalImgs;
+    renderHeaderStats();
 
-    // Global stats (all models)
-    document.getElementById('globalStats').innerText=
+    // Legacy sidebar summary, hidden in current layout.
+    const globalStatsEl=document.getElementById('globalStats');
+    if(globalStatsEl) globalStatsEl.innerText=
         '共 '+Object.keys(MODELS).length+' 个模型 · '+globalBoxCount+' 盒 · '+globalImgCount+' 图';
     // Refresh global counts in background
     refreshGlobalStats();
@@ -4722,7 +4940,7 @@ async function selectLocalFolder(skipConfirm){
         if(!proceed) return null;
     }
     try{
-        const handle=await window.showDirectoryPicker({mode:'readwrite'});
+        const handle=await window.showDirectoryPicker({mode:'read'});
         const subHandle=await resolveLocalDataHandle(handle,{create:true});
         if(!subHandle) return null;
         localRootHandle=handle;
@@ -5197,7 +5415,11 @@ async function importLocalSettingsToDB(settings, report=null, options={}){
                     notifyProgress({phase:'image',modelId,boxId,fileName:imgName});
                     continue;
                 }
-                const imgMeta=isLooseRoot?await buildImageMetaFromFileHandle(boxDir,imgName):(storedImgMeta||{});
+                let imgMeta=isLooseRoot?await buildImageMetaFromFileHandle(boxDir,imgName):(storedImgMeta||{});
+                if(!isLooseRoot&&imageMetaNeedsPromptScan(imgMeta)){
+                    const extracted=extractImageRemarkFromBytes(bytes);
+                    imgMeta=mergeExtractedImageMeta(imgMeta,extracted);
+                }
                 importedNames.add(imgName);
                 const dataUrl=bytesToDataUrl(bytes,guessMimeType(imgName));
                 images.push({
@@ -5349,7 +5571,8 @@ async function cleanupMissingLocalJsonRecords(report, settings, dataHandle){
 
 async function updateFolderPathDisplay(){
     const path=await getFolderDisplayPath();
-    document.getElementById('localFolderPath').textContent=path?'已连接本地：'+path:'当前：浏览器数据库';
+    const el=document.getElementById('localFolderPath');
+    if(el) el.textContent=path?'已连接本地：'+path:'当前：浏览器数据库';
 }
 
 async function inspectLocalFolderHandle(rootHandle){
@@ -5400,7 +5623,7 @@ function showLocalDebugReport(report){
     html+='<p>实际扫描：模型 <b>'+report.scannedModels+'</b>，卡片 <b>'+report.scannedBoxes+'</b>，图片文件 <b>'+report.imageFiles+'</b></p>';
     if(report.looseModelImages.length>0){
         html+='<p style="color:var(--accent);">模型根目录散图：'+report.looseModelImages.map(x=>escapeHtml(x.modelName)+' '+x.count+' 张').join('，')+'</p>';
-        html+='<p style="color:var(--text-light); font-size:0.82rem;">读取本地压缩包/目录时，这些散图会作为对应模型下的“散图”卡片导入。</p>';
+        html+='<p style="color:var(--text-light); font-size:0.82rem;">读取压缩包/文件夹时，这些散图会作为对应模型下的“散图”卡片导入。</p>';
     }
     if(report.emptyModels.length>0){
         html+='<p style="color:var(--error);">空模型目录：'+report.emptyModels.map(escapeHtml).join('，')+'</p>';
@@ -5423,11 +5646,6 @@ async function debugInspectLocalModeDirectory(){
         const report=await inspectLocalFolderHandle(handle);
         showLocalDebugReport(report);
     }catch(e){}
-}
-
-async function hashBytes(bytes){
-    const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
 async function compareLocalImportWithDB(settings, report, dataHandle, folderReport){
@@ -5492,15 +5710,15 @@ async function compareLocalImportWithDB(settings, report, dataHandle, folderRepo
 
 function chooseLocalCompatSource(action){
     const isImport=action==='import';
-    document.getElementById('storageModeTitle').innerText=isImport?'读取本地压缩包/目录':'检查本地压缩包/目录';
+    document.getElementById('storageModeTitle').innerText=isImport?'读取压缩包/文件夹':'检查压缩包/文件夹';
     document.getElementById('storageModeBody').innerHTML=
         '<div style="line-height:1.75; color:var(--text-main); font-size:0.92rem;">'+
         '<p style="margin:0 0 10px;">请选择要处理的本地数据来源。</p>'+
-        '<p style="margin:0; color:var(--text-light); font-size:0.86rem;">压缩包是默认备份格式；目录用于兼容旧的本地文件夹结构。</p>'+
+        '<p style="margin:0; color:var(--text-light); font-size:0.86rem;">压缩包是默认备份格式；文件夹用于兼容旧的本地目录结构。</p>'+
         '</div>';
     document.getElementById('storageModeFooter').innerHTML=
         '<button class="btn btn-primary" id="btnCompatZip">选择压缩包</button>'+
-        '<button class="btn btn-outline" id="btnCompatDir">选择目录</button>'+
+        '<button class="btn btn-outline" id="btnCompatDir">选择文件夹</button>'+
         '<button class="btn btn-outline" id="btnCompatCancel">取消</button>';
     showModal('storageModeModal');
     document.getElementById('btnCompatZip').onclick=()=>{ hideModal('storageModeModal'); openLocalCompatZip(action); };
@@ -5535,7 +5753,7 @@ async function parseLocalModeZipFile(file, options={}){
     const importModels=settings.models||{};
     const importFilters=settings.copyFilterPatterns||[];
     const importBoxes={};
-    const report={jsonTotal:0, actualFiles:0, missingFiles:[], modelCount:0, boxCount:0};
+    const report={jsonTotal:0, actualFiles:0, missingFiles:[], orphanFiles:[], hashDups:[], modelCount:0, boxCount:0};
     let done=0;
     const boxRefs=[];
     for(const modelId of Object.keys(settings.boxIndex||{})){
@@ -5557,7 +5775,36 @@ async function parseLocalModeZipFile(file, options={}){
         importBoxes[ref.modelId].boxes.push(box);
         importBoxes[ref.modelId].images[actualBoxId]=[];
         report.boxCount++;
-        for(const imgName of Object.keys(imgMap||{})){
+        const metaImageNames=new Set(Object.keys(imgMap||{}));
+        const boxPrefix=ref.modelName+'/'+ref.folderName+'/';
+        const actualImageNames=new Set();
+        for(const path of Object.keys(zip.files||{})){
+            if(!path.startsWith(boxPrefix)) continue;
+            const rel=path.slice(boxPrefix.length);
+            if(!rel || rel.includes('/') || rel==='_meta.json') continue;
+            if(isImageFileName(rel)) actualImageNames.add(rel);
+        }
+        const hashMap=new Map();
+        for(const imgName of actualImageNames){
+            const imgFile=zip.file(boxPrefix+imgName);
+            if(!imgFile) continue;
+            try{
+                const bytes=new Uint8Array(await imgFile.async('arraybuffer'));
+                const hash=await hashBytes(bytes);
+                if(hash){
+                    if(!hashMap.has(hash)) hashMap.set(hash,[]);
+                    hashMap.get(hash).push(imgName);
+                }
+            }catch(e){}
+        }
+        for(const [hash,names] of hashMap){
+            if(names.length>1){
+                for(let i=1;i<names.length;i++){
+                    report.hashDups.push({modelId:ref.modelId,boxId:actualBoxId,folderName:ref.folderName,fileName:names[i],hash});
+                }
+            }
+        }
+        for(const imgName of metaImageNames){
             report.jsonTotal++;
             const imgPath=ref.modelName+'/'+ref.folderName+'/'+imgName;
             const imgFile=zip.file(imgPath);
@@ -5569,12 +5816,40 @@ async function parseLocalModeZipFile(file, options={}){
             if(readImages){
                 const imgBuf=await imgFile.async('arraybuffer');
                 const bytes=new Uint8Array(imgBuf);
+                const storedMeta=imgMap[imgName]||{};
+                const imgMeta=imageMetaNeedsPromptScan(storedMeta)
+                    ? mergeExtractedImageMeta(storedMeta,extractImageRemarkFromBytes(bytes))
+                    : storedMeta;
                 importBoxes[ref.modelId].images[actualBoxId].push({
                     name:imgName,
                     dataUrl:bytesToDataUrl(bytes,guessMimeType(imgName)),
-                    ...(imgMap[imgName]||{})
+                    ...imgMeta
                 });
                 if(progress) progress({done:report.actualFiles,total:report.jsonTotal||report.actualFiles,modelName:ref.modelName,boxName:box.name||ref.folderName});
+            }
+        }
+        for(const imgName of actualImageNames){
+            if(metaImageNames.has(imgName)) continue;
+            report.orphanFiles.push({modelId:ref.modelId,boxId:ref.boxId,folderName:ref.folderName,fileName:imgName});
+            report.actualFiles++;
+            if(readImages){
+                const imgPath=ref.modelName+'/'+ref.folderName+'/'+imgName;
+                const imgFile=zip.file(imgPath);
+                if(!imgFile) continue;
+                const imgBuf=await imgFile.async('arraybuffer');
+                const bytes=new Uint8Array(imgBuf);
+                const extracted=extractImageRemarkFromBytes(bytes);
+                const prompts=resolvePrompts(extracted.remark||'', extracted.workflow||null);
+                importBoxes[ref.modelId].images[actualBoxId].push({
+                    name:imgName,
+                    dataUrl:bytesToDataUrl(bytes,guessMimeType(imgName)),
+                    remark:extracted.remark||'',
+                    positivePrompt:prompts.positive||'',
+                    negativePrompt:prompts.negative||'',
+                    steps:prompts.steps||'',
+                    workflow:extracted.workflow||null
+                });
+                if(progress) progress({done:report.actualFiles,total:report.jsonTotal+report.orphanFiles.length||report.actualFiles,modelName:ref.modelName,boxName:box.name||ref.folderName});
             }
         }
         done++;
@@ -5606,6 +5881,95 @@ async function comparePackageWithDB(importBoxes){
         }
     }
     return result;
+}
+
+async function estimateStructureAdds(modelsObj={}, boxIndex={}, importBoxes=null, imageAdds=0){
+    const existingModelNames=new Set(Object.values(MODELS||{}).map(m=>m&&m.name).filter(Boolean));
+    const existingBoxes=await dbGetAll(STORE_BOXES);
+    const existingBoxKeys=new Set();
+    for(const box of existingBoxes){
+        const modelName=(MODELS[box.modelId]||{}).name||box.modelId||'';
+        existingBoxKeys.add(modelName+'\n'+(box.name||''));
+    }
+    let models=0, boxes=0;
+    for(const modelId of Object.keys(boxIndex||{})){
+        const modelName=(modelsObj[modelId]||{}).name||modelId;
+        if(!existingModelNames.has(modelName)) models++;
+        const importModelData=importBoxes&&importBoxes[modelId];
+        const boxNameById=new Map();
+        if(importModelData&&Array.isArray(importModelData.boxes)){
+            for(const box of importModelData.boxes) boxNameById.set(box.id,box.name);
+        }
+        for(const boxId of Object.keys(boxIndex[modelId]||{})){
+            const boxName=boxNameById.get(boxId)||boxIndex[modelId][boxId]||boxId;
+            if(!existingBoxKeys.has(modelName+'\n'+boxName)) boxes++;
+        }
+    }
+    return {models,boxes,images:imageAdds||0};
+}
+
+function buildLocalReadPreviewHtml(options){
+    const sourceType=options.sourceType||'数据';
+    const sourceName=options.sourceName||'';
+    const modelCount=options.modelCount||0;
+    const boxCount=options.boxCount||0;
+    const jsonTotal=options.jsonTotal||0;
+    const actualFiles=options.actualFiles||0;
+    const missingCount=options.missingCount||0;
+    const orphanCount=options.orphanCount||0;
+    const duplicateCount=options.duplicateCount||0;
+    const pendingImages=options.pendingImages??Math.max(0,actualFiles-duplicateCount);
+    const dbCompare=options.dbCompare||{dbImages:0,newImages:pendingImages,duplicateImages:0,isEmpty:true};
+    const boxIssues=options.boxIssues||0;
+    const compareReady=options.compareReady!==false;
+    const missingModels=options.missingModels||0;
+    const missingBoxes=options.missingBoxes||boxIssues||0;
+    const orphanModels=options.orphanModels||0;
+    const orphanBoxes=options.orphanBoxes||0;
+    const duplicateModels=options.duplicateModels||0;
+    const duplicateBoxes=options.duplicateBoxes||0;
+    const mergeAdds=options.mergeAdds||{models:0,boxes:0,images:(dbCompare.newImages??pendingImages)};
+    const hasMissing=missingModels>0||missingBoxes>0||missingCount>0;
+    const hasOrphan=orphanModels>0||orphanBoxes>0||orphanCount>0;
+    const hasDuplicate=duplicateModels>0||duplicateBoxes>0||duplicateCount>0;
+    const hasLocalIssues=hasMissing||hasOrphan||hasDuplicate;
+    const part=(label,value,unit,cls='num')=>label+' <span class="'+cls+'">'+value+'</span> '+unit;
+    const rowParts=(m,b,i,cls)=>[
+        m>0?part('模型',m,'个',cls):'',
+        b>0?part('卡片盒',b,'个',cls):'',
+        i>0?part('图片',i,'张',cls):''
+    ].filter(Boolean).join('，');
+
+    let html='<div class="import-preview">';
+    html+='<div class="import-flow">';
+    html+='<div class="import-step"><div class="import-step-index">1</div><div>'+
+        '<div class="import-step-title">读取本地索引</div>'+
+        '<div class="import-step-text">模型 <span class="num">'+modelCount+'</span> 个，卡片盒 <span class="num">'+boxCount+'</span> 个，图片记录 <span class="num">'+jsonTotal+'</span> 条</div>'+
+        '</div></div>';
+    html+='<div class="import-step"><div class="import-step-index">2</div><div>'+
+        '<div class="import-step-title">核对索引与图片</div>';
+    if(hasLocalIssues){
+        html+='<div class="import-step-text">';
+        if(hasMissing) html+='<div>缺失：'+rowParts(missingModels,missingBoxes,missingCount,'num danger')+'</div>';
+        if(hasOrphan) html+='<div>未记录：'+rowParts(orphanModels,orphanBoxes,orphanCount,'num accent')+'</div>';
+        if(hasDuplicate) html+='<div>重复：'+rowParts(duplicateModels,duplicateBoxes,duplicateCount,'num danger')+'</div>';
+        html+='</div>';
+    }else{
+        html+='<div class="import-step-text">索引与实际图片一致，未发现缺失、未记录或重复。</div>';
+    }
+    html+='</div></div>';
+    html+='<div class="import-step"><div class="import-step-index">3</div><div>'+
+        '<div class="import-step-title">准备合并到当前图库</div>';
+    html+='<div class="import-step-text">预计新增：模型 <span class="num">'+(mergeAdds.models||0)+'</span> 个，卡片盒 <span class="num">'+(mergeAdds.boxes||0)+'</span> 个，图片 <span class="num">'+(mergeAdds.images??0)+'</span> 张';
+    if(!compareReady) html+='；读取时会再按图片内容去重';
+    else if((dbCompare.duplicateImages||0)>0) html+='；当前图库已有重复 <span class="num danger">'+dbCompare.duplicateImages+'</span> 张';
+    html+='。</div>';
+    html+='</div></div>';
+    html+='</div>';
+
+    html+='<p class="import-footnote">读取会合并到当前浏览器图库，不会改动原压缩包或本地文件夹。</p>';
+    html+='</div>';
+    return html;
 }
 
 async function importPackageToDB(pkg, options={}){
@@ -5693,13 +6057,28 @@ async function importPackageToDB(pkg, options={}){
             }else{
                 let targetBoxId=usedBoxIds.has(box.id)?makeUniqueId('box',usedBoxIds):box.id;
                 usedBoxIds.add(targetBoxId);
-                const cleanBox={...box,id:targetBoxId,modelId:targetModelId,imageCount:incoming.length};
+                let preparedIncoming=incoming;
+                if(dedupe&&incoming.length>1){
+                    preparedIncoming=[];
+                    const incomingHashes=new Set();
+                    for(const img of incoming){
+                        const hash=await hashFromDataUrl(img.dataUrl||'');
+                        if(hash&&incomingHashes.has(hash)){
+                            duplicateSkipped++;
+                            notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
+                            continue;
+                        }
+                        if(hash) incomingHashes.add(hash);
+                        preparedIncoming.push(img);
+                    }
+                }
+                const cleanBox={...box,id:targetBoxId,modelId:targetModelId,imageCount:preparedIncoming.length};
                 await dbPut(STORE_BOXES,cleanBox);
-                await dbPut(STORE_IMAGES,{id:targetBoxId,boxId:targetBoxId,images:incoming});
+                await dbPut(STORE_IMAGES,{id:targetBoxId,boxId:targetBoxId,images:preparedIncoming});
                 boxesByModelAndName.set(targetModelId+'\n'+(cleanBox.name||''),cleanBox);
                 boxCount++;
-                imgCount+=incoming.length;
-                for(const img of incoming) notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
+                imgCount+=preparedIncoming.length;
+                for(const img of preparedIncoming) notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
             }
             notify({phase:'box-done',modelId:importModelId,boxId:box.id,boxName:box.name});
         }
@@ -5764,6 +6143,8 @@ async function debugImportLocalModeZip(file){
         }});
         hideModal('progressModal');
         const r=preview.report;
+        const pendingImages=Math.max(0,r.actualFiles-(r.hashDups||[]).length);
+        const mergeAdds=await estimateStructureAdds(preview.importModels,preview.settings&&preview.settings.boxIndex,preview.importBoxes,pendingImages);
         const doImport=async()=>{
             showModal('progressModal');
             setImportBusy(true);
@@ -5785,13 +6166,31 @@ async function debugImportLocalModeZip(file){
                 hideModal('progressModal');
             }
         };
-        let html='<div class="import-preview">';
-        html+='<div class="import-flow">';
-        html+='<div class="import-step"><div class="import-step-index">1</div><div><div class="import-step-title">检查本地压缩包</div><div class="import-step-text">模型 <span class="num">'+r.modelCount+'</span> 个，卡片盒 <span class="num">'+r.boxCount+'</span> 个；索引图片 <span class="num">'+r.jsonTotal+'</span> 条，实际可读取 <span class="num">'+r.actualFiles+'</span> 张</div></div></div>';
-        html+='<div class="import-step"><div class="import-step-index">2</div><div><div class="import-step-title">准备合并到当前图库</div><div class="import-step-text">导入时会解出压缩包里的图片，并按模型、卡片盒与当前浏览器图库合并；相同图片会按内容去重。</div></div></div>';
-        if(r.missingFiles.length>0) html+='<div class="import-step"><div class="import-step-index">!</div><div><div class="import-step-title">压缩包内存在缺失图片</div><div class="import-step-text">有 <span class="num danger">'+r.missingFiles.length+'</span> 条索引记录在压缩包里找不到对应图片，导入时会跳过。</div></div></div>';
-        html+='</div></div>';
-        showStyledConfirm(r.missingFiles.length?'本地压缩包存在差异':'确认读取本地压缩包',html,'读取','取消',doImport);
+        const currentDbImages=await getCurrentDBImageTotal();
+        const html=buildLocalReadPreviewHtml({
+            sourceType:'压缩包',
+            sourceName:file.name,
+            modelCount:r.modelCount,
+            boxCount:r.boxCount,
+            jsonTotal:r.jsonTotal,
+            actualFiles:r.actualFiles,
+            missingCount:r.missingFiles.length,
+            orphanCount:(r.orphanFiles||[]).length,
+            duplicateCount:(r.hashDups||[]).length,
+            pendingImages,
+            dbCompare:{dbImages:currentDbImages,newImages:pendingImages,duplicateImages:0,isEmpty:currentDbImages===0},
+            missingModels:0,
+            missingBoxes:0,
+            orphanModels:0,
+            orphanBoxes:0,
+            duplicateModels:0,
+            duplicateBoxes:0,
+            mergeAdds,
+            compareReady:false,
+            actions:false
+        });
+        const hasIssues=r.missingFiles.length||(r.orphanFiles||[]).length||(r.hashDups||[]).length;
+        showStyledConfirm(hasIssues?'本地数据存在差异':'确认读取本地数据',html,'读取','取消',doImport);
     }catch(e){
         hideModal('progressModal');
         showToast('读取失败：'+(e&&e.message?e.message:e));
@@ -5799,10 +6198,10 @@ async function debugImportLocalModeZip(file){
 }
 
 function showLocalCompatInfo(){
-    document.getElementById('storageModeTitle').innerText='兼容模式说明';
+    document.getElementById('storageModeTitle').innerText='本地数据管理说明';
     document.getElementById('storageModeBody').innerHTML=
         '<div style="line-height:1.75; font-size:0.92rem;">'+
-        '<p style="margin:0; padding-left:12px; border-left:3px solid rgba(255,107,157,0.28); color:var(--text-light); font-size:0.84rem;">兼容模式用于在浏览器数据库和本地文件备份之间转换数据，会保留图片、模型、卡片和一部分结构信息，便于之后重新导回数据库。</p>'+
+        '<p style="margin:0; padding-left:12px; border-left:3px solid rgba(255,107,157,0.28); color:var(--text-light); font-size:0.84rem;">本地数据管理用于检查或读取图库导出的压缩包，也兼容旧版文件夹目录结构；读取时会先做差异检查，再合并进当前浏览器图库。</p>'+
         '<div style="display:grid; gap:10px; margin-top:18px;">'+
         '<div style="display:grid; grid-template-columns:48px 1fr; gap:10px; align-items:start;">'+
         '<b style="color:var(--text-main);">导出</b>'+
@@ -5839,28 +6238,14 @@ async function debugImportLocalModeDirectory(){
         const folderReport=dataHandle?await inspectLocalFolderHandle(handle):null;
         const dbCompare=settings&&dataHandle?await compareLocalImportWithDB(settings,report,dataHandle,folderReport):{dbImages:0,newImages:0,duplicateImages:0,isEmpty:true};
         const doImport=async()=>{
-            const dedupe=!!(document.getElementById('chkImportDedupe')&&document.getElementById('chkImportDedupe').checked);
-            const clean=!!(document.getElementById('chkImportCleanMissing')&&document.getElementById('chkImportCleanMissing').checked);
-            const importOrphans=!!(document.getElementById('chkImportOrphans')&&document.getElementById('chkImportOrphans').checked);
+            const dedupe=true;
+            const importOrphans=true;
             setImportBusy(true);
             showModal('progressModal');
             document.getElementById('progressTitle').innerText='导入本地图库...';
             document.getElementById('progressFill').style.width='0%';
             document.getElementById('progressText').innerText='准备中...';
             try{
-                if(clean&&report&&settings&&dataHandle){
-                    document.getElementById('progressText').innerText='正在清理已遗失图片记录...';
-                    const cleaned=await cleanupMissingLocalJsonRecords(report,settings,dataHandle);
-                    if(cleaned.denied){
-                        showToast('没有写入权限，已跳过清理本地 JSON');
-                    }else{
-                        const parts=[];
-                        if(cleaned.removedImages) parts.push(cleaned.removedImages+' 条图片记录');
-                        if(cleaned.removedBoxes) parts.push(cleaned.removedBoxes+' 个卡片记录');
-                        if(cleaned.removedModels) parts.push(cleaned.removedModels+' 个模型记录');
-                        if(parts.length) showToast('已清理本地 JSON：'+parts.join('、'));
-                    }
-                }
                 await loadExistingLocalData(handle,{allowWrites:false,report,importOptions:{dedupe,importOrphans},progress:handleLocalImportProgress});
             }catch(e){
                 showToast('导入失败：'+(e&&e.message?e.message:e));
@@ -5872,46 +6257,35 @@ async function debugImportLocalModeDirectory(){
         if(report){
             const looseRootCount=folderReport?folderReport.looseModelImages.reduce((s,x)=>s+x.count,0):0;
             const actualFiles=Math.max(0,report.jsonTotal-report.missingFiles.length)+report.orphanFiles.length+looseRootCount;
-            const duplicateClass=report.hashDups.length>0?'num danger':'num';
-            const missingClass=report.missingFiles.length>0?'num danger':'num';
             const unrecordedCount=report.orphanFiles.length+looseRootCount;
-            const unrecordedClass=unrecordedCount>0?'num accent':'num';
             const pendingImages=Math.max(0,actualFiles-report.hashDups.length);
-            let html='<div class="import-preview">';
-            html+='<div class="import-flow">';
-            html+='<div class="import-step"><div class="import-step-index">1</div><div>'+
-                '<div class="import-step-title">检查本地索引与文件</div>'+
-                '<div class="import-step-text">正在读取本地图库索引，并确认文件夹里实际还能看到的图片。索引图片 <span class="num">'+report.jsonTotal+'</span> 条，实际可见 <span class="num">'+actualFiles+'</span> 张</div>'+
-                '</div></div>';
-            html+='<div class="import-step"><div class="import-step-index">2</div><div>'+
-                '<div class="import-step-title">比较本地索引与本地文件</div>'+
-                '<div class="import-step-text">这一轮只检查本地备份内部是否一致：重复图片 <span class="'+duplicateClass+'">'+report.hashDups.length+'</span> 张，缺失图片 <span class="'+missingClass+'">'+report.missingFiles.length+'</span> 条，未记录图片 <span class="'+unrecordedClass+'">'+unrecordedCount+'</span> 张</div>'+
-                '</div></div>';
-            html+='<div class="import-step"><div class="import-step-index">3</div><div>'+
-                '<div class="import-step-title">整理为待合并图库</div>'+
-                '<div class="import-step-text">按下方选项处理本地差异后，会先生成一份准备导入的临时图库；预计有 <span class="num">'+pendingImages+'</span> 张图片进入合并流程';
-            if(looseRootCount>0) html+='；其中 <span class="num accent">'+looseRootCount+'</span> 张根目录散图会整理为“散图”卡片';
-            if(report.boxIssues.length>0) html+='；<span class="num danger">'+report.boxIssues.length+'</span> 个异常目录或元数据会跳过';
-            html+='</div></div></div>';
-            html+='<div class="import-step"><div class="import-step-index">4</div><div>'+
-                '<div class="import-step-title">比较待合并图库与当前图库</div>';
-            if(dbCompare.isEmpty){
-                html+='<div class="import-step-text">当前浏览器图库为空，不需要再做合并判断；待合并图库会直接导入。</div>';
-            }else{
-                html+='<div class="import-step-text">正在把待合并图库和当前浏览器图库对照：当前已有 <span class="num">'+dbCompare.dbImages+'</span> 张，预计新增 <span class="num">'+dbCompare.newImages+'</span> 张，已有重复 <span class="'+(dbCompare.duplicateImages>0?'num danger':'num')+'">'+dbCompare.duplicateImages+'</span> 张</div>';
-            }
-            html+='</div></div>';
-            html+='</div>';
-            if(report.boxIssues.length>0) html+='<p style="color:var(--error); margin-top:8px;">目录或元数据异常：<b>'+report.boxIssues.length+'</b> 个</p>';
-            html+='<div class="import-actions">';
-            html+='<label class="import-action"><input type="checkbox" id="chkImportDedupe" checked><span><span class="import-action-title">去除重复图片</span><span class="import-action-note">同一个卡片盒内相同图片只保留一张</span></span></label>';
-            html+='<label class="import-action"><input type="checkbox" id="chkImportCleanMissing"><span><span class="import-action-title">清除已遗失图片的记录</span><span class="import-action-note">图片已经不在本地，只移除索引里的记录</span></span></label>';
-            html+='<label class="import-action"><input type="checkbox" id="chkImportOrphans" checked><span><span class="import-action-title">补录未记录图片</span><span class="import-action-note">本地有但索引没有的图片，会加入目录并提取提示词</span></span></label>';
-            html+='</div>';
-            html+='<p class="import-footnote">1. 浏览器图库完全为空时会直接导入本地数据库。<br>2. 浏览器图库非空时会与本地记录合并并进行去重。<br>3. 用于导入的本地文件不会被改动，如需最新版的文件夹/图片式备份，需重新导出。</p>';
-            html+='</div>';
+            const missingModels=report.boxIssues.filter(x=>x.issue==='model_dir_missing').length;
+            const missingBoxes=report.boxIssues.filter(x=>x.issue==='box_dir_missing'||x.issue==='meta_missing').length;
+            const orphanModels=Math.max(0,(folderReport?folderReport.scannedModels:0)-(folderReport?folderReport.jsonModels:0));
+            const orphanBoxes=Math.max(0,(folderReport?folderReport.scannedBoxes:0)-(folderReport?folderReport.jsonBoxes:0));
+            const mergeAdds=await estimateStructureAdds(settings.models||{},settings.boxIndex||{},null,dbCompare.newImages);
+            const html=buildLocalReadPreviewHtml({
+                sourceType:'文件夹',
+                sourceName:handle.name||'',
+                modelCount:Object.keys(settings.models||{}).length,
+                boxCount:Object.values(settings.boxIndex||{}).reduce((s,m)=>s+Object.keys(m||{}).length,0),
+                jsonTotal:report.jsonTotal,
+                actualFiles,
+                missingCount:report.missingFiles.length,
+                orphanCount:unrecordedCount,
+                duplicateCount:report.hashDups.length,
+                missingModels,
+                missingBoxes,
+                orphanModels,
+                orphanBoxes,
+                duplicateModels:0,
+                duplicateBoxes:0,
+                pendingImages,
+                dbCompare,
+                mergeAdds
+            });
             const hasIssues=report.missingFiles.length||report.orphanFiles.length||report.hashDups.length||report.boxIssues.length;
-            showStyledConfirm(hasIssues?'本地数据存在差异':'确认导入本地数据',html,'导入','取消',doImport);
+            showStyledConfirm(hasIssues?'本地数据存在差异':'确认读取本地数据',html,'读取','取消',doImport);
         }else{
             await doImport();
         }
@@ -5991,7 +6365,7 @@ async function exportCurrentDBToZip(){
     try{
         showModal('progressModal');
         setImportBusy(true);
-        document.getElementById('progressTitle').innerText='导出数据...';
+        document.getElementById('progressTitle').innerText='导出压缩包...';
         document.getElementById('progressFill').style.width='0%';
         document.getElementById('progressText').innerText='准备压缩包...';
         const JSZip=await ensureJSZip();
@@ -6099,7 +6473,7 @@ async function exportCurrentDBToLocalFiles(){
     let oldRoot=localRootHandle, oldWrite=localWriteGranted;
     try{
         const proceed=await new Promise(resolve=>{
-            showStyledConfirm('导出数据',
+            showStyledConfirm('导出压缩包',
                 '<p>请选择一个目标目录。程序会在其中写入「'+LOCAL_SUBFOLDER+'」结构，包括模型目录、卡片目录、图片文件和 _meta.json。</p>'+
                 '<p style="color:var(--text-light); margin-top:8px;">导出会覆盖同名图片和元数据，但不会主动删除目标目录里额外存在的文件。</p>',
                 '选择目录','取消',()=>resolve(true),()=>resolve(false));
