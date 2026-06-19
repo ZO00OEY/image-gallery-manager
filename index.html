@@ -1119,6 +1119,27 @@
                             <span>批量管理</span>
                         </button>
                     </div>
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-title">兼容性维护</div>
+                        <button class="btn-side sidebar-action-btn" onclick="generateMissingThumbnails()" title="检查并补齐底部预览用的小缩略图。">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="5" width="16" height="14" rx="2"/>
+                                <path d="M7 15l3-3 2.5 2.5"/>
+                                <path d="M13 13l2-2 2 2"/>
+                                <circle cx="9" cy="9" r="1"/>
+                            </svg>
+                            <span>检查缩略图</span>
+                        </button>
+                        <button class="btn-side sidebar-action-btn" onclick="migrateDataUrlsToBlobs()" title="把旧的 Data URL 图片记录批量转换为 Blob 存储。">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/>
+                                <path d="M9 8h6"/>
+                                <path d="M9 12h6"/>
+                                <path d="M10 16h4"/>
+                            </svg>
+                            <span>迁移为 Blob 存储</span>
+                        </button>
+                    </div>
                     <div class="sidebar-group danger-group">
                         <div class="sidebar-group-title">危险操作</div>
                         <button class="btn-side danger" onclick="resetAll()"><span>重置所有数据</span></button>
@@ -1576,7 +1597,15 @@ function escapeHtml(s) { if(typeof s !== 'string') return s; return s.replace(/&
 function sanitizeName(s) { try { return decodeURIComponent(s); } catch(e) { return s; } }
 function showToast(msg) { const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 function showModal(id) { document.getElementById(id).style.display='flex'; if(id==='progressModal') resetProgressDetail(); }
-function hideModal(id) { document.getElementById(id).style.display='none'; if(id==='fullscreenOverlay') isFullscreenOpen=false; }
+function hideModal(id) {
+    document.getElementById(id).style.display='none';
+    if(id==='fullscreenOverlay'){
+        isFullscreenOpen=false;
+        releaseBlobUrls('fullscreen');
+        const img=document.getElementById('fsImage');
+        if(img) img.removeAttribute('src');
+    }
+}
 let importInProgress=false;
 let localImportProgressState=null;
 
@@ -1961,7 +1990,7 @@ async function dbDeleteAll(store){
 // ─── Data Model ─────────────────────────────
 // MODELS: { modelId: { id, name } } — stored in STORE_MODELS
 // Box: { id, name, tags:[], remark:'', createdAt, modelId, viewIndex:0 }
-// ImageRecord: { id, boxId, images: [{name, dataUrl, remark, positivePrompt, negativePrompt, steps}] } — stored in STORE_IMAGES
+// ImageRecord: { id, boxId, images: [{name, blob, mimeType, hash, remark, positivePrompt, negativePrompt, steps}] } — stored in STORE_IMAGES
 
 let MODELS={};
 let currentModelId=null;
@@ -2071,17 +2100,104 @@ function bytesToDataUrl(bytes, mimeType){
     for(let i=0;i<arr.length;i+=CHUNK){ raw+=String.fromCharCode(...arr.subarray(i,i+CHUNK)); }
     return 'data:'+mimeType+';base64,'+btoa(raw);
 }
+function dataUrlMimeType(dataUrl){
+    const m=String(dataUrl||'').match(/^data:([^;,]+)/);
+    return m?m[1]:'image/png';
+}
+function bytesToBlob(bytes, mimeType){
+    const arr=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+    return new Blob([arr],{type:mimeType||'image/png'});
+}
+const THUMB_MAX_SIZE=160;
+const THUMB_MIME_TYPE='image/jpeg';
+const THUMB_QUALITY=0.76;
+async function blobToBytes(blob){
+    if(!blob) return null;
+    return new Uint8Array(await blob.arrayBuffer());
+}
+async function imageToBytes(image){
+    if(!image) return null;
+    if(typeof image==='string') return image.startsWith('data:')?dataUrlToBytes(image):null;
+    if(image.blob instanceof Blob) return await blobToBytes(image.blob);
+    if(image.dataUrl&&image.dataUrl.startsWith('data:')) return dataUrlToBytes(image.dataUrl);
+    if(image.dataUrl&&image.dataUrl.startsWith('blob:')){
+        try{
+            const resp=await fetch(image.dataUrl);
+            const blob=await resp.blob();
+            return await blobToBytes(blob);
+        }catch(e){ return null; }
+    }
+    return null;
+}
+async function createThumbnailBlobFromBytes(bytes, maxSize=THUMB_MAX_SIZE){
+    if(!bytes) return null;
+    try{
+        const sourceBlob=bytesToBlob(bytes,'image/png');
+        const bitmap=await createImageBitmap(sourceBlob);
+        const scale=Math.min(1,maxSize/Math.max(bitmap.width,bitmap.height));
+        const width=Math.max(1,Math.round(bitmap.width*scale));
+        const height=Math.max(1,Math.round(bitmap.height*scale));
+        const canvas=document.createElement('canvas');
+        canvas.width=width;
+        canvas.height=height;
+        const ctx=canvas.getContext('2d',{alpha:false});
+        ctx.fillStyle='#fff';
+        ctx.fillRect(0,0,width,height);
+        ctx.drawImage(bitmap,0,0,width,height);
+        if(bitmap.close) bitmap.close();
+        return await new Promise(resolve=>canvas.toBlob(resolve,THUMB_MIME_TYPE,THUMB_QUALITY));
+    }catch(e){
+        return null;
+    }
+}
+function getImageMimeType(image){
+    if(!image||typeof image==='string') return image&&image.startsWith&&image.startsWith('data:')?dataUrlMimeType(image):'image/png';
+    if(image.mimeType) return image.mimeType;
+    if(image.blob instanceof Blob && image.blob.type) return image.blob.type;
+    if(image.dataUrl&&image.dataUrl.startsWith('data:')) return dataUrlMimeType(image.dataUrl);
+    return guessMimeType(image.name||image.fileName||'');
+}
+async function createImageRecordFromBytes(bytes, fileName, meta={}){
+    const mimeType=meta.mimeType||guessMimeType(fileName||meta.name||'');
+    const hash=meta.hash||await hashBytes(bytes);
+    const thumbBlob=meta.thumbBlob instanceof Blob ? meta.thumbBlob : await createThumbnailBlobFromBytes(bytes);
+    return {
+        name:meta.name||fileName||'',
+        blob:bytesToBlob(bytes,mimeType),
+        mimeType,
+        thumbBlob,
+        thumbMimeType:thumbBlob?THUMB_MIME_TYPE:'',
+        thumbSize:thumbBlob?THUMB_MAX_SIZE:0,
+        hash,
+        remark:meta.remark||'',
+        positivePrompt:meta.positivePrompt||'',
+        negativePrompt:meta.negativePrompt||'',
+        steps:meta.steps||'',
+        workflow:meta.workflow||null
+    };
+}
+async function createImageRecordFromDataUrl(dataUrl, fileName, meta={}){
+    const bytes=dataUrlToBytes(dataUrl);
+    const mimeType=meta.mimeType||dataUrlMimeType(dataUrl)||guessMimeType(fileName||meta.name||'');
+    return await createImageRecordFromBytes(bytes,fileName,{...meta,mimeType});
+}
+function normalizeImageRecord(img){
+    if(typeof img==='string') return {dataUrl:img, remark:'', positivePrompt:'', negativePrompt:'', steps:''};
+    return img||{remark:'', positivePrompt:'', negativePrompt:'', steps:''};
+}
 function getImageFileName(image, index){
+    image=normalizeImageRecord(image);
     let imgName=image.name||image.fileName||'';
     if(imgName){
         // If name already has an extension, use as-is
         if(imgName.includes('.')) return imgName;
         // Add extension based on mime
-        const ext=(image.dataUrl&&image.dataUrl.includes('image/png'))?'png':
-                 (image.dataUrl&&image.dataUrl.includes('image/jpeg'))?'jpg':'png';
+        const mime=getImageMimeType(image);
+        const ext=mime.includes('jpeg')?'jpg':mime.includes('webp')?'webp':mime.includes('gif')?'gif':mime.includes('bmp')?'bmp':'png';
         return imgName+'.'+ext;
     }
-    const ext=(image.dataUrl&&image.dataUrl.includes('image/png'))?'png':'jpg';
+    const mime=getImageMimeType(image);
+    const ext=mime.includes('jpeg')?'jpg':mime.includes('webp')?'webp':mime.includes('gif')?'gif':mime.includes('bmp')?'bmp':'png';
     return 'image_'+(index+1)+'.'+ext;
 }
 async function copyDirRecursive(srcDir, dstDir){
@@ -2154,11 +2270,20 @@ async function hashBytes(bytes){
     const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+async function hashImage(image){
+    if(!image) return null;
+    if(typeof image==='object'&&image.hash) return image.hash;
+    const bytes=await imageToBytes(image);
+    if(!bytes) return null;
+    const hash=await hashBytes(bytes);
+    if(typeof image==='object') image.hash=hash;
+    return hash;
+}
 async function dedupImagesByHash(images){
     if(!images||images.length<2) return images;
     const hashMap=new Map(); const result=[];
     for(const img of images){
-        const hash=await hashFromDataUrl(img.dataUrl||'');
+        const hash=await hashImage(img);
         if(hash&&hashMap.has(hash)) continue;
         if(hash) hashMap.set(hash,true);
         result.push(img);
@@ -2242,8 +2367,35 @@ function showDiscrepancyModal(report, onConfirm, onCancel){
 }
 
 // ─── Local CRUD ──────────────────────────────
-const blobUrls=[];
-function revokeAllBlobUrls(){ blobUrls.forEach(u=>URL.revokeObjectURL(u)); blobUrls.length=0; }
+const blobUrlOwners=new Map();
+function trackBlobUrl(ownerKey,url){
+    if(!ownerKey||!url||!url.startsWith('blob:')) return url;
+    if(!blobUrlOwners.has(ownerKey)) blobUrlOwners.set(ownerKey,new Set());
+    blobUrlOwners.get(ownerKey).add(url);
+    return url;
+}
+function releaseBlobUrls(ownerKey){
+    const urls=blobUrlOwners.get(ownerKey);
+    if(!urls) return;
+    urls.forEach(u=>URL.revokeObjectURL(u));
+    blobUrlOwners.delete(ownerKey);
+}
+function revokeAllBlobUrls(){
+    blobUrlOwners.forEach(urls=>urls.forEach(u=>URL.revokeObjectURL(u)));
+    blobUrlOwners.clear();
+}
+function getImageUrl(img,ownerKey){
+    if(typeof img==='string') return img;
+    if(!img) return '';
+    if(img.dataUrl) return img.dataUrl;
+    if(img.blob instanceof Blob) return trackBlobUrl(ownerKey,URL.createObjectURL(img.blob));
+    return '';
+}
+function getThumbUrl(img,ownerKey){
+    if(!img||typeof img==='string') return getImageUrl(img,ownerKey);
+    if(img.thumbBlob instanceof Blob) return trackBlobUrl(ownerKey,URL.createObjectURL(img.thumbBlob));
+    return getImageUrl(img,ownerKey);
+}
 
 async function localGetSettings(){
     if(!localRootHandle) return null;
@@ -2274,25 +2426,19 @@ async function localGet(store, id){
             const {images,...box}=meta;
             return box;
         }
-        // STORE_IMAGES — read image files and create blob URLs
+        // STORE_IMAGES — read image files as Blob records
         const imgList=[];
         if(meta.images){
             for(const [imgName,imgMeta] of Object.entries(meta.images)){
                 const bytes=await readFileBytes(boxDir, imgName);
                 if(!bytes) continue;
-                const mime=guessMimeType(imgName);
-                const blob=new Blob([bytes],{type:mime});
-                const url=URL.createObjectURL(blob);
-                blobUrls.push(url);
-                imgList.push({
-                    name:imgName,
-                    dataUrl:url,
+                imgList.push(await createImageRecordFromBytes(bytes,imgName,{
                     remark:imgMeta.remark||'',
                     positivePrompt:imgMeta.positivePrompt||'',
                     negativePrompt:imgMeta.negativePrompt||'',
                     steps:imgMeta.steps||'',
                     workflow:imgMeta.workflow||null
-                });
+                }));
             }
         }
         return {id:meta.id||id, boxId:meta.id||id, modelId:modelId, images:imgList};
@@ -2402,7 +2548,10 @@ async function localPut(store, data){
             const img=images[i];
             const imgName=getImageFileName(img,i);
             newImageNames.add(imgName);
-            if(img.dataUrl&&img.dataUrl.startsWith('data:')){
+            if(img.blob instanceof Blob){
+                const bytes=await imageToBytes(img);
+                if(bytes) await writeFileBytes(boxDir, imgName, bytes);
+            } else if(img.dataUrl&&img.dataUrl.startsWith('data:')){
                 const bytes=dataUrlToBytes(img.dataUrl);
                 if(bytes) await writeFileBytes(boxDir, imgName, bytes);
             } else if(img.dataUrl&&img.dataUrl.startsWith('blob:')){
@@ -2565,7 +2714,7 @@ async function loadBoxes() {
             let imgs=r.images||[];
             let needMigrate=false;
             if(imgs.length>0 && typeof imgs[0]==='string'){
-                imgs=imgs.map(url=>({dataUrl:url, remark:''}));
+                imgs=imgs.map(normalizeImageRecord);
                 needMigrate=true;
             }
             for(const img of imgs){
@@ -3126,8 +3275,9 @@ async function executeUnifiedImport(mode){
 
             const boxId='box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
             const imgName=name+'_'+padImgNum(1);
-            const images=[{name:imgName, dataUrl:compressed, remark:'', positivePrompt:'', negativePrompt:'', steps:''}];
-            await enrichImportedImage(file, images[0]);
+            const img=await createImageRecordFromDataUrl(compressed,imgName,{name:imgName});
+            await enrichImportedImage(file, img);
+            const images=[img];
 
             const box={id:boxId, name, tags, remark:'', createdAt:Date.now(), modelId:currentModelId, viewIndex:0, imageCount:1};
             await dbPut(STORE_BOXES,box);
@@ -3150,7 +3300,7 @@ async function executeUnifiedImport(mode){
             const dataURL=await readFileAsDataURL(file);
             const compressed=await compressImage(dataURL);
             const imgName=name+'_'+padImgNum(i+1);
-            const img={name:imgName, dataUrl:compressed, remark:'', positivePrompt:'', negativePrompt:'', steps:''};
+            const img=await createImageRecordFromDataUrl(compressed,imgName,{name:imgName});
             await enrichImportedImage(file, img);
             images.push(img);
             totalImported++;
@@ -3249,7 +3399,7 @@ async function saveEditCard() {
     if(nameChanged && images.length>0){
         for(let i=0;i<images.length;i++){
             const img=images[i];
-            if(typeof img==='string'){ images[i]={dataUrl:img, name:'', remark:'', positivePrompt:'', negativePrompt:'', steps:''}; }
+            if(typeof img==='string'){ images[i]=normalizeImageRecord(img); }
             images[i].name=name+'_'+padImgNum(i+1);
         }
     }
@@ -3257,7 +3407,7 @@ async function saveEditCard() {
     // Save current image metadata
     if(images.length>0&&viewIdx<images.length){
         const img=images[viewIdx];
-        if(typeof img==='string'){ images[viewIdx]={dataUrl:img, name:'', remark:'', positivePrompt:'', negativePrompt:'', steps:''}; }
+        if(typeof img==='string'){ images[viewIdx]=normalizeImageRecord(img); }
         let fullRemark=newRemark;
         if(newNegative) fullRemark+='\nNegative prompt: '+newNegative;
         if(newSteps) fullRemark+='\nSteps: '+newSteps;
@@ -3307,9 +3457,7 @@ async function addImagesToBox(boxId) {
         const record=await dbGet(STORE_IMAGES,boxId);
         if(record){
             existing=record.images||[];
-            if(existing.length>0 && typeof existing[0]==='string'){
-                existing=existing.map(url=>({dataUrl:url, remark:''}));
-            }
+            existing=existing.map(normalizeImageRecord);
         }
 
         for(let i=0;i<ev.target.files.length;i++){
@@ -3326,7 +3474,14 @@ async function addImagesToBox(boxId) {
             }
             const prompts=resolvePrompts(remark, workflow);
             const imgName=file.name.replace(/\.[^.]+$/,'')||'';
-            existing.push({name:imgName, dataUrl:compressed, remark, positivePrompt:prompts.positive, negativePrompt:prompts.negative, steps:prompts.steps, workflow});
+            existing.push(await createImageRecordFromDataUrl(compressed,imgName,{
+                name:imgName,
+                remark,
+                positivePrompt:prompts.positive,
+                negativePrompt:prompts.negative,
+                steps:prompts.steps,
+                workflow
+            }));
             document.getElementById('progressFill').style.width=Math.round(((i+1)/ev.target.files.length)*100)+'%';
             document.getElementById('progressText').innerText=`${i+1}/${ev.target.files.length}`;
             if(i%3===0) await new Promise(r=>setTimeout(r,0));
@@ -3355,7 +3510,7 @@ async function addImagesToBox(boxId) {
 async function deleteImage(boxId, idx, card) {
     let images=cachedBoxImages.get(boxId)||[];
     if(images.length>0 && typeof images[0]==='string'){
-        images=images.map(url=>({dataUrl:url, remark:''}));
+        images=images.map(normalizeImageRecord);
     }
     images.splice(idx,1);
     if(images.length===0){
@@ -3531,7 +3686,7 @@ function renderItems(reset) {
         currentFiltered=getFilteredBoxes();
         renderToken++;
         updateGridLayout();
-        activeCards.forEach(card=>card.remove());
+        activeCards.forEach(card=>{ releaseBlobUrls('card:'+card.dataset.boxId); card.remove(); });
         activeCards.clear();
         cardByBoxId.clear();
         container.innerHTML='';
@@ -3557,7 +3712,12 @@ function renderItems(reset) {
     for(let i=startIdx;i<=endIdx;i++) toRender.add(i);
 
     for(let [idx,card] of activeCards.entries()){
-        if(!toRender.has(idx)){ cardByBoxId.delete(card.dataset.boxId); card.remove(); activeCards.delete(idx); }
+        if(!toRender.has(idx)){
+            releaseBlobUrls('card:'+card.dataset.boxId);
+            cardByBoxId.delete(card.dataset.boxId);
+            card.remove();
+            activeCards.delete(idx);
+        }
     }
 
     const token=renderToken;
@@ -3584,7 +3744,6 @@ function renderItems(reset) {
     }
 }
 
-function getImageUrl(img) { return typeof img==='string' ? img : (img.dataUrl||''); }
 function getImageName(img) {
     if(!img||typeof img==='string') return '';
     return img.name||'';
@@ -3767,6 +3926,8 @@ function createCardElement(box,index) {
 async function renderCardImages(card, box) {
     const pw=card.querySelector('.preview-wrapper');
     if(!pw) return;
+    const cardUrlOwner='card:'+box.id;
+    releaseBlobUrls(cardUrlOwner);
 
     let images=cachedBoxImages.get(box.id);
 
@@ -3774,9 +3935,7 @@ async function renderCardImages(card, box) {
         pw.innerHTML=`<div class="preview-container"><div class="preview-loading">↻</div></div>`;
         const record=await dbGet(STORE_IMAGES, box.id);
         images=(record&&record.images)?record.images:[];
-        if(images.length>0&&typeof images[0]==='string'){
-            images=images.map(url=>({dataUrl:url, remark:''}));
-        }
+        images=images.map(normalizeImageRecord);
         cachedBoxImages.set(box.id, images);
         imageCount.set(box.id, images.length);
         card.dataset.imgLoaded='true';
@@ -3790,7 +3949,7 @@ async function renderCardImages(card, box) {
     const isAddPage=(count>0 && viewIdx>=count);
 
     const currentImgRemark=(count>0&&viewIdx<count)?getImageRemark(images[viewIdx]):'';
-    const imgUrl=(count>0&&viewIdx<count)?getImageUrl(images[viewIdx]):'';
+    const imgUrl=(count>0&&viewIdx<count)?getImageUrl(images[viewIdx],cardUrlOwner):'';
 
     // Build preview HTML with gradient overlay
     let previewHTML;
@@ -3844,7 +4003,7 @@ async function renderCardImages(card, box) {
         }
         const end=Math.min(total, start+MAX);
         for(let i=start;i<end;i++){
-            html+=`<img src="${getImageUrl(images[i])}" class="thumb-box ${i===activeIdx?'active':''}" data-idx="${i}">`;
+            html+=`<img src="${getThumbUrl(images[i],cardUrlOwner)}" class="thumb-box ${i===activeIdx?'active':''}" data-idx="${i}">`;
         }
         html+=`<div class="thumb-box" data-idx="${total}" title="添加新图">+</div>`;
         return html;
@@ -3926,9 +4085,7 @@ async function showFullscreen(boxId, imgIdx) {
     if(!images){
         const record=await dbGet(STORE_IMAGES, boxId);
         images=(record&&record.images)?record.images:[];
-        if(images.length>0&&typeof images[0]==='string'){
-            images=images.map(url=>({dataUrl:url, remark:''}));
-        }
+        images=images.map(normalizeImageRecord);
         cachedBoxImages.set(boxId, images);
         imageCount.set(boxId, images.length);
     }
@@ -3936,7 +4093,8 @@ async function showFullscreen(boxId, imgIdx) {
     fullscreenBoxId=boxId;
     fullscreenImgIdx=imgIdx;
     isFullscreenOpen=true;
-    document.getElementById('fsImage').src=getImageUrl(images[imgIdx]);
+    releaseBlobUrls('fullscreen');
+    document.getElementById('fsImage').src=getImageUrl(images[imgIdx],'fullscreen');
     showModal('fullscreenOverlay');
     updateFullscreenNav();
     setTimeout(()=>document.getElementById('fullscreenOverlay').focus(), 100);
@@ -3955,7 +4113,8 @@ function fullscreenNav(delta) {
     const newIdx=fullscreenImgIdx+delta;
     if(newIdx<0||newIdx>=images.length) return;
     fullscreenImgIdx=newIdx;
-    document.getElementById('fsImage').src=getImageUrl(images[newIdx]);
+    releaseBlobUrls('fullscreen');
+    document.getElementById('fsImage').src=getImageUrl(images[newIdx],'fullscreen');
     updateFullscreenNav();
 }
 
@@ -3981,7 +4140,8 @@ async function deleteFromFullscreen() {
     // Auto-jump to next image or stay on last
     const newIdx=Math.min(idx, after.length-1);
     fullscreenImgIdx=newIdx;
-    document.getElementById('fsImage').src=getImageUrl(after[newIdx]);
+    releaseBlobUrls('fullscreen');
+    document.getElementById('fsImage').src=getImageUrl(after[newIdx],'fullscreen');
     updateFullscreenNav();
 }
 
@@ -4400,7 +4560,7 @@ async function scanImportDiscrepancies(subHandle, existingSettings, importModels
                 let newImgs=0, conflictImgs=0, dupImgs=0;
                 const importHashes=new Map();
                 for(const img of importImgs){
-                    const hash=await hashFromDataUrl(img.dataUrl||'');
+                    const hash=await hashImage(img);
                     if(hash) importHashes.set(hash, img);
                 }
                 const existingHashes=new Map();
@@ -4523,10 +4683,8 @@ async function executeZipImport(report){
                         while(meta.images[base+'_'+n+ext]) n++;
                         targetName=base+'_'+n+ext;
                     }
-                    if(img.dataUrl&&img.dataUrl.startsWith('data:')){
-                        const bytes=dataUrlToBytes(img.dataUrl);
-                        await writeFileBytes(boxDir, targetName, bytes);
-                    }
+                    const bytes=await imageToBytes(img);
+                    if(bytes) await writeFileBytes(boxDir, targetName, bytes);
                     meta.images[targetName]={
                         remark:img.remark||'',
                         positivePrompt:img.positivePrompt||'',
@@ -4549,10 +4707,8 @@ async function executeZipImport(report){
                 for(let i=0;i<importImgs.length;i++){
                     const img=importImgs[i];
                     const imgName=getImageFileName(img,i);
-                    if(img.dataUrl&&img.dataUrl.startsWith('data:')){
-                        const bytes=dataUrlToBytes(img.dataUrl);
-                        await writeFileBytes(boxDir, imgName, bytes);
-                    }
+                    const bytes=await imageToBytes(img);
+                    if(bytes) await writeFileBytes(boxDir, imgName, bytes);
                     meta.images[imgName]={
                         remark:img.remark||'',
                         positivePrompt:img.positivePrompt||'',
@@ -4640,7 +4796,7 @@ function openPromptFixModal(){
     for(const box of currentBoxes){
         const images=cachedBoxImages.get(box.id)||[];
         for(const img of images){
-            if(img&&typeof img==='object'&&img.dataUrl&&img.dataUrl.startsWith('data:image/png')){
+            if(getImageMimeType(img)==='image/png'){
                 pngCount++;
             }
         }
@@ -4668,12 +4824,12 @@ async function executePromptFix(){
         if(!imgs){
             const record=await dbGet(STORE_IMAGES, box.id);
             imgs=(record&&record.images)?record.images:[];
-            if(imgs.length>0&&typeof imgs[0]==='string') imgs=imgs.map(url=>({dataUrl:url, remark:''}));
+            if(imgs.length>0&&typeof imgs[0]==='string') imgs=imgs.map(normalizeImageRecord);
             cachedBoxImages.set(box.id, imgs);
             imageCount.set(box.id, imgs.length);
         }
         for(const img of imgs){
-            if(img&&typeof img==='object'&&img.dataUrl&&img.dataUrl.startsWith('data:image/png')) totalPng++;
+            if(getImageMimeType(img)==='image/png') totalPng++;
         }
     }
     if(totalPng===0){ hideModal('progressModal'); showToast('当前模型没有PNG图片'); return; }
@@ -4691,14 +4847,11 @@ async function executePromptFix(){
 
         for(let ii=0;ii<images.length;ii++){
             const img=images[ii];
-            if(!img||typeof img!=='object'||!img.dataUrl||!img.dataUrl.startsWith('data:image/png')) continue;
+            if(!img||getImageMimeType(img)!=='image/png') continue;
 
             try{
-                // Decode PNG from dataUrl
-                const base64=img.dataUrl.split(',')[1];
-                const binaryStr=atob(base64);
-                const bytes=new Uint8Array(binaryStr.length);
-                for(let j=0;j<binaryStr.length;j++) bytes[j]=binaryStr.charCodeAt(j);
+                const bytes=await imageToBytes(img);
+                if(!bytes) continue;
 
                 const chunks=extractPngTextChunks(bytes);
                 const prompts=resolvePrompts(chunks.remark, chunks.workflow);
@@ -5421,16 +5574,13 @@ async function importLocalSettingsToDB(settings, report=null, options={}){
                     imgMeta=mergeExtractedImageMeta(imgMeta,extracted);
                 }
                 importedNames.add(imgName);
-                const dataUrl=bytesToDataUrl(bytes,guessMimeType(imgName));
-                images.push({
-                    name:imgName,
-                    dataUrl,
+                images.push(await createImageRecordFromBytes(bytes,imgName,{
                     remark:imgMeta.remark||'',
                     positivePrompt:imgMeta.positivePrompt||'',
                     negativePrompt:imgMeta.negativePrompt||'',
                     steps:imgMeta.steps||'',
                     workflow:imgMeta.workflow||null
-                });
+                }));
                 notifyProgress({phase:'image',modelId,boxId,fileName:imgName});
             }
             for(const orphan of orphanByBox.get(modelId+'/'+boxId)||[]){
@@ -5441,15 +5591,13 @@ async function importLocalSettingsToDB(settings, report=null, options={}){
                     continue;
                 }
                 const imgMeta=await buildImageMetaFromFileHandle(boxDir,orphan.fileName);
-                images.push({
-                    name:orphan.fileName,
-                    dataUrl:bytesToDataUrl(bytes,guessMimeType(orphan.fileName)),
+                images.push(await createImageRecordFromBytes(bytes,orphan.fileName,{
                     remark:imgMeta.remark||'',
                     positivePrompt:imgMeta.positivePrompt||'',
                     negativePrompt:imgMeta.negativePrompt||'',
                     steps:imgMeta.steps||'',
                     workflow:imgMeta.workflow||null
-                });
+                }));
                 orphanImported++;
                 notifyProgress({phase:'image',modelId,boxId,fileName:orphan.fileName});
             }
@@ -5461,12 +5609,12 @@ async function importLocalSettingsToDB(settings, report=null, options={}){
                 const existingHashes=new Set();
                 if(dedupe){
                     for(const img of mergedImages){
-                        const hash=await hashFromDataUrl(img.dataUrl||'');
+                        const hash=await hashImage(img);
                         if(hash) existingHashes.add(hash);
                     }
                 }
                 for(const img of images){
-                    const hash=dedupe?await hashFromDataUrl(img.dataUrl||''):null;
+                    const hash=dedupe?await hashImage(img):null;
                     if(hash&&existingHashes.has(hash)){
                         duplicateSkipped++;
                         continue;
@@ -5655,7 +5803,7 @@ async function compareLocalImportWithDB(settings, report, dataHandle, folderRepo
     for(const rec of dbImages){
         for(const img of rec.images||[]){
             result.dbImages++;
-            const hash=await hashFromDataUrl(img.dataUrl||'');
+            const hash=await hashImage(img);
             if(hash) existingHashes.add(hash);
         }
     }
@@ -5820,11 +5968,7 @@ async function parseLocalModeZipFile(file, options={}){
                 const imgMeta=imageMetaNeedsPromptScan(storedMeta)
                     ? mergeExtractedImageMeta(storedMeta,extractImageRemarkFromBytes(bytes))
                     : storedMeta;
-                importBoxes[ref.modelId].images[actualBoxId].push({
-                    name:imgName,
-                    dataUrl:bytesToDataUrl(bytes,guessMimeType(imgName)),
-                    ...imgMeta
-                });
+                importBoxes[ref.modelId].images[actualBoxId].push(await createImageRecordFromBytes(bytes,imgName,{name:imgName,...imgMeta}));
                 if(progress) progress({done:report.actualFiles,total:report.jsonTotal||report.actualFiles,modelName:ref.modelName,boxName:box.name||ref.folderName});
             }
         }
@@ -5840,15 +5984,13 @@ async function parseLocalModeZipFile(file, options={}){
                 const bytes=new Uint8Array(imgBuf);
                 const extracted=extractImageRemarkFromBytes(bytes);
                 const prompts=resolvePrompts(extracted.remark||'', extracted.workflow||null);
-                importBoxes[ref.modelId].images[actualBoxId].push({
-                    name:imgName,
-                    dataUrl:bytesToDataUrl(bytes,guessMimeType(imgName)),
+                importBoxes[ref.modelId].images[actualBoxId].push(await createImageRecordFromBytes(bytes,imgName,{
                     remark:extracted.remark||'',
                     positivePrompt:prompts.positive||'',
                     negativePrompt:prompts.negative||'',
                     steps:prompts.steps||'',
                     workflow:extracted.workflow||null
-                });
+                }));
                 if(progress) progress({done:report.actualFiles,total:report.jsonTotal+report.orphanFiles.length||report.actualFiles,modelName:ref.modelName,boxName:box.name||ref.folderName});
             }
         }
@@ -5865,7 +6007,7 @@ async function comparePackageWithDB(importBoxes){
     for(const rec of dbImages){
         for(const img of rec.images||[]){
             result.dbImages++;
-            const hash=await hashFromDataUrl(img.dataUrl||'');
+            const hash=await hashImage(img);
             if(hash) existingHashes.add(hash);
         }
     }
@@ -5874,7 +6016,7 @@ async function comparePackageWithDB(importBoxes){
     for(const modelData of Object.values(importBoxes||{})){
         for(const imgs of Object.values(modelData.images||{})){
             for(const img of imgs||[]){
-                const hash=await hashFromDataUrl(img.dataUrl||'');
+                const hash=await hashImage(img);
                 if(hash&&existingHashes.has(hash)) result.duplicateImages++;
                 else result.newImages++;
             }
@@ -6029,12 +6171,12 @@ async function importPackageToDB(pkg, options={}){
                 const existingHashes=new Set();
                 if(dedupe){
                     for(const img of mergedImages){
-                        const hash=await hashFromDataUrl(img.dataUrl||'');
+                        const hash=await hashImage(img);
                         if(hash) existingHashes.add(hash);
                     }
                 }
                 for(const img of incoming){
-                    const hash=dedupe?await hashFromDataUrl(img.dataUrl||''):null;
+                    const hash=dedupe?await hashImage(img):null;
                     if(hash&&existingHashes.has(hash)){
                         duplicateSkipped++;
                         notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
@@ -6062,7 +6204,7 @@ async function importPackageToDB(pkg, options={}){
                     preparedIncoming=[];
                     const incomingHashes=new Set();
                     for(const img of incoming){
-                        const hash=await hashFromDataUrl(img.dataUrl||'');
+                        const hash=await hashImage(img);
                         if(hash&&incomingHashes.has(hash)){
                             duplicateSkipped++;
                             notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:img.name});
@@ -6292,8 +6434,10 @@ async function debugImportLocalModeDirectory(){
     }catch(e){}
 }
 
-async function imageDataToBytes(dataUrl){
-    if(!dataUrl) return null;
+async function imageDataToBytes(source){
+    if(!source) return null;
+    if(typeof source!=='string') return await imageToBytes(source);
+    const dataUrl=source;
     if(dataUrl.startsWith('data:')) return dataUrlToBytes(dataUrl);
     if(dataUrl.startsWith('blob:')){
         try{
@@ -6303,6 +6447,216 @@ async function imageDataToBytes(dataUrl){
         }catch(e){ return null; }
     }
     return null;
+}
+
+async function convertImageToBlobRecord(img,index=0){
+    img=normalizeImageRecord(img);
+    if(img.blob instanceof Blob && !img.dataUrl) return img;
+    const bytes=await imageToBytes(img);
+    if(!bytes) return img;
+    const fileName=getImageFileName(img,index);
+    return await createImageRecordFromBytes(bytes,fileName,{
+        name:img.name||fileName.replace(/\.[^.]+$/,''),
+        mimeType:getImageMimeType(img),
+        hash:img.hash||null,
+        remark:img.remark||'',
+        positivePrompt:img.positivePrompt||'',
+        negativePrompt:img.negativePrompt||'',
+        steps:img.steps||'',
+        workflow:img.workflow||null
+    });
+}
+
+async function countDataUrlImages(){
+    const records=await dbGetAll(STORE_IMAGES);
+    let boxes=0, images=0;
+    for(const rec of records){
+        let boxHasOld=false;
+        for(const img of rec.images||[]){
+            const isOld=typeof img==='string'||(img&&typeof img==='object'&&img.dataUrl);
+            if(isOld){ images++; boxHasOld=true; }
+        }
+        if(boxHasOld) boxes++;
+    }
+    return {records,boxes,images};
+}
+
+async function countMissingThumbnails(){
+    const records=await dbGetAll(STORE_IMAGES);
+    let boxes=0, images=0;
+    for(const rec of records){
+        let boxNeedsThumb=false;
+        for(const img of rec.images||[]){
+            if(!img || typeof img==='string' || !(img.thumbBlob instanceof Blob)){
+                images++;
+                boxNeedsThumb=true;
+            }
+        }
+        if(boxNeedsThumb) boxes++;
+    }
+    return {records,boxes,images};
+}
+
+async function ensureImageThumbnail(img,index=0){
+    img=normalizeImageRecord(img);
+    if(img.thumbBlob instanceof Blob) return img;
+    const bytes=await imageToBytes(img);
+    if(!bytes) return img;
+    const thumbBlob=await createThumbnailBlobFromBytes(bytes);
+    if(!thumbBlob) return img;
+    let next=img;
+    if(!(next.blob instanceof Blob) && next.dataUrl){
+        next=await convertImageToBlobRecord(next,index);
+    }else{
+        next={...next};
+    }
+    next.thumbBlob=thumbBlob;
+    next.thumbMimeType=THUMB_MIME_TYPE;
+    next.thumbSize=THUMB_MAX_SIZE;
+    return next;
+}
+
+async function generateMissingThumbnails(){
+    try{
+        const scan=await countMissingThumbnails();
+        if(scan.images===0){
+            showToast('当前图库已经有缩略图');
+            return;
+        }
+        const html=
+            '<div class="import-preview">'+
+            '<div class="import-flow">'+
+            '<div class="import-step"><div class="import-step-index">1</div><div>'+
+            '<div class="import-step-title">检查底部预览缩略图</div>'+
+            '<div class="import-step-text">检测到 <span class="num">'+scan.boxes+'</span> 个卡片盒里有 <span class="num">'+scan.images+'</span> 张图片缺少缩略图。</div>'+
+            '</div></div>'+
+            '<div class="import-step"><div class="import-step-index">2</div><div>'+
+            '<div class="import-step-title">生成 160px 缩略图</div>'+
+            '<div class="import-step-text">缩略图只用于卡片盒底部小预览，上方大图和全屏仍使用原图。</div>'+
+            '</div></div>'+
+            '</div>'+
+            '<p class="import-footnote">检查缩略图会为缺失的小预览生成缓存，不会改动本地压缩包或文件夹；导出备份时仍只导出原图。</p>'+
+            '</div>';
+        const doGenerate=async()=>{
+            showModal('progressModal');
+            setImportBusy(true);
+            document.getElementById('progressTitle').innerText='检查缩略图...';
+            document.getElementById('progressFill').style.width='0%';
+            document.getElementById('progressText').innerText='0/'+scan.images;
+            let processed=0, generated=0;
+            try{
+                for(const rec of scan.records){
+                    const images=rec.images||[];
+                    let changed=false;
+                    const nextImages=[];
+                    for(let i=0;i<images.length;i++){
+                        const img=normalizeImageRecord(images[i]);
+                        const needsThumb=!(img.thumbBlob instanceof Blob);
+                        if(needsThumb){
+                            const next=await ensureImageThumbnail(img,i);
+                            nextImages.push(next);
+                            if(next.thumbBlob instanceof Blob) generated++;
+                            changed=true;
+                            processed++;
+                            const pct=scan.images?Math.round(processed/scan.images*100):100;
+                            document.getElementById('progressFill').style.width=pct+'%';
+                            document.getElementById('progressText').innerText=processed+'/'+scan.images+' ('+pct+'%)';
+                            if(processed%4===0) await new Promise(r=>setTimeout(r,0));
+                        }else{
+                            nextImages.push(img);
+                        }
+                    }
+                    if(changed) await dbPut(STORE_IMAGES,{...rec,images:nextImages});
+                }
+                revokeAllBlobUrls();
+                cachedBoxImages.clear();
+                await loadBoxes();
+                updateStatsAndTags();
+                renderItems(true);
+                showToast('缩略图已补齐：'+generated+' 张');
+            }catch(e){
+                showToast('生成缩略图失败：'+(e&&e.message?e.message:e));
+            }finally{
+                setImportBusy(false);
+                hideModal('progressModal');
+            }
+        };
+        showStyledConfirm('检查缩略图',html,'开始生成','取消',doGenerate);
+    }catch(e){
+        showToast('检查失败：'+(e&&e.message?e.message:e));
+    }
+}
+
+async function migrateDataUrlsToBlobs(){
+    try{
+        const scan=await countDataUrlImages();
+        if(scan.images===0){
+            showToast('当前图库已经是 Blob 存储');
+            return;
+        }
+        const html=
+            '<div class="import-preview">'+
+            '<div class="import-flow">'+
+            '<div class="import-step"><div class="import-step-index">1</div><div>'+
+            '<div class="import-step-title">准备迁移图片存储</div>'+
+            '<div class="import-step-text">检测到 <span class="num">'+scan.boxes+'</span> 个卡片盒里还有 <span class="num">'+scan.images+'</span> 张旧 Data URL 图片。</div>'+
+            '</div></div>'+
+            '<div class="import-step"><div class="import-step-index">2</div><div>'+
+            '<div class="import-step-title">转换为 Blob 存储</div>'+
+            '<div class="import-step-text">迁移会重写浏览器数据库里的图片记录，并保留图片、提示词、工作流、文件名与哈希信息。</div>'+
+            '</div></div>'+
+            '</div>'+
+            '<p class="import-footnote">建议先确认最近已经导出过压缩包备份。迁移只改浏览器图库，不会改动任何本地压缩包或文件夹。</p>'+
+            '</div>';
+        const doMigrate=async()=>{
+            showModal('progressModal');
+            setImportBusy(true);
+            document.getElementById('progressTitle').innerText='迁移为 Blob 存储...';
+            document.getElementById('progressFill').style.width='0%';
+            document.getElementById('progressText').innerText='0/'+scan.images;
+            let processed=0, converted=0;
+            try{
+                for(const rec of scan.records){
+                    const images=rec.images||[];
+                    let changed=false;
+                    const nextImages=[];
+                    for(let i=0;i<images.length;i++){
+                        const img=normalizeImageRecord(images[i]);
+                        const needsConvert=typeof images[i]==='string'||(img&&img.dataUrl);
+                        if(needsConvert){
+                            nextImages.push(await convertImageToBlobRecord(img,i));
+                            converted++;
+                            changed=true;
+                        }else{
+                            nextImages.push(img);
+                        }
+                        if(needsConvert){
+                            processed++;
+                            const pct=scan.images?Math.round(processed/scan.images*100):100;
+                            document.getElementById('progressFill').style.width=pct+'%';
+                            document.getElementById('progressText').innerText=processed+'/'+scan.images+' ('+pct+'%)';
+                            if(processed%5===0) await new Promise(r=>setTimeout(r,0));
+                        }
+                    }
+                    if(changed) await dbPut(STORE_IMAGES,{...rec,images:nextImages});
+                }
+                revokeAllBlobUrls();
+                cachedBoxImages.clear();
+                await loadBoxes();
+                updateStatsAndTags();
+                renderItems(true);
+                showToast('迁移完成：'+converted+' 张图片已转为 Blob 存储');
+            }catch(e){
+                showToast('迁移失败：'+(e&&e.message?e.message:e));
+            }finally{
+                setImportBusy(false);
+                hideModal('progressModal');
+            }
+        };
+        showStyledConfirm('迁移为 Blob 存储',html,'开始迁移','取消',doMigrate);
+    }catch(e){
+        showToast('检查失败：'+(e&&e.message?e.message:e));
+    }
 }
 
 async function makeUniqueEntryName(parentHandle, baseName, existingNames){
@@ -6403,7 +6757,7 @@ async function exportCurrentDBToZip(){
 
                 for(let i=0;i<images.length;i++){
                     const img=images[i];
-                    const bytes=await imageDataToBytes(img.dataUrl||'');
+                    const bytes=await imageDataToBytes(img);
                     if(!bytes) continue;
                     const imgName=makeUniqueBackupImageName(img,i,usedImageNames);
                     zip.file(zipPath+imgName,bytes);
@@ -6532,7 +6886,7 @@ async function exportCurrentDBToLocalFiles(){
                 const usedImageNames=new Set();
                 for(let i=0;i<images.length;i++){
                     const img=images[i];
-                    const bytes=await imageDataToBytes(img.dataUrl||'');
+                    const bytes=await imageDataToBytes(img);
                     if(!bytes) continue;
                     const imgName=await makeUniqueImageFileName(boxDir,img,i,usedImageNames);
                     await writeFileBytes(boxDir,imgName,bytes);
