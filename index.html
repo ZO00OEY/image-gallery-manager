@@ -25,6 +25,9 @@
             --rail-width: 66px;
             --panel-width: 260px;
             --rail-shift: 0px;
+            --menu-row-h: 52px;
+            --menu-start-offset: 14px;
+            --menu-icon-top: 78px;
             --br-lg: 24px; --br-md: 16px; --br-sm: 12px; --br-xs: 8px;
             --transition: all 0.2s ease;
         }
@@ -61,6 +64,14 @@
         }
 
         body { color: var(--text-main); min-height: 100vh; display: flex; background: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
+        body.layout-initializing .main-content,
+        body.layout-initializing .sidebar-panel,
+        body.layout-initializing .sidebar-panel-head,
+        body.layout-initializing .sidebar-panel-body,
+        body.layout-initializing .sidebar-panel-foot,
+        body.layout-initializing .rail-logo {
+            transition: none !important;
+        }
         body.sidebar-collapsed .sidebar-panel { transform: translateX(-102%); }
         body.sidebar-open .sidebar-panel { transform: none; }
         body.sidebar-open .main-content { margin-left: calc(var(--rail-width) + var(--panel-width, 220px)); }
@@ -92,7 +103,14 @@
         body.sidebar-open .rail-logo .arrow-collapse { display: inline; }
         body.sidebar-open .rail-logo { transform: translateX(calc(var(--panel-width, 220px) + var(--rail-shift))); }
         .rail-button:hover, .rail-button.active, .rail-button.menu-hover { color: var(--primary); background: var(--primary-bg); }
-        body.sidebar-open .rail-button[data-section="sec_import"] { margin-top: 14px; }
+        body.sidebar-open .rail-button[data-section="sec_import"],
+        body.sidebar-open .rail-button[data-section="sec_data"],
+        body.sidebar-open .rail-button[data-section="sec_tags"] {
+            position: absolute; left: 11px; margin: 0;
+        }
+        body.sidebar-open .rail-button[data-section="sec_import"] { top: var(--menu-icon-top); }
+        body.sidebar-open .rail-button[data-section="sec_data"] { top: calc(var(--menu-icon-top) + var(--menu-row-h)); }
+        body.sidebar-open .rail-button[data-section="sec_tags"] { top: calc(var(--menu-icon-top) + var(--menu-row-h) * 2); }
         .rail-button:not(.rail-logo):active { transform: translateX(var(--rail-shift)) scale(0.94); }
         .rail-logo:active { transform: translateX(var(--rail-shift)) scale(0.94); }
         body.sidebar-open .rail-logo:active { transform: translateX(calc(var(--panel-width, 220px) + var(--rail-shift))) scale(0.94); }
@@ -261,7 +279,7 @@
         .btn-side.active { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); font-weight: 700; }
         .btn-side-danger { color: var(--error) !important; }
         #panelMenuView .btn-side {
-            min-height: 44px;
+            height: var(--menu-row-h);
             padding: 0 12px 0 14px;
             display: flex;
             align-items: center;
@@ -270,7 +288,7 @@
             color: var(--text-main);
             font-size: 0.92rem;
             font-weight: 720;
-            margin-bottom: 6px;
+            margin-bottom: 0;
         }
         #panelMenuView .btn-side svg {
             display: none;
@@ -540,15 +558,15 @@
         .items-grid { position: relative; min-height: 200px; width: 100%; }
 
         .item-card {
-            position: absolute; background: var(--card-bg); border-radius: 18px;
-            box-shadow: 0 12px 28px rgba(255,107,157,0.08), 0 2px 8px rgba(0,0,0,0.05);
+            position: absolute; background: var(--card-bg); border-radius: 14px;
+            box-shadow: 0 10px 22px rgba(255,107,157,0.07), 0 2px 7px rgba(0,0,0,0.045);
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
             display: flex; flex-direction: column; will-change: transform;
         }
         .item-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 18px 38px rgba(255,107,157,0.14), 0 6px 18px rgba(0,0,0,0.08);
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(255,107,157,0.12), 0 5px 14px rgba(0,0,0,0.07);
             z-index: 10;
         }
 
@@ -563,9 +581,9 @@
 
         /* Dark frosted glass — top bar only */
         .preview-overlay-top {
-            position: absolute; top: 0; left: 0; right: 0; height: 13%; z-index: 2; pointer-events: none;
+            position: absolute; top: 0; left: 0; right: 0; height: 12%; z-index: 2; pointer-events: none;
             background: linear-gradient(to bottom,
-                rgba(22,22,24,0.76) 0%, rgba(22,22,24,0.56) 52%,
+                rgba(22,22,24,0.70) 0%, rgba(22,22,24,0.48) 52%,
                 rgba(30,30,30,0) 100%);
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
@@ -607,11 +625,11 @@
             grid-area: 1 / 1;
             display: flex; align-items: center; gap: 3px;
             justify-content: center; padding: 0;
-            font-size: 0.76rem; font-weight: 600; color: rgba(255,255,255,0.88);
+            font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.82);
             line-height: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.45);
             opacity: 1; transition: opacity 0.16s ease, transform 0.16s ease;
         }
-        .card-img-count-overlay svg { opacity: 0.72; width: 13px; height: 13px; stroke-width: 1.7; }
+        .card-img-count-overlay svg { opacity: 0.66; width: 12px; height: 12px; stroke-width: 1.65; }
         .card-img-count-overlay .count-num { line-height: 1; transform: translateY(-1px); }
         .card-action-set {
             grid-area: 1 / 1; display: flex; align-items: center; gap: 5px;
@@ -689,7 +707,7 @@
 
         .thumbnails-bar {
             display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none;
-            min-height: 42px; padding: 6px 9px 7px; align-items: center;
+            min-height: 36px; padding: 5px 8px 6px; align-items: center;
             background: linear-gradient(to bottom, rgba(255,255,255,0.92), rgba(255,255,255,0.98));
         }
         .theme-night .thumbnails-bar {
@@ -697,15 +715,15 @@
         }
         .thumbnails-bar::-webkit-scrollbar { display: none; }
         .thumb-box {
-            width: 34px; height: 34px; border-radius: 8px; object-fit: cover;
-            cursor: pointer; border: 2px solid transparent; opacity: 0.58; transition: 0.18s;
+            width: 30px; height: 30px; border-radius: 7px; object-fit: cover;
+            cursor: pointer; border: 1px solid transparent; opacity: 0.46; transition: 0.18s;
             background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; color: var(--text-light); flex-shrink: 0;
+            font-size: 1.04rem; color: rgba(136,136,136,0.55); flex-shrink: 0;
         }
-        .thumb-box:hover { opacity: 0.95; transform: translateY(-1px); }
+        .thumb-box:hover { opacity: 0.9; transform: translateY(-1px); background: rgba(255,107,157,0.07); }
         .thumb-box.active {
             border-color: var(--primary); opacity: 1;
-            box-shadow: 0 0 0 2px rgba(255,107,157,0.16);
+            box-shadow: 0 0 0 1px rgba(255,107,157,0.18);
         }
 
         .item-tags {
@@ -1932,7 +1950,7 @@
         </div>
         <div class="sidebar-panel-body" id="sidebarPanelBody">
             <!-- Menu View -->
-            <div id="panelMenuView" style="display:flex; flex-direction:column; gap:2px;">
+            <div id="panelMenuView" style="display:flex; flex-direction:column; gap:0;">
                 <button class="btn-side" data-section="sec_import" onclick="openPanelDetail('sec_import')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     <span>图片导入</span>
@@ -3092,7 +3110,7 @@ let globalBoxCount=0, globalImgCount=0;
 let currentBoxCount=0, currentImgCount=0;
 let headerStatsScope='current';
 
-let virtualGrid={ cardWidth:230, cardHeight:375, gap:20, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:230, cardHeight:375, gap:18, cols:1, bufferRows:3 };
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
@@ -3106,6 +3124,9 @@ const marqueeEl=document.createElement('div');
 marqueeEl.className='selection-marquee';
 document.body.appendChild(marqueeEl);
 let currentFiltered=[];
+let gridResizeObserver=null;
+let gridResizeTicking=false;
+let lastObservedGridWidth=0;
 
 // ─── Local File Operations ───────────────────
 function sanitizeFileName(name){
@@ -5231,6 +5252,29 @@ async function deleteImage(boxId, idx, card) {
 }
 
 // ─── Render Cards ───────────────────────────
+function scheduleGridRelayout(){
+    if(gridResizeTicking) return;
+    gridResizeTicking=true;
+    requestAnimationFrame(()=>{
+        gridResizeTicking=false;
+        updateGridLayout();
+        renderItems(false);
+    });
+}
+
+function observeGridResize(){
+    const container=document.getElementById('itemsContainer');
+    if(!container||typeof ResizeObserver==='undefined'||gridResizeObserver) return;
+    gridResizeObserver=new ResizeObserver(entries=>{
+        const entry=entries[0];
+        const width=Math.round(entry.contentRect.width);
+        if(!width||Math.abs(width-lastObservedGridWidth)<2) return;
+        lastObservedGridWidth=width;
+        if(currentFiltered.length>0) scheduleGridRelayout();
+    });
+    gridResizeObserver.observe(container);
+}
+
 function updateGridLayout() {
     const container=document.getElementById('itemsContainer');
     const sidebarWidth=document.body.classList.contains('sidebar-collapsed')?0:260;
@@ -5245,7 +5289,7 @@ function updateGridLayout() {
     const titleSize=Math.max(0.66,Math.min(0.9,virtualGrid.cardWidth/250*0.86));
     container.style.setProperty('--card-title-size',titleSize.toFixed(3)+'rem');
     const tagBarOn=document.getElementById('tagChipsBar').style.display==='flex';
-    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + (tagBarOn?88:48);
+    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + (tagBarOn?80:40);
 
     const totalRows=Math.ceil(currentFiltered.length/virtualGrid.cols);
     container.style.height=`${(totalRows*virtualGrid.cardHeight)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
@@ -9087,6 +9131,7 @@ function resetAll(){
 }
 
 document.addEventListener('DOMContentLoaded',async ()=>{
+    document.body.classList.add('layout-initializing');
     // Load UI prefs from IndexedDB first (survives file://)
     await initUIPrefs();
     await initDB();
@@ -9095,6 +9140,8 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     await loadBoxes();
     bindPanelMenuHover();
     restoreSidebarState();
+    observeGridResize();
+    await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
 
     // ─── Restore all persisted state BEFORE first render ──
     const savedColumns=getColumnCount();
@@ -9124,6 +9171,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
 
     // DB-primary mode: local folders are only touched by explicit import/sync tools.
     await reloadData();
+    document.body.classList.remove('layout-initializing');
     // Event listeners
     window.addEventListener('scroll',onScroll,{passive:true});
     window.addEventListener('resize',()=>{ updateGridLayout(); renderItems(false); });
