@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1347,20 +1347,6 @@
         }
         .image-import-footer { flex-wrap: wrap; gap: 10px; }
         .image-import-footer .btn { border-radius: 4px; padding: 10px 18px; font-size: 0.9rem; }
-        .clipboard-paste-zone {
-            border: 1.5px dashed rgba(255,107,157,0.34); border-radius: 4px;
-            padding: 24px; text-align: center; color: var(--text-light);
-            background: rgba(255,107,157,0.04); outline: none; cursor: text;
-            transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
-        }
-        .clipboard-paste-zone:hover,
-        .clipboard-paste-zone:focus {
-            border-color: rgba(255,107,157,0.72); background: rgba(255,255,255,0.58);
-            transform: translateY(-1px);
-        }
-        .clipboard-paste-zone svg { width: 22px; height: 22px; color: var(--primary); margin-bottom: 8px; }
-        .clipboard-paste-title { color: var(--primary); font-size: 0.92rem; font-weight: 760; margin-bottom: 4px; }
-        .clipboard-paste-note { font-size: 0.82rem; line-height: 1.55; }
         .url-import-panel {
             display: grid; gap: 14px;
         }
@@ -2434,52 +2420,6 @@
         </div>
     </div>
 
-    <!-- Image Conflict Modal -->
-    <div class="modal-overlay" id="conflictModal">
-        <div class="modal" style="max-width:850px; max-height:90vh;">
-            <div class="modal-header"><div class="modal-title">🖼️ 图片冲突解决</div><button class="modal-close" onclick="pendingImportData=null; pendingImportFilters=null; pendingConflicts=[]; hideModal('conflictModal'); showToast('导入已取消');">×</button></div>
-            <div class="modal-body" style="padding:16px;">
-                <p id="conflictStats" style="font-size:0.9rem; font-weight:700; color:var(--primary); margin-bottom:2px;"></p>
-                <p id="dupSkipNotice" style="font-size:0.75rem; color:var(--accent); margin-bottom:12px; display:none;"></p>
-
-                <!-- Tabs -->
-                <div class="tabs-header" style="margin-bottom:16px;">
-                    <button class="tab-btn active" data-conflict-tab="manual" onclick="switchConflictTab('manual')">🔍 逐一操作</button>
-                    <button class="tab-btn" data-conflict-tab="batch" onclick="switchConflictTab('batch')">⚡ 批量操作</button>
-                </div>
-
-                <!-- Manual tab panel -->
-                <div id="conflictManualPanel" style="border:1px solid var(--border-color); border-radius:var(--br-sm); padding:12px;">
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <div id="conflictSingleView" style="flex:1; min-width:0;"></div>
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;">
-                            <button class="conflict-nav-btn" id="conflictPrevBtn" onclick="navigateConflict(-1)" title="上一组">▲</button>
-                            <span style="font-size:0.65rem; color:var(--text-light);" id="conflictNavCount"></span>
-                            <button class="conflict-nav-btn" id="conflictNextBtn" onclick="navigateConflict(1)" title="下一组">▼</button>
-                        </div>
-                    </div>
-                    <div style="display:flex; justify-content:center; margin-top:12px;" id="conflictExecuteRow">
-                        <button class="btn btn-outline" onclick="executeSelectedChoices()" style="padding:6px 18px; font-size:0.8rem;" id="conflictExecuteBtn">执行</button>
-                    </div>
-                </div>
-
-                <!-- Batch tab panel -->
-                <div id="conflictBatchPanel" style="border:1px solid var(--border-color); border-radius:var(--br-sm); padding:12px; display:none;">
-                    <div style="font-weight:bold; font-size:0.9rem; margin-bottom:4px; color:var(--primary);">共 <span id="conflictBatchCount">0</span> 张冲突</div>
-                    <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:14px;">选择一种处理方式，将立即应用到全部并完成导入</p>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button class="btn btn-outline" onclick="resolveAllAndImport('keepExisting')" style="flex:1; min-width:140px;">⬅️ 保留现有全部</button>
-                        <button class="btn btn-outline" onclick="resolveAllAndImport('keepImport')" style="flex:1; min-width:140px;">全部使用导入 ➡️</button>
-                        <button class="btn btn-outline" onclick="resolveAllAndImport('rename')" style="flex:1; min-width:140px;">📅 全部自动重命名</button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="pendingImportData=null; pendingImportFilters=null; pendingConflicts=[]; hideModal('conflictModal'); showToast('导入已取消');">取消</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Edit Card Modal -->
     <div class="modal-overlay" id="editCardModal" onclick="if(event.target===this) hideModal('editCardModal')">
         <div class="modal edit-card-modal">
@@ -2652,25 +2592,6 @@
     </div>
 
     <!-- Single Create Modal -->
-    <div class="modal-overlay" id="singleCreateModal">
-        <div class="modal">
-            <div class="modal-header"><div class="modal-title">📝 手动创建卡片</div><button class="modal-close" onclick="hideModal('singleCreateModal')">×</button></div>
-            <div class="modal-body">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">卡片名称</label>
-                <input type="text" id="singleCardName" class="input-text" placeholder="输入卡片名称">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">🏷️ 标签 (逗号分隔)</label>
-                <input type="text" id="singleCardTags" class="input-text" placeholder="标签1, 标签2" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.value+=', ';}">
-                <div class="tag-suggestions" id="singleCardTagsSuggestions"></div>
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">📝 备注 / 提示词</label>
-                <textarea id="singleCardRemark" class="input-text remark-editor" placeholder="输入提示词或备注内容..."></textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="hideModal('singleCreateModal')">取消</button>
-                <button class="btn btn-primary" onclick="createSingleCard()">创建</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Batch Action Bar -->
     <div id="batchActionBar">
         <span id="batchSelectText">已选择 0 项</span>
@@ -2742,7 +2663,6 @@
 <script>
 // ─── Utility ──────────────────────────────────
 function escapeHtml(s) { if(typeof s !== 'string') return s; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-function sanitizeName(s) { try { return decodeURIComponent(s); } catch(e) { return s; } }
 function showToast(msg) { const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 function showModal(id) { document.getElementById(id).style.display='flex'; if(id==='progressModal') resetProgressDetail(); }
 function hideModal(id) {
@@ -2766,7 +2686,6 @@ function hideModal(id) {
     if(id==='storageModeModal'){
         document.getElementById('storageModeFooter')?.classList.remove('compat-source-footer','reset-data-footer');
         releaseBlobUrls('clipboard-preview');
-        pendingClipboardTargetBoxId=null;
     }
 }
 function isModalVisible(id) {
@@ -3119,18 +3038,6 @@ function initDB(){
     });
 }
 
-function withStore(store, mode, fn, fallback=null){
-    return new Promise(resolve=>{
-        if(!db){ resolve(fallback); return; }
-        try{
-            const tx=db.transaction([store],mode);
-            const result=fn(tx.objectStore(store));
-            tx.oncomplete=()=>resolve(result&&result.__defer?result.value:result);
-            tx.onerror=()=>resolve(fallback);
-            tx.onabort=()=>resolve(fallback);
-        }catch(e){ resolve(fallback); }
-    });
-}
 function dbGet(store,id){
     return new Promise(resolve=>{
         if(!db){ resolve(null); return; }
@@ -3180,10 +3087,6 @@ function dbGetByIndex(store,indexName,value){
             req.onerror=()=>resolve([]);
         }catch(e){ resolve([]); }
     });
-}
-async function dbDeleteAll(store){
-    const all=await dbGetAll(store);
-    for(const item of all) await dbDelete(store,item.id);
 }
 
 // ─── Data Model ─────────────────────────────
@@ -3294,13 +3197,6 @@ function dataUrlToBytes(dataUrl){
     const idx=dataUrl.indexOf(',');
     if(idx<0) return null;
     return Uint8Array.from(atob(dataUrl.slice(idx+1)),c=>c.charCodeAt(0));
-}
-function bytesToDataUrl(bytes, mimeType){
-    const arr=new Uint8Array(bytes);
-    const CHUNK=8192;
-    let raw='';
-    for(let i=0;i<arr.length;i+=CHUNK){ raw+=String.fromCharCode(...arr.subarray(i,i+CHUNK)); }
-    return 'data:'+mimeType+';base64,'+btoa(raw);
 }
 function dataUrlMimeType(dataUrl){
     const m=String(dataUrl||'').match(/^data:([^;,]+)/);
@@ -3498,12 +3394,6 @@ async function computeFileHash(handle, fileName){
     if(!bytes) return null;
     return hashBytes(bytes);
 }
-async function hashFromDataUrl(dataUrl){
-    if(!dataUrl||!dataUrl.startsWith('data:')) return null;
-    const bytes=dataUrlToBytes(dataUrl);
-    if(!bytes) return null;
-    return hashBytes(bytes);
-}
 async function hashBytes(bytes){
     const hashBuffer=await crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -3516,17 +3406,6 @@ async function hashImage(image){
     const hash=await hashBytes(bytes);
     if(typeof image==='object') image.hash=hash;
     return hash;
-}
-async function dedupImagesByHash(images){
-    if(!images||images.length<2) return images;
-    const hashMap=new Map(); const result=[];
-    for(const img of images){
-        const hash=await hashImage(img);
-        if(hash&&hashMap.has(hash)) continue;
-        if(hash) hashMap.set(hash,true);
-        result.push(img);
-    }
-    return result;
 }
 
 // ─── Local Discrepancy Scanner ────────────────
@@ -3591,19 +3470,6 @@ function showStyledConfirm(title, messageHtml, confirmLabel, cancelLabel, onConf
     document.getElementById('btnStyledConfirm').onclick=()=>{ hideModal('storageModeModal'); if(onConfirm) onConfirm(); };
     document.getElementById('btnStyledCancel').onclick=()=>{ hideModal('storageModeModal'); if(onCancel) onCancel(); };
 }
-function showDiscrepancyModal(report, onConfirm, onCancel){
-    let html='<div style="line-height:1.8; font-size:0.95rem;">';
-    html+='<p>JSON 内共 <b>'+report.jsonTotal+'</b> 张图片</p>';
-    if(report.missingFiles.length>0) html+='<p style="color:var(--error);">其中 <b>'+report.missingFiles.length+'</b> 张文件丢失（本地不存在）</p>';
-    if(report.orphanFiles.length>0) html+='<p style="color:var(--accent);">本地文件不在 JSON 里的有 <b>'+report.orphanFiles.length+'</b> 张</p>';
-    if(report.hashDups.length>0) html+='<p style="color:var(--primary);">哈希重复 <b>'+report.hashDups.length+'</b> 张（将只保留一份）</p>';
-    if(report.boxIssues.length>0) html+='<p style="color:var(--error);">无效盒子 <b>'+report.boxIssues.length+'</b> 个（目录或 _meta.json 缺失）</p>';
-    if(report.missingFiles.length===0&&report.orphanFiles.length===0&&report.hashDups.length===0&&report.boxIssues.length===0){
-        html+='<p style="color:var(--primary);">数据完全一致，无需修复。</p>';
-    }
-    html+='</div>';
-    showStyledConfirm('数据差异确认', html, '确认执行', '取消', onConfirm, onCancel);
-}
 
 // ─── Local CRUD ──────────────────────────────
 const blobUrlOwners=new Map();
@@ -3643,258 +3509,6 @@ async function localGetSettings(){
     return await readJSON(handle,'gallery_settings.json');
 }
 
-async function localGet(store, id){
-    if(!localRootHandle) return null;
-    const dataHandle=await resolveLocalDataHandle(localRootHandle);
-    if(!dataHandle) return null;
-    const settings=await readJSON(dataHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex) return null;
-    if(store===STORE_MODELS) return settings.models?{id:'main',data:settings.models}:null;
-    // STORE_BOXES or STORE_IMAGES — find the box by id across all models
-    for(const modelId of Object.keys(settings.boxIndex)){
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        if(!settings.boxIndex[modelId][id]) continue;
-        const folderName=settings.boxIndex[modelId][id];
-        let modelDir;
-        try{ modelDir=await dataHandle.getDirectoryHandle(modelName); }catch(e){ continue; }
-        let boxDir;
-        try{ boxDir=await modelDir.getDirectoryHandle(folderName); }catch(e){ continue; }
-        const meta=await readJSON(boxDir,'_meta.json');
-        if(!meta) return null;
-        if(store===STORE_BOXES){
-            const {images,...box}=meta;
-            return box;
-        }
-        // STORE_IMAGES — read image files as Blob records
-        const imgList=[];
-        if(meta.images){
-            for(const [imgName,imgMeta] of Object.entries(meta.images)){
-                const bytes=await readFileBytes(boxDir, imgName);
-                if(!bytes) continue;
-                imgList.push(await createImageRecordFromBytes(bytes,imgName,{name:imgName,...(imgMeta||{})}));
-            }
-        }
-        return {id:meta.id||id, boxId:meta.id||id, modelId:modelId, images:imgList};
-    }
-    return null;
-}
-
-async function localPut(store, data){
-    if(!localRootHandle) return null;
-    const dataHandle=await resolveLocalDataHandle(localRootHandle,{create:true});
-    if(!dataHandle) return null;
-    let settings=await readJSON(dataHandle,'gallery_settings.json');
-    if(!settings){ settings={version:1,models:{},boxIndex:{},currentModelId:currentModelId,copyFilterPatterns:[]}; }
-    if(!settings.boxIndex) settings.boxIndex={};
-
-    if(store===STORE_MODELS){
-        // Handle model rename: move old directory to new name
-        const newModels=data.data;
-        for(const [mid, m] of Object.entries(newModels)){
-            const oldM=(settings.models||{})[mid];
-            if(oldM && oldM.name!==m.name){
-                let oldDir;
-                try{ oldDir=await dataHandle.getDirectoryHandle(oldM.name); }catch(e){}
-                if(oldDir){
-                    const newDir=await ensureDir(dataHandle, m.name);
-                    if(newDir){
-                        for await(const [name, entry] of oldDir.entries()){
-                            try{
-                                if(entry.kind==='file'){
-                                    const file=await entry.getFile();
-                                    const bytes=new Uint8Array(await file.arrayBuffer());
-                                    await writeFileBytes(newDir, name, bytes);
-                                }else if(entry.kind==='directory'){
-                                    await copyDirRecursive(entry, await ensureDir(newDir, name));
-                                }
-                            }catch(e){}
-                        }
-                        try{ await dataHandle.removeEntry(oldM.name,{recursive:true}); }catch(e){}
-                    }
-                }
-            }
-        }
-        settings.models=newModels;
-        settings.currentModelId=currentModelId;
-        await writeJSON(dataHandle,'gallery_settings.json',settings);
-        return;
-    }
-    // STORE_BOXES or STORE_IMAGES
-    const box=data.id?data:data; // data might be the box or {id, boxId, images}
-    const boxId=box.id||box.boxId||'';
-    let modelId=box.modelId||currentModelId;
-    if(!settings.boxIndex[modelId]) settings.boxIndex[modelId]={};
-    let oldFolderName=(settings.boxIndex[modelId]||{})[boxId]||null;
-    // If not found under current model, search all models (image-only update may not carry modelId)
-    if(!oldFolderName){
-        for(const [mid, mboxes] of Object.entries(settings.boxIndex)){
-            if(mboxes[boxId]){ modelId=mid; oldFolderName=mboxes[boxId]; break; }
-        }
-    }
-    const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-    // Use existing folder name unless box.name is explicitly set (i.e. this is a box save, not just image update)
-    const hasName=!!box.name;
-    // If no existing folder found and this is just an image update (no name), we can't place the files
-    if(!oldFolderName && !hasName) return;
-    const targetFolderName=hasName?sanitizeFileName(box.name):oldFolderName;
-
-    const modelDir=await ensureDir(dataHandle, modelName);
-    if(!modelDir) return;
-    // If box was renamed, move old folder contents to new folder
-    if(hasName && oldFolderName && oldFolderName!==targetFolderName){
-        let oldDir;
-        try{ oldDir=await modelDir.getDirectoryHandle(oldFolderName); }catch(e){}
-        if(oldDir){
-            const newDir=await ensureDir(modelDir, targetFolderName);
-            if(newDir){
-                for await(const [name, entry] of oldDir.entries()){
-                    try{
-                        if(entry.kind==='file'){
-                            const file=await entry.getFile();
-                            const bytes=new Uint8Array(await file.arrayBuffer());
-                            await writeFileBytes(newDir, name, bytes);
-                        }
-                    }catch(e){}
-                }
-                try{ await modelDir.removeEntry(oldFolderName,{recursive:true}); }catch(e){}
-            }
-        }
-    }
-    settings.boxIndex[modelId][boxId]=targetFolderName;
-    const boxDir=await ensureDir(modelDir, targetFolderName);
-    if(!boxDir) return;
-
-    let meta=await readJSON(boxDir,'_meta.json');
-    if(!meta){ meta={id:boxId,name:box.name||'',tags:box.tags||[],remark:box.remark||'',createdAt:box.createdAt||Date.now(),modelId,viewIndex:0,imageCount:0,images:{}}; }
-    if(!meta.images) meta.images={};
-    meta.name=box.name||meta.name;
-    meta.tags=[...new Set([...(meta.tags||[]),...(box.tags||[])])];
-    if(!meta.remark&&box.remark) meta.remark=box.remark;
-    if(box.viewIndex!==undefined) meta.viewIndex=box.viewIndex;
-    meta.modelId=modelId;
-
-    // Handle images — write new image files, remove orphaned ones
-    const images=data.images||[];
-    if(images.length>0){
-        const newImageNames=new Set();
-        for(let i=0;i<images.length;i++){
-            const img=images[i];
-            const imgName=getImageFileName(img,i);
-            newImageNames.add(imgName);
-            if(img.blob instanceof Blob){
-                const bytes=await imageToBytes(img);
-                if(bytes) await writeFileBytes(boxDir, imgName, bytes);
-            } else if(img.dataUrl&&img.dataUrl.startsWith('data:')){
-                const bytes=dataUrlToBytes(img.dataUrl);
-                if(bytes) await writeFileBytes(boxDir, imgName, bytes);
-            } else if(img.dataUrl&&img.dataUrl.startsWith('blob:')){
-                // Blob URL from local display — fetch back to bytes for file write
-                try{
-                    const resp=await fetch(img.dataUrl);
-                    const blob=await resp.blob();
-                    const bytes=new Uint8Array(await blob.arrayBuffer());
-                    await writeFileBytes(boxDir, imgName, bytes);
-                }catch(e){}
-            } else if(meta.images[imgName]){
-                // Name unchanged, keep existing file
-            }
-            meta.images[imgName]=imageMetaForExport(img);
-        }
-        // Remove files that are in meta but not in the new image set
-        for(const oldName of Object.keys(meta.images)){
-            if(!newImageNames.has(oldName)){
-                await removeEntrySafe(boxDir, oldName);
-                delete meta.images[oldName];
-            }
-        }
-    }
-    meta.imageCount=Object.keys(meta.images).length;
-    await writeJSON(boxDir,'_meta.json',meta);
-    await writeJSON(dataHandle,'gallery_settings.json',settings);
-}
-
-async function localDelete(store, id){
-    if(!localRootHandle) return;
-    const dataHandle=await resolveLocalDataHandle(localRootHandle);
-    if(!dataHandle) return;
-    const settings=await readJSON(dataHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex) return;
-    if(store===STORE_MODELS){
-        if(settings.models&&settings.models[id]){
-            const modelName=settings.models[id].name;
-            delete settings.models[id];
-            if(settings.boxIndex[id]) delete settings.boxIndex[id];
-            // Remove model directory
-            try{ await dataHandle.removeEntry(modelName,{recursive:true}); }catch(e){}
-            await writeJSON(dataHandle,'gallery_settings.json',settings);
-        }
-        return;
-    }
-    // STORE_BOXES / STORE_IMAGES
-    for(const modelId of Object.keys(settings.boxIndex)){
-        if(!settings.boxIndex[modelId][id]) continue;
-        const folderName=settings.boxIndex[modelId][id];
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        delete settings.boxIndex[modelId][id];
-        if(Object.keys(settings.boxIndex[modelId]).length===0) delete settings.boxIndex[modelId];
-        let modelDir;
-        try{ modelDir=await dataHandle.getDirectoryHandle(modelName); }catch(e){}
-        if(modelDir){
-            try{ await modelDir.removeEntry(folderName,{recursive:true}); }catch(e){}
-        }
-        await writeJSON(dataHandle,'gallery_settings.json',settings);
-        return;
-    }
-}
-
-async function localGetAll(store){
-    if(!localRootHandle) return [];
-    const dataHandle=await resolveLocalDataHandle(localRootHandle);
-    if(!dataHandle) return [];
-    const settings=await readJSON(dataHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex) return [];
-    const results=[];
-    for(const modelId of Object.keys(settings.boxIndex)){
-        for(const boxId of Object.keys(settings.boxIndex[modelId])){
-            const rec=await localGet(store, boxId);
-            if(rec) results.push(rec);
-        }
-    }
-    return results;
-}
-
-async function localGetByIndex(store, indexName, value){
-    if(!localRootHandle) return [];
-    if(indexName!=='modelId') return [];
-    const dataHandle=await resolveLocalDataHandle(localRootHandle);
-    if(!dataHandle) return [];
-    const settings=await readJSON(dataHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex||!settings.boxIndex[value]) return [];
-    const results=[];
-    for(const boxId of Object.keys(settings.boxIndex[value])){
-        const rec=await localGet(store, boxId);
-        if(rec) results.push(rec);
-    }
-    return results;
-}
-
-async function localDeleteAll(store){
-    if(!localRootHandle) return;
-    const dataHandle=await resolveLocalDataHandle(localRootHandle);
-    if(!dataHandle) return;
-    const settings=await readJSON(dataHandle,'gallery_settings.json');
-    if(!settings||!settings.boxIndex) return;
-    for(const modelId of Object.keys(settings.boxIndex)){
-        const modelName=settings.models[modelId]?settings.models[modelId].name:modelId;
-        try{ await dataHandle.removeEntry(modelName,{recursive:true}); }catch(e){}
-        delete settings.boxIndex[modelId];
-    }
-    settings.models={};
-    settings.currentModelId=null;
-    await writeJSON(dataHandle,'gallery_settings.json',settings);
-}
-
-// ─── Load / Init ────────────────────────────
 async function loadModels() {
     const saved=await dbGet(STORE_MODELS,'main');
     if(saved) {
@@ -4332,10 +3946,6 @@ function openPanelDetail(sectionId){
     document.body.classList.add('sidebar-open');
     setPref('ipm_sidebarOpen','1');
 }
-function openSidebarPanel(sectionId){
-    showPanelMenu();
-    openPanelDetail(sectionId);
-}
 function closeSidebarPanel(){
     document.body.classList.remove('sidebar-open');
     setActiveRailSection(null);
@@ -4444,9 +4054,6 @@ let unifiedPreviewRows=3;
 let unifiedPreviewSourceLabel='文件';
 let unifiedImportMode='file';
 let unifiedTargetBoxId=null;
-let pendingClipboardFiles=[];
-let clipboardPreviewRows=3;
-let pendingClipboardTargetBoxId=null;
 function readFileAsDataURL(file) {
     return new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); });
 }
@@ -4476,18 +4083,6 @@ function ensureImportModel(){
     }
 }
 
-function ensureModelByName(name){
-    const targetName=(name||'').trim();
-    if(!targetName) return currentModelId;
-    const found=Object.values(MODELS).find(m=>m&&m.name===targetName);
-    if(found) return found.id;
-    const id='model_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-    const maxIdx=Math.max(-1,...Object.values(MODELS).map(m=>m.sortIndex||0));
-    MODELS[id]={id,name:targetName,sortIndex:maxIdx+1};
-    saveModels();
-    renderModelTabs();
-    return id;
-}
 
 function setUnifiedImportMode(mode, targetBoxId=null){
     unifiedImportMode=mode||'file';
@@ -4595,121 +4190,10 @@ async function handleUnifiedImportPaste(event){
     renderUnifiedFileList('剪贴板');
 }
 
-function openClipboardPasteModal(targetBoxId=null){
-    releaseBlobUrls('clipboard-preview');
-    pendingClipboardFiles=[];
-    clipboardPreviewRows=3;
-    pendingClipboardTargetBoxId=targetBoxId;
-    document.getElementById('storageModeTitle').innerText='剪贴板导入';
-    document.getElementById('storageModeBody').innerHTML=
-        '<div style="display:grid; gap:14px;">'+
-        '<div id="clipboardPasteZone" class="clipboard-paste-zone" tabindex="0">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8l2 2v14H6V6l2-2z"/><path d="M9 4.5V3h6v1.5"/><path d="M9 13l2 2 4-5"/></svg>'+
-        '<div class="clipboard-paste-title">粘贴图片</div>'+
-        '<div class="clipboard-paste-note">复制图片后点击这里按 Ctrl+V，可重复粘贴多张。</div>'+
-        '</div>'+
-        '<div id="clipboardPasteList" class="image-file-list"></div>'+
-        '</div>';
-    document.getElementById('storageModeFooter').innerHTML=
-        '<button class="btn btn-outline" onclick="hideModal(\'storageModeModal\')">取消</button>'+
-        '<button class="btn btn-outline" id="btnClipboardClear" onclick="clearClipboardPasteFiles()">清空</button>'+
-        '<button class="btn btn-primary" id="btnClipboardContinue" onclick="continueClipboardPasteImport()">'+(targetBoxId?'加入卡片盒':'继续导入')+'</button>';
-    showModal('storageModeModal');
-    renderClipboardPasteList();
-    const zone=document.getElementById('clipboardPasteZone');
-    if(zone){
-        zone.onpaste=async e=>{
-            const files=await filesFromClipboardItems(e.clipboardData&&e.clipboardData.items);
-            if(files.length===0){ showToast('剪贴板里没有可导入的图片'); return; }
-            e.preventDefault();
-            pendingClipboardFiles.push(...files);
-            renderClipboardPasteList();
-            showToast('已加入 '+files.length+' 张剪贴板图片');
-        };
-        setTimeout(()=>zone.focus(),80);
-    }
-}
 
-function renderClipboardPasteList(){
-    releaseBlobUrls('clipboard-preview');
-    const list=document.getElementById('clipboardPasteList');
-    if(!list) return;
-    const clearBtn=document.getElementById('btnClipboardClear');
-    const continueBtn=document.getElementById('btnClipboardContinue');
-    if(clearBtn) clearBtn.disabled=pendingClipboardFiles.length===0;
-    if(continueBtn) continueBtn.disabled=pendingClipboardFiles.length===0;
-    if(pendingClipboardFiles.length===0){
-        list.innerHTML='<div style="color:var(--text-light);">还没有粘贴图片。</div>';
-        return;
-    }
-    const previewCols=getImportPreviewColumns();
-    const maxPreview=Math.max(1,previewCols*clipboardPreviewRows-1);
-    const hasMore=pendingClipboardFiles.length>maxPreview;
-    const previewCount=hasMore?maxPreview:pendingClipboardFiles.length;
-    let html='<div class="import-preview-head"><span>已加入 '+pendingClipboardFiles.length+' 张剪贴板图片</span></div>';
-    html+='<div class="import-preview-grid" style="--import-preview-cols:'+previewCols+'">';
-    for(let i=0;i<previewCount;i++){
-        const url=trackBlobUrl('clipboard-preview',URL.createObjectURL(pendingClipboardFiles[i]));
-        html+='<div class="import-preview-thumb" title="'+escapeHtml(pendingClipboardFiles[i].name||'剪贴板图片')+'">'+
-            '<img src="'+url+'" decoding="async">'+
-            '<button class="import-preview-remove" type="button" data-clipboard-remove-idx="'+i+'" title="移除">'+
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>'+
-            '</button></div>';
-    }
-    if(hasMore){
-        html+='<button class="import-preview-more" type="button" onclick="expandClipboardPreviewRows()">+'+(pendingClipboardFiles.length-previewCount)+'</button>';
-    }
-    html+='</div>';
-    list.innerHTML=html;
-    list.querySelectorAll('.import-preview-remove').forEach(btn=>{
-        btn.onclick=e=>{
-            e.stopPropagation();
-            const index=parseInt(btn.dataset.clipboardRemoveIdx,10);
-            if(index>=0&&index<pendingClipboardFiles.length){
-                pendingClipboardFiles.splice(index,1);
-                renderClipboardPasteList();
-            }
-        };
-    });
-}
 
-function expandClipboardPreviewRows(){
-    clipboardPreviewRows+=1;
-    renderClipboardPasteList();
-}
 
-function clearClipboardPasteFiles(){
-    pendingClipboardFiles=[];
-    clipboardPreviewRows=3;
-    renderClipboardPasteList();
-}
 
-function continueClipboardPasteImport(){
-    if(pendingClipboardFiles.length===0){ showToast('请先粘贴图片'); return; }
-    const files=Array.from(pendingClipboardFiles);
-    const targetBoxId=pendingClipboardTargetBoxId;
-    pendingClipboardTargetBoxId=null;
-    hideModal('storageModeModal');
-    if(targetBoxId){
-        addFilesToBox(targetBoxId,files,'剪贴板');
-        return;
-    }
-    openUnifiedImportWithFiles(files,'剪贴板','clipboard');
-}
-
-function openUrlImportModal(targetBoxId=null){
-    const html=
-        '<div style="display:grid; gap:10px;">'+
-        '<textarea id="urlImportInput" class="input-text" style="min-height:110px; margin:0;" placeholder="每行一个图片网址"></textarea>'+
-        '<p style="margin:0; color:var(--text-light); font-size:0.84rem; line-height:1.6;">支持图片直链。部分网站可能因为跨域限制无法读取。</p>'+
-        '</div>';
-    showStyledConfirm('网址导入',html,targetBoxId?'加入卡片盒':'读取','取消',async()=>{
-        const input=document.getElementById('urlImportInput');
-        const urls=(input&&input.value||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);
-        if(urls.length===0){ showToast('请先输入图片网址'); return; }
-        await importFromUrls(urls,targetBoxId);
-    });
-}
 
 let urlImportTargetBoxId=null;
 function openUrlImportModal(targetBoxId=null){
@@ -4955,31 +4439,7 @@ async function executeUnifiedImport(mode){
 }
 
 // ─── Single Create ──────────────────────────
-function openSingleCreateModal() {
-    document.getElementById('singleCardName').value='';
-    document.getElementById('singleCardTags').value='';
-    document.getElementById('singleCardRemark').value='';
-    renderTagSuggestions('singleCardTagsSuggestions','singleCardTags');
-    showModal('singleCreateModal');
-}
 
-async function createSingleCard() {
-    const name=document.getElementById('singleCardName').value.trim();
-    if(!name) { showToast('请输入卡片名称'); return; }
-    if(currentBoxes.some(b=>b.name===name)) { showToast('该名称已存在'); return; }
-
-    const tags=document.getElementById('singleCardTags').value.split(',').map(s=>s.trim()).filter(s=>s);
-    const remark=document.getElementById('singleCardRemark').value.trim();
-
-    const box={id:'box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8), name, tags, remark, createdAt:Date.now(), modelId:currentModelId, viewIndex:0, imageCount:0};
-    currentBoxes.push(box);
-    currentBoxes.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    await dbPut(STORE_BOXES,box);
-    cachedBoxImages.set(box.id,[]);
-    imageCount.set(box.id,0);
-    updateStatsAndTags(); renderItems(true);
-    showToast('卡片创建成功');
-}
 
 // ─── Edit Card ──────────────────────────────
 let editingBoxId=null;
@@ -5465,12 +4925,6 @@ function toggleFilterTag(tag) {
     renderItems(true);
 }
 
-function clearAllFilterTags(){
-    selectedFilterTags=[];
-    renderTagChips();
-    renderSidebarTags();
-    renderItems(true);
-}
 
 function getFilteredBoxes() {
     const kw=document.getElementById('searchInput').value.toLowerCase().trim();
@@ -5602,10 +5056,6 @@ function renderItems(reset) {
     }
 }
 
-function getImageName(img) {
-    if(!img||typeof img==='string') return '';
-    return img.name||'';
-}
 function getImageRemark(img) {
     if(!img||typeof img==='string') return '';
     if(img.positivePrompt!==undefined) return img.positivePrompt;
@@ -6299,16 +5749,6 @@ async function createModel() {
     showToast('模型标签已创建');
 }
 
-async function renameModel(e,id) {
-    e.stopPropagation();
-    const newName=prompt('重命名模型标签:',MODELS[id].name);
-    if(newName&&newName.trim()){
-        MODELS[id].name=newName.trim();
-        saveModels();
-        renderModelTabs();
-        showToast('已重命名');
-    }
-}
 
 async function deleteModel(e,id) {
     e.stopPropagation();
@@ -6411,10 +5851,6 @@ async function ensureJSZip(){
     _JSZip=JSZip;
     return _JSZip;
 }
-
-let pendingImportData=null;
-let pendingConflicts=[];
-let pendingImportFilters=null;
 
 async function handleZipImport(event){
     const file=event.target.files[0];
@@ -6540,235 +5976,7 @@ async function showDBImportReport(file, previewPkg, isZip){
     showStyledConfirm('确认导入备份数据',html,'导入','取消',doImport);
 }
 
-async function scanImportDiscrepancies(subHandle, existingSettings, importModels, importBoxes){
-    const report={newModels:0, newBoxes:0, newImages:0, conflictBoxes:0, conflictImages:0, hashDups:0, details:[]};
 
-    // Build name→id maps for existing data
-    const existingModelNames={};
-    for(const [id,m] of Object.entries(existingSettings?.models||{})){ existingModelNames[m.name]=id; }
-
-    for(const [importModelId, modelData] of Object.entries(importBoxes)){
-        const importModelName=(importModels[importModelId]||{}).name||importModelId;
-        const existingModelId=existingModelNames[importModelName];
-        if(!existingModelId){
-            report.newModels++;
-            report.newBoxes+=modelData.boxes.length;
-            for(const box of modelData.boxes){
-                report.newImages+=(modelData.images[box.id]||[]).length;
-            }
-            report.details.push({type:'new_model', name:importModelName, boxes:modelData.boxes.length});
-            continue;
-        }
-
-        const existingBoxNames={};
-        const existingBoxes=existingSettings?.boxIndex?.[existingModelId]||{};
-        for(const boxId of Object.keys(existingBoxes)){
-            try{
-                const folderName=existingBoxes[boxId];
-                const modelName=(existingSettings?.models?.[existingModelId]||{}).name||existingModelId;
-                const modelDir=await subHandle.getDirectoryHandle(modelName);
-                const boxDir=await modelDir.getDirectoryHandle(folderName);
-                const meta=await readJSON(boxDir,'_meta.json');
-                if(meta) existingBoxNames[meta.name]=boxId;
-            }catch(e){}
-        }
-
-        for(const box of modelData.boxes){
-            const importImgs=modelData.images[box.id]||[];
-            const existingBoxId=existingBoxNames[box.name];
-            if(!existingBoxId){
-                report.newBoxes++;
-                report.newImages+=importImgs.length;
-                report.details.push({type:'new_box', model:importModelName, name:box.name, images:importImgs.length});
-                continue;
-            }
-            // Compare images by hash
-            try{
-                const modelName=(existingSettings?.models?.[existingModelId]||{}).name||existingModelId;
-                const folderName=existingBoxes[existingBoxId];
-                const modelDir=await subHandle.getDirectoryHandle(modelName);
-                const boxDir=await modelDir.getDirectoryHandle(folderName);
-                const existingMeta=await readJSON(boxDir,'_meta.json');
-                const existingImgs=existingMeta?.images||{};
-                const existingNames=new Set(Object.keys(existingImgs));
-
-                let newImgs=0, conflictImgs=0, dupImgs=0;
-                const importHashes=new Map();
-                for(const img of importImgs){
-                    const hash=await hashImage(img);
-                    if(hash) importHashes.set(hash, img);
-                }
-                const existingHashes=new Map();
-                for(const [ename, emeta] of Object.entries(existingImgs)){
-                    const hash=await computeFileHash(boxDir, ename);
-                    if(hash) existingHashes.set(hash, ename);
-                }
-
-                for(const [hash, img] of importHashes){
-                    if(existingHashes.has(hash)){
-                        dupImgs++;
-                        continue;
-                    }
-                    if(existingNames.has(img.name)){
-                        conflictImgs++;
-                    }else{
-                        newImgs++;
-                    }
-                }
-                if(newImgs>0||conflictImgs>0||dupImgs>0){
-                    report.details.push({type:'box_diff', model:importModelName, name:box.name, newImgs, conflictImgs, dupImgs});
-                }
-                report.newImages+=newImgs;
-                report.conflictImages+=conflictImgs;
-                report.hashDups+=dupImgs;
-            }catch(e){}
-        }
-    }
-    return report;
-}
-
-function showImportReport(report){
-    let html='<div style="line-height:1.8; font-size:0.9rem;">';
-    html+='<p>📊 <b>导入摘要</b></p>';
-    if(report.newModels>0) html+='<p>新增模型: <b>'+report.newModels+'</b> 个</p>';
-    if(report.newBoxes>0) html+='<p>新增卡片盒: <b>'+report.newBoxes+'</b> 个</p>';
-    if(report.newImages>0) html+='<p style="color:var(--primary);">新增图片: <b>'+report.newImages+'</b> 张</p>';
-    if(report.conflictImages>0) html+='<p style="color:var(--error);">名称冲突: <b>'+report.conflictImages+'</b> 张（将自动重命名）</p>';
-    if(report.hashDups>0) html+='<p style="color:var(--text-light);">哈希重复（跳过）: <b>'+report.hashDups+'</b> 张</p>';
-    if(report.newModels===0&&report.newBoxes===0&&report.newImages===0&&report.hashDups===0&&report.conflictImages===0){
-        html+='<p style="color:var(--primary);">数据完全一致，无需导入。</p>';
-    }
-    html+='</div>';
-
-    if(report.details.length>0&&report.details.length<=20){
-        html+='<div style="max-height:200px; overflow-y:auto; margin-top:8px; font-size:0.78rem; color:var(--text-light); border-top:1px solid var(--border-color); padding-top:8px;">';
-        for(const d of report.details){
-            if(d.type==='new_model') html+='<div>🆕 新模型: '+escapeHtml(d.name)+' ('+d.boxes+' 盒)</div>';
-            else if(d.type==='new_box') html+='<div>📦 新盒: '+escapeHtml(d.model)+' ▸ '+escapeHtml(d.name)+' ('+d.images+' 图)</div>';
-            else if(d.type==='box_diff') html+='<div>📋 '+escapeHtml(d.model)+' ▸ '+escapeHtml(d.name)+': +'+d.newImgs+' 新, '+d.conflictImgs+' 冲突, '+d.dupImgs+' 重复</div>';
-        }
-        html+='</div>';
-    }
-
-    const hasChanges=report.newModels>0||report.newBoxes>0||report.newImages>0||report.conflictImages>0;
-    showStyledConfirm('导入数据',
-        html,
-        hasChanges?'确认导入':'关闭',
-        '取消',
-        hasChanges?()=>executeZipImport(report):null);
-}
-
-async function executeZipImport(report){
-    if(!pendingImportData) return;
-    const {importModels, importBoxes, importFilters, isZip}=pendingImportData;
-
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='导入中...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='0%';
-
-    const subHandle=await getOrCreateSubfolder(localRootHandle);
-    let settings=await readJSON(subHandle,'gallery_settings.json');
-    if(!settings){ settings={version:1,models:{},boxIndex:{},currentModelId,copyFilterPatterns:[]}; }
-    if(!settings.boxIndex) settings.boxIndex={};
-
-    // Build existing model name→id map
-    const existingModelNames={};
-    for(const [id,m] of Object.entries(settings.models||{})){ existingModelNames[m.name]=id; }
-
-    let totalOps=0, doneOps=0;
-    for(const d of report.details){
-        if(d.type==='new_model'||d.type==='new_box') totalOps+=d.boxes||1;
-        else if(d.type==='box_diff') totalOps++;
-    }
-    if(totalOps===0) totalOps=1;
-
-    for(const [importModelId, modelData] of Object.entries(importBoxes)){
-        const importModelName=(importModels[importModelId]||{}).name||importModelId;
-        let targetModelId=existingModelNames[importModelName];
-        if(!targetModelId){
-            targetModelId='model_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-            settings.models[targetModelId]={id:targetModelId, name:importModelName, sortIndex:Object.keys(settings.models).length};
-            existingModelNames[importModelName]=targetModelId;
-            if(!settings.boxIndex[targetModelId]) settings.boxIndex[targetModelId]={};
-        }
-
-        for(const box of modelData.boxes){
-            const importImgs=modelData.images[box.id]||[];
-            const existingBoxes=settings.boxIndex[targetModelId]||{};
-            const existingBoxId=Object.keys(existingBoxes).find(bid=>{
-                return existingBoxes[bid]===sanitizeFileName(box.name);
-            });
-
-            if(existingBoxId){
-                // Merge images
-                const folderName=existingBoxes[existingBoxId];
-                const modelDir=await ensureDir(subHandle, importModelName);
-                const boxDir=await ensureDir(modelDir, folderName);
-                let meta=await readJSON(boxDir,'_meta.json');
-                if(!meta){ meta={...box, images:{}, imageCount:0}; }
-                if(!meta.images) meta.images={};
-
-                for(const img of importImgs){
-                    let targetName=img.name;
-                    if(meta.images[targetName]){
-                        const ext=targetName.includes('.')?'.'+targetName.split('.').pop():'.png';
-                        const base=targetName.replace(/\.[^.]+$/,'');
-                        let n=1;
-                        while(meta.images[base+'_'+n+ext]) n++;
-                        targetName=base+'_'+n+ext;
-                    }
-                    const bytes=await imageToBytes(img);
-                    if(bytes) await writeFileBytes(boxDir, targetName, bytes);
-                    meta.images[targetName]=imageMetaForExport(img);
-                }
-                meta.imageCount=Object.keys(meta.images).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }else{
-                // New box
-                const newBoxId=box.id||'box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-                const folderName=sanitizeFileName(box.name);
-                if(!settings.boxIndex[targetModelId]) settings.boxIndex[targetModelId]={};
-                settings.boxIndex[targetModelId][newBoxId]=folderName;
-                const modelDir=await ensureDir(subHandle, importModelName);
-                const boxDir=await ensureDir(modelDir, folderName);
-                const meta={...box, id:newBoxId, modelId:targetModelId, images:{}, imageCount:0};
-                for(let i=0;i<importImgs.length;i++){
-                    const img=importImgs[i];
-                    const imgName=getImageFileName(img,i);
-                    const bytes=await imageToBytes(img);
-                    if(bytes) await writeFileBytes(boxDir, imgName, bytes);
-                    meta.images[imgName]=imageMetaForExport(img);
-                }
-                meta.imageCount=Object.keys(meta.images).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }
-            doneOps++;
-            document.getElementById('progressFill').style.width=Math.round(doneOps/totalOps*100)+'%';
-            document.getElementById('progressText').innerText=doneOps+'/'+totalOps;
-        }
-    }
-
-    // Update MODELS from settings
-    MODELS={...settings.models};
-    currentModelId=currentModelId||Object.keys(MODELS)[0];
-    await writeJSON(subHandle,'gallery_settings.json',settings);
-
-    // Merge filter patterns
-    if(importFilters&&importFilters.length>0){
-        const existing=new Set(appSettings.copyFilterPatterns||[]);
-        for(const p of importFilters){
-            if(!existing.has(p)){ appSettings.copyFilterPatterns.push(p); existing.add(p); }
-        }
-        saveSettings();
-    }
-
-    pendingImportData=null;
-    pendingImportFilters=null;
-    hideModal('progressModal');
-    await reloadData();
-    showToast('导入完成');
-}
 
 // ─── Theme ──────────────────────────────────
 let isNight=false;
@@ -6813,109 +6021,6 @@ function onScroll() {
 }
 
 // ─── Prompt Fix ──────────────────────────────
-function openPromptFixModal(){
-    let imageTotal=0;
-    for(const box of currentBoxes){
-        const images=cachedBoxImages.get(box.id)||[];
-        imageTotal+=images.length;
-    }
-    document.getElementById('fixPngCount').innerText=imageTotal;
-    document.getElementById('fixPngPrompts').checked=true;
-    showModal('promptFixModal');
-}
-
-async function executePromptFix(){
-    hideModal('promptFixModal');
-    const fixPrompts=document.getElementById('fixPngPrompts').checked;
-    if(!fixPrompts){ showToast('?????????'); return; }
-
-    showModal('progressModal');
-    document.getElementById('progressTitle').innerText='??????...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText='';
-
-    let totalImages=0;
-    for(let bi=0;bi<currentBoxes.length;bi++){
-        const box=currentBoxes[bi];
-        let imgs=cachedBoxImages.get(box.id);
-        if(!imgs){
-            const record=await dbGet(STORE_IMAGES, box.id);
-            imgs=(record&&record.images)?record.images:[];
-            if(imgs.length>0&&typeof imgs[0]==='string') imgs=imgs.map(normalizeImageRecord);
-            cachedBoxImages.set(box.id, imgs);
-            imageCount.set(box.id, imgs.length);
-        }
-        totalImages+=imgs.length;
-    }
-    if(totalImages===0){ hideModal('progressModal'); showToast('????????'); return; }
-
-    document.getElementById('progressTitle').innerText='?????? LoRA...';
-    document.getElementById('progressFill').style.width='0%';
-    document.getElementById('progressText').innerText=`0/${totalImages}`;
-
-    let processed=0, updated=0, loraUpdated=0, pngFilled=0;
-
-    for(let bi=0;bi<currentBoxes.length;bi++){
-        const box=currentBoxes[bi];
-        const images=cachedBoxImages.get(box.id)||[];
-        let changed=false;
-
-        for(let ii=0;ii<images.length;ii++){
-            let img=images[ii];
-            if(!img) continue;
-            if(typeof img==='string'){ img=images[ii]=normalizeImageRecord(img); }
-
-            try{
-                if(getImageMimeType(img)==='image/png'){
-                    const bytes=await imageToBytes(img);
-                    if(bytes){
-                        const chunks=extractPngTextChunks(bytes);
-                        const prompts=resolvePrompts(chunks.remark, chunks.workflow);
-                        let filled=false;
-                        if(chunks.remark&&!img.remark){ img.remark=chunks.remark; filled=true; }
-                        if(chunks.workflow&&!img.workflow){ img.workflow=chunks.workflow; filled=true; }
-                        if(prompts.positive&&!img.positivePrompt){ img.positivePrompt=prompts.positive; filled=true; }
-                        if(prompts.negative&&!img.negativePrompt){ img.negativePrompt=prompts.negative; filled=true; }
-                        if(prompts.steps&&!img.steps){ img.steps=prompts.steps; filled=true; }
-                        if(filled){ changed=true; updated++; pngFilled++; }
-                    }
-                }
-
-                const promptForLora=img.positivePrompt||getImageRemark(img)||'';
-                const loras=extractLorasFromPrompt(promptForLora);
-                if(loras.length){
-                    const before=getImageLoraLabel(img);
-                    img.loras=mergeLoraLists(img.loras||img.loraText||'', loras);
-                    img.loraText=getImageLoraLabel(img);
-                    const cleaned=stripLorasFromPrompt(promptForLora);
-                    if(cleaned!==promptForLora){
-                        const shouldCleanRemark=(img.remark===promptForLora||(!img.positivePrompt&&img.remark));
-                        img.positivePrompt=cleaned;
-                        if(shouldCleanRemark) img.remark=cleaned;
-                    }
-                    if(getImageLoraLabel(img)!==before){ changed=true; updated++; loraUpdated++; }
-                }
-            } catch(e){ /* skip corrupted images */ }
-            processed++;
-            if(processed%3===0||processed===totalImages){
-                const pct=Math.round((processed/totalImages)*100);
-                document.getElementById('progressFill').style.width=pct+'%';
-                document.getElementById('progressText').innerText=`${processed}/${totalImages} (${pct}%)`;
-                await new Promise(r=>setTimeout(r,0));
-            }
-        }
-
-        if(changed){
-            await dbPut(STORE_IMAGES,{id:box.id, boxId:box.id, images});
-            cachedBoxImages.set(box.id,images);
-        }
-    }
-
-    hideModal('progressModal');
-    updateStatsAndTags(); renderItems(true);
-    showToast(`????? ${processed} ???? ${pngFilled} ???? LoRA ${loraUpdated} ?`);
-}
-
 async function countPromptFixScope(includeAll){
     if(includeAll){
         const boxes=await dbGetAll(STORE_BOXES);
@@ -7406,19 +6511,6 @@ async function restoreLocalFolder(requestPermissionNow=false){
     return false;
 }
 
-async function promptRestoreLocalFolder(){
-    return await new Promise(resolve=>{
-        showStyledConfirm('继续使用上次文件夹',
-            '<p>已记住上次选择的图库文件夹，但浏览器需要你点击一次来重新授权访问。</p><p>确认后会继续使用原路径，不需要重新选择文件夹。</p>',
-            '继续使用上次文件夹','重新选择',
-            async()=>{
-                const ok=await restoreLocalFolder(true);
-                resolve(ok);
-            },
-            ()=>resolve(false)
-        );
-    });
-}
 
 async function getFolderDisplayPath(){
     if(!localRootHandle) return '';
@@ -7922,64 +7014,6 @@ async function importLocalSettingsToDB(settings, report=null, options={}){
     return {modelCount,boxCount,imgCount,orphanImported,duplicateSkipped,renamedImages};
 }
 
-async function cleanupMissingLocalJsonRecords(report, settings, dataHandle){
-    if(!report||!settings||!dataHandle) return {removedImages:0,removedBoxes:0,removedModels:0};
-    const canWrite=await ensureWritePermission(dataHandle);
-    if(!canWrite) return {removedImages:0,removedBoxes:0,removedModels:0,denied:true};
-
-    let removedImages=0, removedBoxes=0, removedModels=0;
-    const missingByBox=new Map();
-    for(const item of report.missingFiles||[]){
-        const key=item.modelId+'/'+item.boxId;
-        if(!missingByBox.has(key)) missingByBox.set(key,[]);
-        missingByBox.get(key).push(item);
-    }
-
-    for(const [key, items] of missingByBox){
-        try{
-            const first=items[0];
-            const modelName=settings.models[first.modelId]?settings.models[first.modelId].name:first.modelId;
-            const modelDir=await dataHandle.getDirectoryHandle(modelName);
-            const boxDir=await modelDir.getDirectoryHandle(first.folderName);
-            const meta=await readJSON(boxDir,'_meta.json');
-            if(!meta||!meta.images) continue;
-            let changed=false;
-            for(const item of items){
-                if(meta.images[item.fileName]){
-                    delete meta.images[item.fileName];
-                    removedImages++;
-                    changed=true;
-                }
-            }
-            if(changed){
-                meta.imageCount=Object.keys(meta.images).length;
-                await writeJSON(boxDir,'_meta.json',meta);
-            }
-        }catch(e){}
-    }
-
-    let settingsChanged=false;
-    for(const issue of report.boxIssues||[]){
-        if(issue.issue==='model_dir_missing'){
-            if(settings.boxIndex&&settings.boxIndex[issue.modelId]){
-                delete settings.boxIndex[issue.modelId];
-                removedModels++;
-                settingsChanged=true;
-            }
-            if(settings.models&&settings.models[issue.modelId]){
-                delete settings.models[issue.modelId];
-                settingsChanged=true;
-            }
-        }else if((issue.issue==='box_dir_missing'||issue.issue==='meta_missing')&&settings.boxIndex&&settings.boxIndex[issue.modelId]&&settings.boxIndex[issue.modelId][issue.boxId]){
-            delete settings.boxIndex[issue.modelId][issue.boxId];
-            removedBoxes++;
-            settingsChanged=true;
-            if(Object.keys(settings.boxIndex[issue.modelId]).length===0) delete settings.boxIndex[issue.modelId];
-        }
-    }
-    if(settingsChanged) await writeJSON(dataHandle,'gallery_settings.json',settings);
-    return {removedImages,removedBoxes,removedModels};
-}
 
 async function updateFolderPathDisplay(){
     const path=await getFolderDisplayPath();
@@ -8266,30 +7300,6 @@ async function parseLocalModeZipFile(file, options={}){
     return {settings,importModels,importBoxes,importFilters,report};
 }
 
-async function comparePackageWithDB(importBoxes){
-    const result={dbImages:0,newImages:0,duplicateImages:0,isEmpty:true};
-    const dbImages=await dbGetAll(STORE_IMAGES);
-    const existingHashes=new Set();
-    for(const rec of dbImages){
-        for(const img of rec.images||[]){
-            result.dbImages++;
-            const hash=await hashImage(img);
-            if(hash) existingHashes.add(hash);
-        }
-    }
-    result.isEmpty=result.dbImages===0;
-    if(result.isEmpty) return result;
-    for(const modelData of Object.values(importBoxes||{})){
-        for(const imgs of Object.values(modelData.images||{})){
-            for(const img of imgs||[]){
-                const hash=await hashImage(img);
-                if(hash&&existingHashes.has(hash)) result.duplicateImages++;
-                else result.newImages++;
-            }
-        }
-    }
-    return result;
-}
 
 async function estimateStructureAdds(modelsObj={}, boxIndex={}, importBoxes=null, imageAdds=0){
     const existingModelNames=new Set(Object.values(MODELS||{}).map(m=>m&&m.name).filter(Boolean));
@@ -9201,19 +8211,6 @@ async function reloadData(){
     updateFolderPathDisplay();
 }
 
-async function reselectLocalFolder(){
-    if(pendingRootHandle){
-        const ok=await restoreLocalFolder(true);
-        if(ok){
-            await loadExistingLocalData(localRootHandle,{allowWrites:false});
-            return;
-        }
-    }
-    const handle=await selectLocalFolder(false);
-    if(!handle) return;
-    revokeAllBlobUrls();
-    await loadExistingLocalData(handle,{allowWrites:false});
-}
 
 // ─── Health Check ────────────────────────────
 function resetAll(){
