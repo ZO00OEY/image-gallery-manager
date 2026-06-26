@@ -2624,40 +2624,31 @@ function initDB(){
     });
 }
 
-function dbRequest(store, mode, fallback, run){
+function dbRequest(store, mode, fallback, run, successValue){
     return new Promise(resolve=>{
         if(!db){ resolve(fallback); return; }
         try{
-            const req=run(db.transaction([store],mode).objectStore(store));
-            req.onsuccess=e=>resolve(e.target.result||fallback);
+            const tx=mode?db.transaction([store],mode):db.transaction([store]);
+            const req=run(tx.objectStore(store));
+            req.onsuccess=e=>resolve(successValue!==undefined?successValue:(e.target.result!==undefined?e.target.result:fallback));
             req.onerror=()=>resolve(fallback);
         }catch(e){ resolve(fallback); }
     });
 }
 function dbGet(store,id){
-    return dbRequest(store, undefined, null, s=>s.get(id));
-}
-function dbWrite(store, run){
-    return new Promise(resolve=>{
-        if(!db){ resolve(false); return; }
-        try{
-            const req=run(db.transaction([store],'readwrite').objectStore(store));
-            req.onsuccess=()=>resolve(true);
-            req.onerror=()=>resolve(false);
-        }catch(e){ resolve(false); }
-    });
+    return dbRequest(store, null, null, s=>s.get(id));
 }
 function dbPut(store,data){
-    return dbWrite(store, s=>s.put(data));
+    return dbRequest(store, 'readwrite', false, s=>s.put(data), true);
 }
 function dbDelete(store,id){
-    return dbWrite(store, s=>s.delete(id));
+    return dbRequest(store, 'readwrite', false, s=>s.delete(id), true);
 }
 function dbGetAll(store){
-    return dbRequest(store, undefined, [], s=>s.getAll());
+    return dbRequest(store, null, [], s=>s.getAll());
 }
 function dbGetByIndex(store,indexName,value){
-    return dbRequest(store, undefined, [], s=>s.index(indexName).getAll(value));
+    return dbRequest(store, null, [], s=>s.index(indexName).getAll(value));
 }
 
 // ─── Data Model ─────────────────────────────
@@ -3140,31 +3131,13 @@ function extractJpegCom(bytes) {
     return parts.length>0?parts.join('\n'):null;
 }
 
-function extractImageRemark(file) {
-    return new Promise((resolve)=>{
-        if(file.type && !file.type.match('image.*') && !isImageFileName(file.name)) { resolve({remark:null,workflow:null}); return; }
-        const reader=new FileReader();
-        reader.onload=function(e){
-            try {
-                const bytes=new Uint8Array(e.target.result);
-                const isJpeg=bytes[0]===0xFF && bytes[1]===0xD8;
-                const isPng=bytes[0]===137 && bytes[1]===80 && bytes[2]===78 && bytes[3]===71;
-
-                if(isJpeg){
-                    const exif=extractExifUserComment(bytes);
-                    if(exif) { resolve({remark:exif,workflow:null}); return; }
-                    const com=extractJpegCom(bytes);
-                    resolve({remark:com,workflow:null});
-                } else if(isPng){
-                    const chunks=extractPngTextChunks(bytes);
-                    resolve(chunks);
-                } else {
-                    resolve({remark:null,workflow:null});
-                }
-            } catch(err){ resolve({remark:null,workflow:null}); }
-        };
-        reader.readAsArrayBuffer(file);
-    });
+async function extractImageRemark(file) {
+    if(file.type && !file.type.match('image.*') && !isImageFileName(file.name)) return {remark:null,workflow:null};
+    try{
+        return extractImageRemarkFromBytes(new Uint8Array(await file.arrayBuffer()));
+    }catch(e){
+        return {remark:null,workflow:null};
+    }
 }
 
 function extractImageRemarkFromBytes(bytes){
@@ -3906,12 +3879,19 @@ function loadEditImageFields() {
     const images=getEditingImages();
     const viewIdx=box?Math.max(0, Math.min(images.length-1, box.viewIndex||0)):0;
     const img=(images.length>0&&viewIdx<images.length)?images[viewIdx]:null;
-    document.getElementById('editCardModel').value=getImageModelLabel(img);
+    const remarkParts=img&&typeof img!=='string'&&img.remark?parsePromptParts(img.remark):{};
+    const modelParts=[];
+    if(img&&typeof img!=='string'){
+        if(img.modelName) modelParts.push(img.modelName);
+        if(img.modelVersion) modelParts.push(img.modelVersion);
+        if(!modelParts.length&&img.baseModel) modelParts.push(img.baseModel);
+    }
+    document.getElementById('editCardModel').value=modelParts.join(' / ');
     document.getElementById('editCardLoras').value=getImageLoraLabel(img);
     document.getElementById('editCardRemark').value=getImageRemark(img)||box?.remark||'';
-    document.getElementById('editCardNegative').value=getImageNegative(img);
-    document.getElementById('editCardSteps').value=getImageSteps(img);
-    document.getElementById('editCardWorkflow').value=getImageWorkflow(img);
+    document.getElementById('editCardNegative').value=img&&typeof img!=='string'&&img.negativePrompt!==undefined?img.negativePrompt:(remarkParts.negative||'');
+    document.getElementById('editCardSteps').value=img&&typeof img!=='string'&&img.steps!==undefined?img.steps:(remarkParts.steps||'');
+    document.getElementById('editCardWorkflow').value=img&&typeof img!=='string'?img.workflow||'':'';
     syncEditFieldDensity();
     refreshEditImagePreview();
 }
@@ -4263,7 +4243,10 @@ function getFilteredBoxes() {
             let haystack=(box.name+' '+(box.remark||'')+' '+(box.tags||[]).join(' ')).toLowerCase();
             const imgs=cachedBoxImages.get(box.id)||[];
             for(const img of imgs){
-                haystack+=' '+(getImageRemark(img)+' '+getImageNegative(img)+' '+getImageSteps(img)).toLowerCase();
+                const parts=img&&typeof img!=='string'&&img.remark?parsePromptParts(img.remark):{};
+                const negative=img&&typeof img!=='string'&&img.negativePrompt!==undefined?img.negativePrompt:(parts.negative||'');
+                const steps=img&&typeof img!=='string'&&img.steps!==undefined?img.steps:(parts.steps||'');
+                haystack+=' '+(getImageRemark(img)+' '+negative+' '+steps).toLowerCase();
             }
             if(!kws.every(k=>haystack.includes(k))) return false;
         }
@@ -4387,30 +4370,6 @@ function getImageRemark(img) {
     if(img.positivePrompt!==undefined) return img.positivePrompt;
     if(img.remark){ const p=parsePromptParts(img.remark); return p.positive||img.remark; }
     return '';
-}
-function getImageNegative(img) {
-    if(!img||typeof img==='string') return '';
-    if(img.negativePrompt!==undefined) return img.negativePrompt;
-    if(img.remark){ const p=parsePromptParts(img.remark); return p.negative||''; }
-    return '';
-}
-function getImageSteps(img) {
-    if(!img||typeof img==='string') return '';
-    if(img.steps!==undefined) return img.steps;
-    if(img.remark){ const p=parsePromptParts(img.remark); return p.steps||''; }
-    return '';
-}
-function getImageWorkflow(img) {
-    if(!img||typeof img==='string') return '';
-    return img.workflow||'';
-}
-function getImageModelLabel(img) {
-    if(!img||typeof img==='string') return '';
-    const parts=[];
-    if(img.modelName) parts.push(img.modelName);
-    if(img.modelVersion) parts.push(img.modelVersion);
-    if(!parts.length&&img.baseModel) parts.push(img.baseModel);
-    return parts.join(' / ');
 }
 function getImageLoraLabel(img) {
     if(!img||typeof img==='string') return '';
