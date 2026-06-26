@@ -2624,55 +2624,40 @@ function initDB(){
     });
 }
 
-function dbGet(store,id){
+function dbRequest(store, mode, fallback, run){
     return new Promise(resolve=>{
-        if(!db){ resolve(null); return; }
+        if(!db){ resolve(fallback); return; }
         try{
-            const req=db.transaction([store]).objectStore(store).get(id);
-            req.onsuccess=e=>resolve(e.target.result||null);
-            req.onerror=()=>resolve(null);
-        }catch(e){ resolve(null); }
+            const req=run(db.transaction([store],mode).objectStore(store));
+            req.onsuccess=e=>resolve(e.target.result||fallback);
+            req.onerror=()=>resolve(fallback);
+        }catch(e){ resolve(fallback); }
+    });
+}
+function dbGet(store,id){
+    return dbRequest(store, undefined, null, s=>s.get(id));
+}
+function dbWrite(store, run){
+    return new Promise(resolve=>{
+        if(!db){ resolve(false); return; }
+        try{
+            const req=run(db.transaction([store],'readwrite').objectStore(store));
+            req.onsuccess=()=>resolve(true);
+            req.onerror=()=>resolve(false);
+        }catch(e){ resolve(false); }
     });
 }
 function dbPut(store,data){
-    return new Promise(resolve=>{
-        if(!db){ resolve(false); return; }
-        try{
-            const req=db.transaction([store],'readwrite').objectStore(store).put(data);
-            req.onsuccess=()=>resolve(true);
-            req.onerror=()=>resolve(false);
-        }catch(e){ resolve(false); }
-    });
+    return dbWrite(store, s=>s.put(data));
 }
 function dbDelete(store,id){
-    return new Promise(resolve=>{
-        if(!db){ resolve(false); return; }
-        try{
-            const req=db.transaction([store],'readwrite').objectStore(store).delete(id);
-            req.onsuccess=()=>resolve(true);
-            req.onerror=()=>resolve(false);
-        }catch(e){ resolve(false); }
-    });
+    return dbWrite(store, s=>s.delete(id));
 }
 function dbGetAll(store){
-    return new Promise(resolve=>{
-        if(!db){ resolve([]); return; }
-        try{
-            const req=db.transaction([store]).objectStore(store).getAll();
-            req.onsuccess=e=>resolve(e.target.result||[]);
-            req.onerror=()=>resolve([]);
-        }catch(e){ resolve([]); }
-    });
+    return dbRequest(store, undefined, [], s=>s.getAll());
 }
 function dbGetByIndex(store,indexName,value){
-    return new Promise(resolve=>{
-        if(!db){ resolve([]); return; }
-        try{
-            const req=db.transaction([store]).objectStore(store).index(indexName).getAll(value);
-            req.onsuccess=e=>resolve(e.target.result||[]);
-            req.onerror=()=>resolve([]);
-        }catch(e){ resolve([]); }
-    });
+    return dbRequest(store, undefined, [], s=>s.index(indexName).getAll(value));
 }
 
 // ─── Data Model ─────────────────────────────
@@ -2827,9 +2812,9 @@ async function createImageRecordFromBytes(bytes, fileName, meta={}){
         metaSource:meta.metaSource||null
     };
 }
-async function createImageRecordFromDataUrl(dataUrl, fileName, meta={}){
-    const bytes=dataUrlToBytes(dataUrl);
-    const mimeType=meta.mimeType||dataUrlMimeType(dataUrl)||guessMimeType(fileName||meta.name||'');
+async function createImageRecordFromFile(file, fileName, meta={}){
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    const mimeType=meta.mimeType||file.type||guessMimeType(fileName||file.name||meta.name||'');
     return await createImageRecordFromBytes(bytes,fileName,{...meta,mimeType});
 }
 function normalizeImageRecord(img){
@@ -3480,9 +3465,6 @@ let unifiedPreviewRows=3;
 let unifiedPreviewSourceLabel='文件';
 let unifiedImportMode='file';
 let unifiedTargetBoxId=null;
-function readFileAsDataURL(file) {
-    return new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); });
-}
 function padImgNum(n){ return String(n).padStart(3,'0'); }
 function findCommonPrefix(strings){
     if(!strings||strings.length===0) return '';
@@ -3766,6 +3748,24 @@ async function executeUnifiedImportAppend(){
     await addFilesToBox(targetBoxId,files,unifiedPreviewSourceLabel||'剪贴板');
 }
 
+async function enrichImportedImage(file, img){
+    try{
+        const extracted=await extractImageRemark(file);
+        const remark=(extracted&&extracted.remark)||'';
+        const workflow=(extracted&&extracted.workflow)||null;
+        if(remark || workflow){
+            const prompts=resolvePrompts(remark, workflow);
+            img.remark=remark;
+            img.positivePrompt=prompts.positive||'';
+            img.negativePrompt=prompts.negative||'';
+            img.steps=prompts.steps||'';
+            if(workflow) img.workflow=workflow;
+        }
+    }catch(e){}
+    mergeImportedImageMeta(img,file&&file.galleryImportMeta);
+    return img;
+}
+
 async function executeUnifiedImport(mode){
     if(pendingUnifiedFiles.length===0){ showToast('请先选择图片文件'); return; }
     try{
@@ -3779,34 +3779,15 @@ async function executeUnifiedImport(mode){
 
     let totalImported=0;
 
-    async function enrichImportedImage(file, img){
-        try{
-            const extracted=await extractImageRemark(file);
-            const remark=(extracted&&extracted.remark)||'';
-            const workflow=(extracted&&extracted.workflow)||null;
-            if(remark || workflow){
-                const prompts=resolvePrompts(remark, workflow);
-                img.remark=remark;
-                img.positivePrompt=prompts.positive||'';
-                img.negativePrompt=prompts.negative||'';
-                img.steps=prompts.steps||'';
-                if(workflow) img.workflow=workflow;
-            }
-        }catch(e){}
-        mergeImportedImageMeta(img,file&&file.galleryImportMeta);
-        return img;
-    }
-
     if(mode==='single'){
         for(let i=0;i<pendingUnifiedFiles.length;i++){
             const file=pendingUnifiedFiles[i];
             const rawName=file.name.replace(/\.[^.]+$/,'');
             const name=boxName||rawName;
-            const dataURL=await readFileAsDataURL(file);
 
             const boxId='box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
             const imgName=name+'_'+padImgNum(1);
-            const img=await createImageRecordFromDataUrl(dataURL,imgName,{name:imgName});
+            const img=await createImageRecordFromFile(file,imgName,{name:imgName});
             await enrichImportedImage(file, img);
             const images=[img];
 
@@ -3828,9 +3809,8 @@ async function executeUnifiedImport(mode){
 
         for(let i=0;i<pendingUnifiedFiles.length;i++){
             const file=pendingUnifiedFiles[i];
-            const dataURL=await readFileAsDataURL(file);
             const imgName=name+'_'+padImgNum(i+1);
-            const img=await createImageRecordFromDataUrl(dataURL,imgName,{name:imgName});
+            const img=await createImageRecordFromFile(file,imgName,{name:imgName});
             await enrichImportedImage(file, img);
             images.push(img);
             totalImported++;
@@ -4116,24 +4096,9 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
 
         for(let i=0;i<imageFiles.length;i++){
             const file=imageFiles[i];
-            const dataUrl=await readFileAsDataURL(file);
-            let remark='', workflow=null;
-            const extracted=await extractImageRemark(file);
-            if(extracted){
-                remark=extracted.remark||'';
-                workflow=extracted.workflow||null;
-            }
-            const prompts=resolvePrompts(remark, workflow);
             const imgName=(file.name||'').replace(/\.[^.]+$/,'')||'';
-            existing.push(await createImageRecordFromDataUrl(dataUrl,imgName,{
-                name:imgName,
-                remark,
-                positivePrompt:prompts.positive,
-                negativePrompt:prompts.negative,
-                steps:prompts.steps,
-                workflow,
-                ...(file.galleryImportMeta||{})
-            }));
+            const img=await createImageRecordFromFile(file,imgName,{name:imgName});
+            existing.push(await enrichImportedImage(file,img));
             const pct=Math.round(((i+1)/imageFiles.length)*100);
             document.getElementById('progressFill').style.width=pct+'%';
             document.getElementById('progressText').innerText=`${i+1}/${imageFiles.length}`;
@@ -5581,6 +5546,12 @@ function renderBatchTagSuggestions(){
     });
 }
 
+function finishBatchAction(){
+    toggleBatchMode(false,{render:false,toast:false});
+    updateStatsAndTags();
+    renderItems(true,{updateStats:false});
+}
+
 async function executeBatchEdit(act='add-tags') {
     const tags=document.getElementById('batchTagInput').value.split(',').map(s=>s.trim()).filter(s=>s);
     if(tags.length===0){ showToast('请输入标签'); return; }
@@ -5593,9 +5564,7 @@ async function executeBatchEdit(act='add-tags') {
         await dbPut(STORE_BOXES,box);
     }
     hideModal('batchEditModal');
-    toggleBatchMode(false,{render:false,toast:false});
-    renderItems(true,{updateStats:false});
-    updateStatsAndTags();
+    finishBatchAction();
     showToast('批量编辑完成');
 }
 
@@ -5625,14 +5594,8 @@ async function executeBatchTransfer(){
         await dbPut(STORE_BOXES,box);
     }
     closeBatchTransferModal();
-    batchMode=false;
-    batchSelection.clear();
-    const grid=document.getElementById('itemsContainer');
-    if(grid) grid.classList.remove('batch-mode');
-    document.getElementById('batchActionBar').style.display='none';
     await loadBoxes();
-    updateStatsAndTags();
-    renderItems(true,{updateStats:false});
+    finishBatchAction();
     showToast('批量转移完成');
 }
 
@@ -5647,10 +5610,8 @@ async function executeBatchDelete() {
         cachedBoxImages.delete(boxId);
         imageCount.delete(boxId);
     }
-    toggleBatchMode(false,{render:false,toast:false});
     currentBoxes=currentBoxes.filter(b=>!selectedIds.has(b.id));
-    updateStatsAndTags();
-    renderItems(true,{updateStats:false});
+    finishBatchAction();
     showToast(`已删除 ${deletedCount} 个卡片盒`);
 }
 
@@ -5676,9 +5637,7 @@ async function executeBatchCopy() {
         currentBoxes.push(newBox);
         copied++;
     }
-    toggleBatchMode(false,{render:false,toast:false});
-    updateStatsAndTags();
-    renderItems(true,{updateStats:false});
+    finishBatchAction();
     showToast(`已复制 ${copied} 个卡片盒`);
 }
 
