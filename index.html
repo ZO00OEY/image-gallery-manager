@@ -182,10 +182,6 @@
 
         /* Panel content sections */
         .sidebar-section { margin-bottom: 10px; }
-        .sidebar-section-title {
-            font-size: 0.72rem; font-weight: 700; color: var(--text-light);
-            padding: 6px 8px 4px; text-transform: uppercase; letter-spacing: 0.04em;
-        }
         .sidebar-group {
             position: relative; z-index: 0;
             margin: 6px 0 16px; padding: 10px 8px 8px 8px;
@@ -204,20 +200,6 @@
             color: var(--primary); font-size: 1rem; font-weight: 800;
             letter-spacing: 0; display: flex; align-items: center; gap: 7px;
         }
-        .sidebar-group-kicker {
-            padding: 2px 6px; border-radius: 999px;
-            background: rgba(255,107,157,0.12); color: var(--text-light);
-            font-size: 0.68rem; font-weight: 700;
-        }
-        .sidebar-info-btn {
-            margin-left: auto; margin-right: -6px; width: 22px; height: 22px; padding: 0;
-            border: 0; background: transparent; color: var(--text-light);
-            display: inline-flex; align-items: center; justify-content: center;
-            cursor: pointer; opacity: 0.72; transition: opacity 0.16s, transform 0.16s, background 0.16s;
-            border-radius: 50%;
-        }
-        .sidebar-info-btn svg { width: 18px; height: 18px; }
-        .sidebar-info-btn:hover { opacity: 1; color: var(--primary); transform: translateY(-1px); background: var(--primary-bg); }
         .sidebar-action-btn {
             padding: 8px 9px; font-size: 0.84rem; font-weight: 600;
             color: var(--text-light); border-width: 1.5px;
@@ -277,7 +259,6 @@
         .danger-group::before { background: var(--error); }
         .danger-group .sidebar-group-title { color: var(--error); }
         .btn-side.active { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); font-weight: 700; }
-        .btn-side-danger { color: var(--error) !important; }
         #panelMenuView .btn-side {
             height: var(--menu-row-h);
             padding: 0 12px 0 14px;
@@ -535,9 +516,6 @@
         }
         .sidebar-tag-chip:hover { border-color: rgba(255,107,157,0.42); color: var(--primary); background: rgba(255,107,157,0.08); }
         .sidebar-tag-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 6px 16px rgba(255,107,157,0.22); }
-        .sidebar-tag-chip.selected-always {
-            border-style: dashed; border-color: var(--primary-light);
-        }
 
         .header-sep { width: 1px; height: 18px; background: var(--border-color); margin: 0 6px; flex-shrink: 0; }
 
@@ -803,33 +781,6 @@
             color: #fff;
             border-color: var(--error);
         }
-        .filter-modal-note {
-            color: var(--text-light);
-            font-size: 0.82rem;
-            line-height: 1.65;
-            margin: 0 0 14px;
-        }
-        .filter-input-row {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 9px;
-            margin-bottom: 14px;
-        }
-        .filter-input-row .input-text { margin: 0; }
-        .filter-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid rgba(255,107,157,0.14);
-            border-radius: 6px;
-            padding: 8px;
-            min-height: 60px;
-            background: rgba(255,255,255,0.34);
-        }
-        .filter-list-empty {
-            font-size: 0.78rem;
-            color: var(--text-light);
-            padding: 6px;
-        }
         .filter-pattern-row {
             display: flex;
             align-items: center;
@@ -861,16 +812,6 @@
             font-size: 1rem;
             line-height: 1;
             flex: 0 0 auto;
-        }
-        .filter-quick-btn {
-            border-radius: 999px;
-            padding: 4px 12px;
-            border: 1px solid rgba(255,107,157,0.7);
-            background: rgba(255,255,255,0.42);
-            color: var(--primary);
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
         }
         .batch-tag-modal { border-radius: 22px; max-width: 560px !important; }
         .batch-tag-modal .modal-header {
@@ -943,8 +884,7 @@
             background: rgba(255,245,248,0.58);
         }
         #promptFixModal .modal-footer .btn,
-        #filterModal .modal-footer .btn,
-        #filterModal .filter-input-row .btn {
+        #filterModal .modal-footer .btn {
             min-height: 38px;
             padding: 8px 18px;
             border-radius: 6px;
@@ -1047,15 +987,6 @@
             font-weight: 700 !important;
         }
         .import-preview { line-height: 1.7; font-size: 0.92rem; color: var(--text-main); }
-        .import-stat-list { display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 18px; row-gap: 4px; }
-        .import-stat-group { display: grid; gap: 4px; align-content: start; }
-        .import-stat-group.muted { opacity: 0.55; }
-        .import-stat-heading { color: var(--text-light); font-size: 0.76rem; font-weight: 700; margin-bottom: 2px; }
-        .import-stat-row { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
-        .import-stat-row b { font-weight: 500; color: var(--text-main); }
-        .import-stat-row .num { color: var(--text-main); }
-        .import-stat-row .num.accent { color: var(--accent); }
-        .import-stat-row .num.danger { color: var(--error); }
         .import-actions {
             margin-top: 14px; padding-top: 14px; border-top: 2px solid rgba(255,107,157,0.2);
             display: grid; gap: 13px;
@@ -2504,7 +2435,6 @@ function loadSettings() {
         if(saved){
             const parsed=JSON.parse(saved);
             appSettings.copyFilterPatterns=parsed.copyFilterPatterns||[];
-            if(parsed.dataMigrated!==undefined) appSettings.dataMigrated=parsed.dataMigrated;
             if(parsed.imgCountMigrated!==undefined) appSettings.imgCountMigrated=parsed.imgCountMigrated;
             if(parsed.boxQuickImportMode!==undefined) appSettings.boxQuickImportMode=parsed.boxQuickImportMode;
         }
@@ -2636,47 +2566,8 @@ function formatTime(ts) {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// ─── Config DB (persists UI prefs) ────
-const CONFIG_DB_NAME='ImagePromptManagerConfig';
-
-async function openConfigDB(){
-    return new Promise((resolve,reject)=>{
-        const req=indexedDB.open(CONFIG_DB_NAME,1);
-        req.onupgradeneeded=e=>{
-            const d=e.target.result;
-            if(!d.objectStoreNames.contains('config')) d.createObjectStore('config',{keyPath:'id'});
-        };
-        req.onsuccess=e=>{ resolve(e.target.result); };
-        req.onerror=()=>{ resolve(null); };
-    });
-}
-async function configGet(id){
-    const configDB=await openConfigDB();
-    if(!configDB) return null;
-    return new Promise(res=>{ configDB.transaction(['config']).objectStore('config').get(id).onsuccess=e=>res(e.target.result); });
-}
-async function configPut(id, data){
-    const configDB=await openConfigDB();
-    if(!configDB) return null;
-    return new Promise(res=>{ configDB.transaction(['config'],'readwrite').objectStore('config').put({id,...data}).onsuccess=res; });
-}
-// ─── UI Preferences (IndexedDB-backed, survives file://) ────
-const uiPrefs=new Map(); // in-memory cache, synced with IndexedDB
-async function initUIPrefs(){
-    const keys=['ipm_columns','ipm_scale','ipm_tagBar','ipm_night','ipm_sfw','ipm_lastModel','ipm_sidebarOpen'];
-    for(const k of keys){
-        try{
-            const rec=await configGet('ui_'+k);
-            if(rec) uiPrefs.set(k, rec.value);
-            else {
-                const local=localStorage.getItem('ui_'+k);
-                if(local!==null) uiPrefs.set(k, local);
-            }
-        }catch(e){}
-    }
-}
+// ─── UI Preferences ────
 function getPref(key, fallback=null){
-    if(uiPrefs.has(key)) return uiPrefs.get(key);
     try{
         const local=localStorage.getItem('ui_'+key);
         if(local!==null) return local;
@@ -2684,13 +2575,10 @@ function getPref(key, fallback=null){
     return fallback;
 }
 function setPref(key, value){
-    uiPrefs.set(key, value);
     try{
         if(value===null||value===undefined) localStorage.removeItem('ui_'+key);
         else localStorage.setItem('ui_'+key, String(value));
     }catch(e){}
-    // fire-and-forget write-through to IndexedDB
-    configPut('ui_'+key, {value}).catch(()=>{});
 }
 
 // ─── Dispatch Layer (IndexedDB primary) ──
@@ -6233,7 +6121,6 @@ function resetAll(){
     function doReset(){
         (async()=>{
             revokeAllBlobUrls();
-            try{ indexedDB.deleteDatabase(CONFIG_DB_NAME); }catch(e){}
             try{ if(db){ db.close(); db=null; } }catch(e){}
             const req=indexedDB.deleteDatabase(DB_NAME);
             req.onsuccess=()=>{
@@ -6269,8 +6156,6 @@ function resetAll(){
 
 document.addEventListener('DOMContentLoaded',async ()=>{
     document.body.classList.add('layout-initializing');
-    // Load UI prefs from IndexedDB first (survives file://)
-    await initUIPrefs();
     await initDB();
     loadSettings();
     bindPanelMenuHover();
