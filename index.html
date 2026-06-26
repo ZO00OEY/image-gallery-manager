@@ -784,26 +784,6 @@
             padding: 16px 24px; background: var(--primary-bg);
             border-top: 2px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px;
         }
-        .modal-footer.compat-source-footer {
-            padding: 14px 24px;
-            border-top-width: 1px;
-            background: rgba(255,245,248,0.58);
-            gap: 10px;
-        }
-        .modal-footer.compat-source-footer .btn {
-            min-height: 38px;
-            padding: 8px 18px;
-            border-radius: 6px;
-            font-size: 0.88rem;
-            letter-spacing: 0;
-        }
-        .modal-footer.compat-source-footer .btn-primary {
-            box-shadow: 0 8px 18px rgba(255,107,157,0.18);
-        }
-        .modal-footer.compat-source-footer .btn-outline {
-            border-width: 1.5px;
-            background: rgba(255,255,255,0.48);
-        }
         .tool-modal { border-radius: 22px; }
         .tool-modal .modal-header {
             padding: 18px 24px;
@@ -2597,7 +2577,7 @@ function hideModal(id) {
         urlImportTargetBoxId=null;
     }
     if(id==='storageModeModal'){
-        document.getElementById('storageModeFooter')?.classList.remove('compat-source-footer','reset-data-footer');
+        document.getElementById('storageModeFooter')?.classList.remove('reset-data-footer');
         releaseBlobUrls('clipboard-preview');
     }
 }
@@ -3048,7 +3028,17 @@ async function blobToBytes(blob){
 }
 async function imageToBytes(image){
     if(!image) return null;
-    if(typeof image==='string') return image.startsWith('data:')?dataUrlToBytes(image):null;
+    if(typeof image==='string'){
+        if(image.startsWith('data:')) return dataUrlToBytes(image);
+        if(image.startsWith('blob:')){
+            try{
+                const resp=await fetch(image);
+                const blob=await resp.blob();
+                return await blobToBytes(blob);
+            }catch(e){ return null; }
+        }
+        return null;
+    }
     if(image.blob instanceof Blob) return await blobToBytes(image.blob);
     if(image.dataUrl&&image.dataUrl.startsWith('data:')) return dataUrlToBytes(image.dataUrl);
     if(image.dataUrl&&image.dataUrl.startsWith('blob:')){
@@ -3186,7 +3176,7 @@ async function hashImage(image){
 function showStyledConfirm(title, messageHtml, confirmLabel, cancelLabel, onConfirm, onCancel){
     document.getElementById('storageModeTitle').innerText=title;
     document.getElementById('storageModeBody').innerHTML=messageHtml;
-    document.getElementById('storageModeFooter').classList.remove('compat-source-footer','reset-data-footer');
+    document.getElementById('storageModeFooter').classList.remove('reset-data-footer');
     document.getElementById('storageModeFooter').innerHTML=
         '<button class="btn btn-outline" id="btnStyledCancel">'+(cancelLabel||'取消')+'</button>'+
         '<button class="btn btn-primary" id="btnStyledConfirm">'+(confirmLabel||'确认')+'</button>';
@@ -3781,9 +3771,6 @@ let unifiedTargetBoxId=null;
 function readFileAsDataURL(file) {
     return new Promise(res=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); });
 }
-function compressImage(dataURL) {
-    return Promise.resolve(dataURL); // Always use original quality
-}
 function padImgNum(n){ return String(n).padStart(3,'0'); }
 function findCommonPrefix(strings){
     if(!strings||strings.length===0) return '';
@@ -4108,11 +4095,10 @@ async function executeUnifiedImport(mode){
             const rawName=file.name.replace(/\.[^.]+$/,'');
             const name=boxName||rawName;
             const dataURL=await readFileAsDataURL(file);
-            const compressed=await compressImage(dataURL);
 
             const boxId='box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
             const imgName=name+'_'+padImgNum(1);
-            const img=await createImageRecordFromDataUrl(compressed,imgName,{name:imgName});
+            const img=await createImageRecordFromDataUrl(dataURL,imgName,{name:imgName});
             await enrichImportedImage(file, img);
             const images=[img];
 
@@ -4135,9 +4121,8 @@ async function executeUnifiedImport(mode){
         for(let i=0;i<pendingUnifiedFiles.length;i++){
             const file=pendingUnifiedFiles[i];
             const dataURL=await readFileAsDataURL(file);
-            const compressed=await compressImage(dataURL);
             const imgName=name+'_'+padImgNum(i+1);
-            const img=await createImageRecordFromDataUrl(compressed,imgName,{name:imgName});
+            const img=await createImageRecordFromDataUrl(dataURL,imgName,{name:imgName});
             await enrichImportedImage(file, img);
             images.push(img);
             totalImported++;
@@ -4401,58 +4386,7 @@ async function addLocalImagesToBox(boxId) {
     const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true;
     inp.onchange=async ev=>{
         if(!ev.target.files.length) return;
-        showModal('progressModal');
-        document.getElementById('progressTitle').innerText='上传图片...';
-        let existing=cachedBoxImages.get(boxId)||[];
-        const record=await dbGet(STORE_IMAGES,boxId);
-        if(record){
-            existing=record.images||[];
-            existing=existing.map(normalizeImageRecord);
-        }
-
-        for(let i=0;i<ev.target.files.length;i++){
-            const file=ev.target.files[i];
-            if(!file.type.match('image.*')) continue;
-            const dataUrl=await readFileAsDataURL(file);
-            const compressed=await compressImage(dataUrl).catch(()=>dataUrl);
-            // Try to extract image remark
-            let remark='', workflow=null;
-            const extracted=await extractImageRemark(file);
-            if(extracted){
-                remark=extracted.remark||'';
-                workflow=extracted.workflow||null;
-            }
-            const prompts=resolvePrompts(remark, workflow);
-            const imgName=file.name.replace(/\.[^.]+$/,'')||'';
-            existing.push(await createImageRecordFromDataUrl(compressed,imgName,{
-                name:imgName,
-                remark,
-                positivePrompt:prompts.positive,
-                negativePrompt:prompts.negative,
-                steps:prompts.steps,
-                workflow
-            }));
-            document.getElementById('progressFill').style.width=Math.round(((i+1)/ev.target.files.length)*100)+'%';
-            document.getElementById('progressText').innerText=`${i+1}/${ev.target.files.length}`;
-            if(i%3===0) await new Promise(r=>setTimeout(r,0));
-        }
-
-        await dbPut(STORE_IMAGES,{id:boxId,boxId,images:existing});
-        cachedBoxImages.set(boxId,existing);
-        imageCount.set(boxId,existing.length);
-        syncBoxImageCount(boxId);
-
-        hideModal('progressModal');
-        const box=currentBoxes.find(b=>b.id===boxId);
-        if(box) box.viewIndex=existing.length-1;
-        const card=cardByBoxId.get(boxId);
-        if(card){
-            renderCardImages(card, box||{id:boxId});
-        } else {
-            renderItems(true,{updateStats:false});
-        }
-        updateStatsAndTags();
-        showToast(`已添加 ${ev.target.files.length} 张图片`);
+        await addFilesToBox(boxId,ev.target.files,'本地');
     };
     inp.click();
 }
@@ -4475,7 +4409,6 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
         for(let i=0;i<imageFiles.length;i++){
             const file=imageFiles[i];
             const dataUrl=await readFileAsDataURL(file);
-            const compressed=await compressImage(dataUrl).catch(()=>dataUrl);
             let remark='', workflow=null;
             const extracted=await extractImageRemark(file);
             if(extracted){
@@ -4484,7 +4417,7 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
             }
             const prompts=resolvePrompts(remark, workflow);
             const imgName=(file.name||'').replace(/\.[^.]+$/,'')||'';
-            existing.push(await createImageRecordFromDataUrl(compressed,imgName,{
+            existing.push(await createImageRecordFromDataUrl(dataUrl,imgName,{
                 name:imgName,
                 remark,
                 positivePrompt:prompts.positive,
@@ -5498,10 +5431,6 @@ function exportData() {
     exportCurrentDBToZip();
 }
 
-function ensureJSZip(){
-    return Promise.resolve(window.JSZip);
-}
-
 async function handleZipImport(event){
     const file=event.target.files[0];
     if(!file) return;
@@ -6120,8 +6049,7 @@ function makeUniqueId(prefix, usedIds){
 async function parseLocalModeZipFile(file, options={}){
     const readImages=!!options.readImages;
     const progress=options.progress||null;
-    const JSZip=await ensureJSZip();
-    const zip=await JSZip.loadAsync(await file.arrayBuffer());
+    const zip=await window.JSZip.loadAsync(await file.arrayBuffer());
     const settingsFile=zip.file('gallery_settings.json');
     if(!settingsFile) throw new Error('压缩包里没有 gallery_settings.json');
     const settings=JSON.parse(await settingsFile.async('text'));
@@ -6228,95 +6156,6 @@ async function parseLocalModeZipFile(file, options={}){
     return {settings,importModels,importBoxes,importFilters,report};
 }
 
-
-async function estimateStructureAdds(modelsObj={}, boxIndex={}, importBoxes=null, imageAdds=0){
-    const existingModelNames=new Set(Object.values(MODELS||{}).map(m=>m&&m.name).filter(Boolean));
-    const existingBoxes=await dbGetAll(STORE_BOXES);
-    const existingBoxKeys=new Set();
-    for(const box of existingBoxes){
-        const modelName=(MODELS[box.modelId]||{}).name||box.modelId||'';
-        existingBoxKeys.add(modelName+'\n'+(box.name||''));
-    }
-    let models=0, boxes=0;
-    for(const modelId of Object.keys(boxIndex||{})){
-        const modelName=(modelsObj[modelId]||{}).name||modelId;
-        if(!existingModelNames.has(modelName)) models++;
-        const importModelData=importBoxes&&importBoxes[modelId];
-        const boxNameById=new Map();
-        if(importModelData&&Array.isArray(importModelData.boxes)){
-            for(const box of importModelData.boxes) boxNameById.set(box.id,box.name);
-        }
-        for(const boxId of Object.keys(boxIndex[modelId]||{})){
-            const boxName=boxNameById.get(boxId)||boxIndex[modelId][boxId]||boxId;
-            if(!existingBoxKeys.has(modelName+'\n'+boxName)) boxes++;
-        }
-    }
-    return {models,boxes,images:imageAdds||0};
-}
-
-function buildLocalReadPreviewHtml(options){
-    const sourceType=options.sourceType||'数据';
-    const sourceName=options.sourceName||'';
-    const modelCount=options.modelCount||0;
-    const boxCount=options.boxCount||0;
-    const jsonTotal=options.jsonTotal||0;
-    const actualFiles=options.actualFiles||0;
-    const missingCount=options.missingCount||0;
-    const orphanCount=options.orphanCount||0;
-    const duplicateCount=options.duplicateCount||0;
-    const pendingImages=options.pendingImages??Math.max(0,actualFiles-duplicateCount);
-    const dbCompare=options.dbCompare||{dbImages:0,newImages:pendingImages,duplicateImages:0,isEmpty:true};
-    const boxIssues=options.boxIssues||0;
-    const compareReady=options.compareReady!==false;
-    const missingModels=options.missingModels||0;
-    const missingBoxes=options.missingBoxes||boxIssues||0;
-    const orphanModels=options.orphanModels||0;
-    const orphanBoxes=options.orphanBoxes||0;
-    const duplicateModels=options.duplicateModels||0;
-    const duplicateBoxes=options.duplicateBoxes||0;
-    const mergeAdds=options.mergeAdds||{models:0,boxes:0,images:(dbCompare.newImages??pendingImages)};
-    const hasMissing=missingModels>0||missingBoxes>0||missingCount>0;
-    const hasOrphan=orphanModels>0||orphanBoxes>0||orphanCount>0;
-    const hasDuplicate=duplicateModels>0||duplicateBoxes>0||duplicateCount>0;
-    const hasLocalIssues=hasMissing||hasOrphan||hasDuplicate;
-    const part=(label,value,unit,cls='num')=>label+' <span class="'+cls+'">'+value+'</span> '+unit;
-    const rowParts=(m,b,i,cls)=>[
-        m>0?part('模型',m,'个',cls):'',
-        b>0?part('卡片盒',b,'个',cls):'',
-        i>0?part('图片',i,'张',cls):''
-    ].filter(Boolean).join('，');
-
-    let html='<div class="import-preview">';
-    html+='<div class="import-flow">';
-    html+='<div class="import-step"><div class="import-step-index">1</div><div>'+
-        '<div class="import-step-title">读取本地索引</div>'+
-        '<div class="import-step-text">模型 <span class="num">'+modelCount+'</span> 个，卡片盒 <span class="num">'+boxCount+'</span> 个，图片记录 <span class="num">'+jsonTotal+'</span> 条</div>'+
-        '</div></div>';
-    html+='<div class="import-step"><div class="import-step-index">2</div><div>'+
-        '<div class="import-step-title">核对索引与图片</div>';
-    if(hasLocalIssues){
-        html+='<div class="import-step-text">';
-        if(hasMissing) html+='<div>缺失：'+rowParts(missingModels,missingBoxes,missingCount,'num danger')+'</div>';
-        if(hasOrphan) html+='<div>未记录：'+rowParts(orphanModels,orphanBoxes,orphanCount,'num accent')+'</div>';
-        if(hasDuplicate) html+='<div>重复：'+rowParts(duplicateModels,duplicateBoxes,duplicateCount,'num danger')+'</div>';
-        html+='</div>';
-    }else{
-        html+='<div class="import-step-text">索引与实际图片一致，未发现缺失、未记录或重复。</div>';
-    }
-    html+='</div></div>';
-    html+='<div class="import-step"><div class="import-step-index">3</div><div>'+
-        '<div class="import-step-title">准备合并到当前图库</div>';
-    html+='<div class="import-step-text">预计新增：模型 <span class="num">'+(mergeAdds.models||0)+'</span> 个，卡片盒 <span class="num">'+(mergeAdds.boxes||0)+'</span> 个，图片 <span class="num">'+(mergeAdds.images??0)+'</span> 张';
-    if(!compareReady) html+='；读取时会再按图片内容去重';
-    else if((dbCompare.duplicateImages||0)>0) html+='；当前图库已有重复 <span class="num danger">'+dbCompare.duplicateImages+'</span> 张';
-    html+='。</div>';
-    html+='</div></div>';
-    html+='</div>';
-
-    html+='<p class="import-footnote">读取会合并到当前浏览器图库，不会改动原压缩包或本地文件夹。</p>';
-    html+='</div>';
-    return html;
-}
 
 async function importPackageToDB(pkg, options={}){
     const dedupe=options.dedupe!==false;
@@ -6445,21 +6284,6 @@ async function importPackageToDB(pkg, options={}){
     return {modelCount,boxCount,imgCount,duplicateSkipped,renamedImages};
 }
 
-async function imageDataToBytes(source){
-    if(!source) return null;
-    if(typeof source!=='string') return await imageToBytes(source);
-    const dataUrl=source;
-    if(dataUrl.startsWith('data:')) return dataUrlToBytes(dataUrl);
-    if(dataUrl.startsWith('blob:')){
-        try{
-            const resp=await fetch(dataUrl);
-            const blob=await resp.blob();
-            return new Uint8Array(await blob.arrayBuffer());
-        }catch(e){ return null; }
-    }
-    return null;
-}
-
 function makeUniqueBackupName(baseName, existingNames, fallback='untitled'){
     const cleaned=sanitizeFileName(baseName||fallback)||fallback;
     let candidate=cleaned, n=2;
@@ -6486,8 +6310,7 @@ async function exportCurrentDBToZip(){
         document.getElementById('progressTitle').innerText='导出压缩包...';
         document.getElementById('progressFill').style.width='0%';
         document.getElementById('progressText').innerText='准备压缩包...';
-        const JSZip=await ensureJSZip();
-        const zip=new JSZip();
+        const zip=new window.JSZip();
 
         const settings={version:1,models:{},boxIndex:{},currentModelId,copyFilterPatterns:appSettings.copyFilterPatterns||[]};
         const boxes=await dbGetAll(STORE_BOXES);
@@ -6521,7 +6344,7 @@ async function exportCurrentDBToZip(){
 
                 for(let i=0;i<images.length;i++){
                     const img=images[i];
-                    const bytes=await imageDataToBytes(img);
+                    const bytes=await imageToBytes(img);
                     if(!bytes) continue;
                     const imgName=makeUniqueBackupImageName(img,i,usedImageNames);
                     zip.file(zipPath+imgName,bytes);
