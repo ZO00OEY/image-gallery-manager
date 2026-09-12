@@ -24,6 +24,7 @@
             --sidebar-width: 260px;
             --rail-width: 66px;
             --panel-width: 260px;
+            --sidebar-occupied-width: calc(var(--rail-width) + var(--panel-width));
             --rail-shift: 0px;
             --menu-row-h: 52px;
             --menu-start-offset: 14px;
@@ -63,6 +64,7 @@
             transition: background-color 0.3s ease;
         }
 
+        html { min-height: 100%; overflow-y: scroll; scrollbar-gutter: stable; }
         body { color: var(--text-main); min-height: 100vh; display: flex; background: transparent; transition: background-color 0.3s ease, color 0.3s ease; }
         body.layout-initializing .main-content,
         body.layout-initializing .sidebar-panel,
@@ -74,7 +76,7 @@
         }
         body.sidebar-collapsed .sidebar-panel { transform: translateX(-102%); }
         body.sidebar-open .sidebar-panel { transform: none; }
-        body.sidebar-open .main-content { margin-left: calc(var(--rail-width) + var(--panel-width, 220px)); }
+        body.sidebar-open .main-content { margin-left: var(--sidebar-occupied-width); }
 
         /* Nav rail — narrow icon column */
         .nav-rail {
@@ -287,7 +289,6 @@
         .main-content {
             flex: 1; margin-left: var(--rail-width); padding: 18px 28px 28px;
             display: flex; flex-direction: column; gap: 18px; min-width: 0;
-            transition: margin-left 0.34s cubic-bezier(.22,.78,.25,1);
             transition: margin-left 0.3s ease;
         }
 
@@ -539,6 +540,17 @@
             width: 100%; aspect-ratio: 3 / 4; overflow: hidden; position: relative; cursor: pointer;
             background: rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center;
             transition: var(--transition);
+        }
+        .preview-container.image-drop-active {
+            box-shadow: inset 0 0 0 3px var(--primary);
+        }
+        .preview-container.image-drop-active::before {
+            content: '松开即可添加图片';
+            position: absolute; inset: 0; z-index: 8;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,107,157,0.78); color: #fff;
+            font-size: 0.94rem; font-weight: 760; letter-spacing: 0.02em;
+            pointer-events: none;
         }
         .preview-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.32s ease, filter 0.3s ease; }
         .preview-container:hover .preview-image { transform: scale(1.035); }
@@ -2427,7 +2439,7 @@ function handleLocalImportProgress(event){
     detail.innerHTML=html;
 }
 // ─── Settings ───────────────────────────────
-let appSettings={copyFilterPatterns:[]};
+let appSettings={copyFilterPatterns:[],imageDataVersion:0};
 
 function loadSettings() {
     try{
@@ -2435,7 +2447,7 @@ function loadSettings() {
         if(saved){
             const parsed=JSON.parse(saved);
             appSettings.copyFilterPatterns=parsed.copyFilterPatterns||[];
-            if(parsed.imgCountMigrated!==undefined) appSettings.imgCountMigrated=parsed.imgCountMigrated;
+            if(Number.isFinite(parsed.imageDataVersion)) appSettings.imageDataVersion=parsed.imageDataVersion;
             if(parsed.boxQuickImportMode!==undefined) appSettings.boxQuickImportMode=parsed.boxQuickImportMode;
         }
     } catch(e){}
@@ -2587,6 +2599,7 @@ const STORE_BOXES='boxes';
 const STORE_IMAGES='images';
 const DB_NAME='ImagePromptManagerDB';
 const DB_VERSION=5;
+const IMAGE_DATA_VERSION=2;
 let db=null;
 
 function initDB(){
@@ -2624,31 +2637,60 @@ function initDB(){
     });
 }
 
-function dbRequest(store, mode, fallback, run, successValue){
+function dbReadRequest(store, fallback, run){
     return new Promise(resolve=>{
         if(!db){ resolve(fallback); return; }
         try{
-            const tx=mode?db.transaction([store],mode):db.transaction([store]);
+            const tx=db.transaction([store]);
             const req=run(tx.objectStore(store));
-            req.onsuccess=e=>resolve(successValue!==undefined?successValue:(e.target.result!==undefined?e.target.result:fallback));
+            req.onsuccess=e=>resolve(e.target.result!==undefined?e.target.result:fallback);
             req.onerror=()=>resolve(fallback);
         }catch(e){ resolve(fallback); }
     });
 }
+function dbWriteRequest(store, run){
+    return new Promise((resolve,reject)=>{
+        if(!db){ reject(new Error('数据库尚未初始化')); return; }
+        let settled=false;
+        try{
+            const tx=db.transaction([store],'readwrite');
+            const request=run(tx.objectStore(store));
+            tx.oncomplete=()=>{
+                if(settled) return;
+                settled=true;
+                resolve(true);
+            };
+            const fail=event=>{
+                if(settled) return;
+                settled=true;
+                const cause=(event&&event.target&&event.target.error)||(request&&request.error)||tx.error;
+                reject(new Error(cause&&cause.name==='QuotaExceededError'?'浏览器存储空间不足':'数据库写入失败'));
+            };
+            tx.onerror=fail;
+            tx.onabort=fail;
+        }catch(e){
+            reject(e instanceof Error?e:new Error('数据库写入失败'));
+        }
+    });
+}
+function reportDataError(error, prefix='保存失败'){
+    console.error(prefix,error);
+    showToast(prefix+'：'+(error&&error.message?error.message:'未知错误'));
+}
 function dbGet(store,id){
-    return dbRequest(store, null, null, s=>s.get(id));
+    return dbReadRequest(store, null, s=>s.get(id));
 }
 function dbPut(store,data){
-    return dbRequest(store, 'readwrite', false, s=>s.put(data), true);
+    return dbWriteRequest(store, s=>s.put(data));
 }
 function dbDelete(store,id){
-    return dbRequest(store, 'readwrite', false, s=>s.delete(id), true);
+    return dbWriteRequest(store, s=>s.delete(id));
 }
 function dbGetAll(store){
-    return dbRequest(store, null, [], s=>s.getAll());
+    return dbReadRequest(store, [], s=>s.getAll());
 }
 function dbGetByIndex(store,indexName,value){
-    return dbRequest(store, null, [], s=>s.index(indexName).getAll(value));
+    return dbReadRequest(store, [], s=>s.index(indexName).getAll(value));
 }
 
 // ─── Data Model ─────────────────────────────
@@ -2660,7 +2702,7 @@ let MODELS={};
 let currentModelId=null;
 let currentBoxes=[];       // boxes for current model
 let imageCount=new Map();  // boxId -> count
-let cachedBoxImages=new Map(); // boxId -> Array<{dataUrl, remark}>
+let cachedBoxImages=new Map(); // boxId -> image records
 let globalBoxCount=0, globalImgCount=0;
 let currentBoxCount=0, currentImgCount=0;
 let headerStatsScope='current';
@@ -2682,6 +2724,9 @@ let currentFiltered=[];
 let gridResizeObserver=null;
 let gridResizeTicking=false;
 let lastObservedGridWidth=0;
+let lastLayoutKey='';
+const BASE_RAIL_WIDTH=66;
+const BASE_PANEL_WIDTH=260;
 
 function sanitizeFileName(name){
     return name.replace(/[<>:"/\\|?*]/g,'_').replace(/\s+/g,' ').trim()||'untitled';
@@ -2694,14 +2739,24 @@ function guessMimeType(fileName){
 function isImageFileName(fileName){
     return /\.(png|jpe?g|webp|gif|bmp)$/i.test(fileName||'');
 }
-function dataUrlToBytes(dataUrl){
-    const idx=dataUrl.indexOf(',');
-    if(idx<0) return null;
-    return Uint8Array.from(atob(dataUrl.slice(idx+1)),c=>c.charCodeAt(0));
-}
 function dataUrlMimeType(dataUrl){
-    const m=String(dataUrl||'').match(/^data:([^;,]+)/);
-    return m?m[1]:'image/png';
+    const match=String(dataUrl||'').match(/^data:([^;,]+)/i);
+    return match?match[1]:'image/png';
+}
+function dataUrlToBytes(dataUrl){
+    const value=String(dataUrl||'');
+    const comma=value.indexOf(',');
+    if(comma<0||!value.startsWith('data:')) return null;
+    const header=value.slice(0,comma);
+    const payload=value.slice(comma+1);
+    if(/;base64/i.test(header)){
+        try{ return Uint8Array.from(atob(payload),char=>char.charCodeAt(0)); }
+        catch(e){ return null; }
+    }
+    try{
+        const decoded=decodeURIComponent(payload);
+        return new TextEncoder().encode(decoded);
+    }catch(e){ return null; }
 }
 function bytesToBlob(bytes, mimeType){
     const arr=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
@@ -2716,26 +2771,9 @@ async function blobToBytes(blob){
 }
 async function imageToBytes(image){
     if(!image) return null;
-    if(typeof image==='string'){
-        if(image.startsWith('data:')) return dataUrlToBytes(image);
-        if(image.startsWith('blob:')){
-            try{
-                const resp=await fetch(image);
-                const blob=await resp.blob();
-                return await blobToBytes(blob);
-            }catch(e){ return null; }
-        }
-        return null;
-    }
+    if(typeof image==='string') return dataUrlToBytes(image);
     if(image.blob instanceof Blob) return await blobToBytes(image.blob);
-    if(image.dataUrl&&image.dataUrl.startsWith('data:')) return dataUrlToBytes(image.dataUrl);
-    if(image.dataUrl&&image.dataUrl.startsWith('blob:')){
-        try{
-            const resp=await fetch(image.dataUrl);
-            const blob=await resp.blob();
-            return await blobToBytes(blob);
-        }catch(e){ return null; }
-    }
+    if(typeof image.dataUrl==='string') return dataUrlToBytes(image.dataUrl);
     return null;
 }
 async function createThumbnailBlobFromBytes(bytes, maxSize=THUMB_MAX_SIZE, sourceMimeType='image/png'){
@@ -2760,10 +2798,11 @@ async function createThumbnailBlobFromBytes(bytes, maxSize=THUMB_MAX_SIZE, sourc
     }
 }
 function getImageMimeType(image){
-    if(!image||typeof image==='string') return image&&image.startsWith&&image.startsWith('data:')?dataUrlMimeType(image):'image/png';
+    if(!image) return 'image/png';
+    if(typeof image==='string') return dataUrlMimeType(image);
     if(image.mimeType) return image.mimeType;
     if(image.blob instanceof Blob && image.blob.type) return image.blob.type;
-    if(image.dataUrl&&image.dataUrl.startsWith('data:')) return dataUrlMimeType(image.dataUrl);
+    if(image.dataUrl) return dataUrlMimeType(image.dataUrl);
     return guessMimeType(image.name||image.fileName||'');
 }
 async function createImageRecordFromBytes(bytes, fileName, meta={}){
@@ -2809,7 +2848,7 @@ async function createImageRecordFromFile(file, fileName, meta={}){
     return await createImageRecordFromBytes(bytes,fileName,{...meta,mimeType});
 }
 function normalizeImageRecord(img){
-    if(typeof img==='string') return {dataUrl:img, remark:'', positivePrompt:'', negativePrompt:'', steps:'', modelName:'', modelVersion:'', baseModel:'', loras:[], resources:[]};
+    if(typeof img==='string') return {dataUrl:img,remark:'',positivePrompt:'',negativePrompt:'',steps:'',modelName:'',modelVersion:'',baseModel:'',loras:[],resources:[]};
     return img||{remark:'', positivePrompt:'', negativePrompt:'', steps:'', modelName:'', modelVersion:'', baseModel:'', loras:[], resources:[]};
 }
 function imageMetaForExport(img){
@@ -2869,7 +2908,10 @@ function showStyledConfirm(title, messageHtml, confirmLabel, cancelLabel, onConf
         '<button class="btn btn-outline" id="btnStyledCancel">'+(cancelLabel||'取消')+'</button>'+
         '<button class="btn btn-primary" id="btnStyledConfirm">'+(confirmLabel||'确认')+'</button>';
     showModal('storageModeModal');
-    document.getElementById('btnStyledConfirm').onclick=()=>{ hideModal('storageModeModal'); if(onConfirm) onConfirm(); };
+    document.getElementById('btnStyledConfirm').onclick=()=>{
+        hideModal('storageModeModal');
+        if(onConfirm) Promise.resolve().then(onConfirm).catch(error=>reportDataError(error,'操作失败'));
+    };
     document.getElementById('btnStyledCancel').onclick=()=>{ hideModal('storageModeModal'); if(onCancel) onCancel(); };
 }
 
@@ -2892,33 +2934,41 @@ function revokeAllBlobUrls(){
     blobUrlOwners.clear();
 }
 function getImageUrl(img,ownerKey){
-    if(typeof img==='string') return img;
     if(!img) return '';
-    if(img.dataUrl) return img.dataUrl;
+    if(typeof img==='string') return img;
     if(img.blob instanceof Blob) return trackBlobUrl(ownerKey,URL.createObjectURL(img.blob));
+    if(typeof img.dataUrl==='string') return img.dataUrl;
     return '';
 }
 function getThumbUrl(img,ownerKey){
-    if(!img||typeof img==='string') return getImageUrl(img,ownerKey);
+    if(!img) return '';
+    if(typeof img==='string') return img;
     if(img.thumbBlob instanceof Blob) return trackBlobUrl(ownerKey,URL.createObjectURL(img.thumbBlob));
     return getImageUrl(img,ownerKey);
 }
 
 async function loadModels() {
     const saved=await dbGet(STORE_MODELS,'main');
+    let needsSave=false;
     if(saved) {
         MODELS=saved.data;
         if(Object.keys(MODELS).length===0) { initDefaultModels(); return; }
         // Assign sortIndex to models that don't have one
         let idx=0;
-        Object.values(MODELS).forEach(m=>{ if(m.sortIndex===undefined) m.sortIndex=idx++; });
+        Object.values(MODELS).forEach(m=>{
+            if(m.sortIndex===undefined){ m.sortIndex=idx; needsSave=true; }
+            idx++;
+        });
         const lastId=getPref('ipm_lastModel');
         currentModelId=(lastId&&MODELS[lastId])?lastId:
             Object.keys(MODELS)[0];
     } else {
         initDefaultModels();
     }
-    saveModels(false);
+    if(needsSave){
+        try{ await saveModels(false); }
+        catch(error){ reportDataError(error,'模型排序升级失败'); }
+    }
 }
 
 function initDefaultModels() {
@@ -2935,9 +2985,76 @@ function scheduleGlobalStatsRefresh(){
     },0);
 }
 
-function saveModels(refreshStats=true) {
-    dbPut(STORE_MODELS,{id:'main',data:MODELS});
+async function saveModels(refreshStats=true) {
+    await dbPut(STORE_MODELS,{id:'main',data:MODELS});
     if(refreshStats) scheduleGlobalStatsRefresh();
+}
+
+function isLegacyImageRecord(image){
+    return typeof image==='string'||!!(image&&typeof image.dataUrl==='string'&&!(image.blob instanceof Blob));
+}
+async function migrateLegacyImageRecord(image,index){
+    const source=typeof image==='string'?{dataUrl:image}:image;
+    const bytes=dataUrlToBytes(source.dataUrl);
+    if(!bytes) throw new Error('旧图片数据无法解析');
+    const mimeType=source.mimeType||dataUrlMimeType(source.dataUrl);
+    const promptParts=source.remark&&source.positivePrompt===undefined?parsePromptParts(source.remark):{};
+    const ext=mimeType.includes('jpeg')?'jpg':mimeType.includes('webp')?'webp':mimeType.includes('gif')?'gif':mimeType.includes('bmp')?'bmp':'png';
+    const migrated={
+        remark:'',positivePrompt:'',negativePrompt:'',steps:'',modelName:'',modelVersion:'',baseModel:'',loras:[],resources:[],
+        ...source,
+        name:source.name||source.fileName||('image_'+padImgNum(index+1)+'.'+ext),
+        blob:bytesToBlob(bytes,mimeType),
+        mimeType,
+        thumbBlob:source.thumbBlob instanceof Blob?source.thumbBlob:await createThumbnailBlobFromBytes(bytes,THUMB_MAX_SIZE,mimeType),
+        positivePrompt:source.positivePrompt!==undefined?source.positivePrompt:(promptParts.positive||''),
+        negativePrompt:source.negativePrompt!==undefined?source.negativePrompt:(promptParts.negative||''),
+        steps:source.steps!==undefined?source.steps:(promptParts.steps||'')
+    };
+    delete migrated.dataUrl;
+    return migrated;
+}
+async function migrateLegacyImageDataAndCounts(){
+    if((appSettings.imageDataVersion||0)>=IMAGE_DATA_VERSION) return;
+    const boxes=await dbGetAll(STORE_BOXES);
+    const records=await dbGetAll(STORE_IMAGES);
+    const counts=new Map();
+    let failedImages=0;
+
+    for(const record of records){
+        const images=Array.isArray(record.images)?record.images:[];
+        const migrated=[];
+        let changed=false;
+        for(let i=0;i<images.length;i++){
+            if(!isLegacyImageRecord(images[i])){
+                migrated.push(images[i]);
+                continue;
+            }
+            try{
+                migrated.push(await migrateLegacyImageRecord(images[i],i));
+                changed=true;
+            }catch(error){
+                migrated.push(images[i]);
+                failedImages++;
+                console.error('旧图片迁移失败',record.id,i,error);
+            }
+        }
+        if(changed) await dbPut(STORE_IMAGES,{...record,images:migrated});
+        counts.set(record.boxId||record.id,migrated.length);
+    }
+
+    for(const box of boxes){
+        const count=counts.get(box.id)||0;
+        if(box.imageCount!==count) await dbPut(STORE_BOXES,{...box,imageCount:count});
+    }
+
+    if(failedImages===0){
+        appSettings.imageDataVersion=IMAGE_DATA_VERSION;
+        delete appSettings.imgCountMigrated;
+        saveSettings();
+    }else{
+        showToast('有 '+failedImages+' 张旧图片暂未迁移，原数据已保留');
+    }
 }
 
 async function loadBoxes() {
@@ -2945,37 +3062,6 @@ async function loadBoxes() {
     currentBoxes.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     imageCount.clear();
     cachedBoxImages.clear();
-
-    // Migrate: ensure boxes have imageCount field, and old-format images are updated
-    if(!appSettings.imgCountMigrated){
-        const boxIds=currentBoxes.map(b=>b.id);
-        const records=await Promise.all(boxIds.map(id=>dbGet(STORE_IMAGES,id)));
-        for(let i=0;i<currentBoxes.length;i++){
-            const b=currentBoxes[i];
-            const r=records[i];
-            if(!r){ b.imageCount=0; await dbPut(STORE_BOXES,b); continue; }
-            let imgs=r.images||[];
-            let needMigrate=false;
-            if(imgs.length>0 && typeof imgs[0]==='string'){
-                imgs=imgs.map(normalizeImageRecord);
-                needMigrate=true;
-            }
-            for(const img of imgs){
-                if(typeof img==='object' && img.remark && img.positivePrompt===undefined){
-                    const parts=parsePromptParts(img.remark);
-                    img.positivePrompt=parts.positive;
-                    img.negativePrompt=parts.negative;
-                    img.steps=parts.steps;
-                    needMigrate=true;
-                }
-            }
-            if(needMigrate) await dbPut(STORE_IMAGES,{id:r.id, boxId:r.id, images:imgs});
-            b.imageCount=imgs.length;
-            await dbPut(STORE_BOXES,b);
-        }
-        appSettings.imgCountMigrated=true;
-        saveSettings();
-    }
 
     // Only read image counts from box records — no image data loaded
     currentBoxes.forEach(b=>{ imageCount.set(b.id, b.imageCount||0); });
@@ -3188,12 +3274,24 @@ function renderModelTabs() {
         btn.draggable=!isEditing;
         btn.dataset.modelId=m.id;
         btn.dataset.sortIdx=idx;
-        btn.innerHTML=isEditing?`
-            <input class="model-tab-name-input" value="${escapeHtml(m.name)}" aria-label="模型名称">
-            <span class="model-tab-action" onmousedown="event.preventDefault()" onclick="deleteModel(event,'${m.id}')" title="删除">×</span>
-        `:`
-            <span style="pointer-events:none;">${escapeHtml(m.name)}</span>
-        `;
+        if(isEditing){
+            const nameInput=document.createElement('input');
+            nameInput.className='model-tab-name-input';
+            nameInput.value=m.name||'';
+            nameInput.setAttribute('aria-label','模型名称');
+            const deleteAction=document.createElement('span');
+            deleteAction.className='model-tab-action';
+            deleteAction.title='删除';
+            deleteAction.textContent='×';
+            deleteAction.onmousedown=event=>event.preventDefault();
+            deleteAction.onclick=event=>deleteModel(event,m.id);
+            btn.append(nameInput,deleteAction);
+        }else{
+            const label=document.createElement('span');
+            label.style.pointerEvents='none';
+            label.textContent=m.name||'';
+            btn.appendChild(label);
+        }
         btn.onclick=e=>{ if(!isEditing&&!e.target.classList.contains('model-tab-action')) switchModel(m.id); };
         btn.ondblclick=e=>{ e.stopPropagation(); startInlineModelEdit(m.id); };
         btn.addEventListener('dragstart',modelDragStart);
@@ -3204,15 +3302,22 @@ function renderModelTabs() {
         c.appendChild(btn);
         if(isEditing){
             const input=btn.querySelector('.model-tab-name-input');
-            const finish=save=>{
+            const finish=async save=>{
                 if(editingModelTabId!==m.id) return;
                 const next=input.value.trim();
                 editingModelTabId=null;
                 if(save&&next&&next!==m.name){
+                    const previous=m.name;
                     MODELS[m.id].name=next;
-                    saveModels(false);
-                    renderModelTabs();
-                    showToast('已重命名');
+                    try{
+                        await saveModels(false);
+                        renderModelTabs();
+                        showToast('已重命名');
+                    }catch(error){
+                        MODELS[m.id].name=previous;
+                        renderModelTabs();
+                        reportDataError(error,'重命名失败');
+                    }
                     return;
                 }
                 renderModelTabs();
@@ -3267,7 +3372,7 @@ function modelDrop(e){
     sorted.splice(dragIdx,1);
     sorted.splice(dropIdx,0,MODELS[dragModelId]);
     sorted.forEach((m,i)=>{ m.sortIndex=i; });
-    saveModels(false);
+    void saveModels(false).catch(error=>reportDataError(error,'排序保存失败'));
     renderModelTabs();
 }
 function modelDragEnd(){
@@ -3281,7 +3386,7 @@ async function switchModel(modelId) {
     if(currentModelId===modelId) return;
     currentModelId=modelId;
     setPref('ipm_lastModel',modelId);
-    saveModels(false);
+    await saveModels(false);
     document.getElementById('searchInput').value='';
     selectedFilterTags=[];
     renderTagChips();
@@ -3327,6 +3432,7 @@ function openPanelDetail(sectionId){
     const titles={sec_import:'图片导入',sec_data:'数据管理',sec_tags:'标签管理',sec_settings:'设置'};
     document.getElementById('sidebarPanelTitle').innerText=titles[sectionId]||'图库管理器';
     setActiveRailSection(sectionId);
+    updateSidebarWidth();
     document.body.classList.add('sidebar-open');
     setPref('ipm_sidebarOpen','1');
 }
@@ -3339,6 +3445,7 @@ function toggleSidebar(){
     if(document.body.classList.contains('sidebar-open')){ closeSidebarPanel(); }
     else{
         showPanelMenu();
+        updateSidebarWidth();
         document.body.classList.add('sidebar-open');
         setPref('ipm_sidebarOpen','1');
     }
@@ -3347,6 +3454,7 @@ function toggleSidebar(){
 function restoreSidebarState(){
     if(getPref('ipm_sidebarOpen')==='1'){
         showPanelMenu();
+        updateSidebarWidth();
         document.body.classList.add('sidebar-open');
     }else{
         document.body.classList.remove('sidebar-open');
@@ -3456,7 +3564,7 @@ function ensureImportModel(){
         const modelId='model_1';
         MODELS[modelId]={id:modelId, name:'默认模型', sortIndex:0};
         currentModelId=modelId;
-        saveModels();
+        void saveModels().catch(error=>reportDataError(error,'模型初始化失败'));
         renderModelTabs();
     }
 }
@@ -3822,7 +3930,6 @@ function applyEditImageFieldsToCurrentImage() {
     const images=getEditingImages();
     const viewIdx=Math.max(0, Math.min(images.length-1, box.viewIndex||0));
     if(!images.length||!images[viewIdx]) return;
-    if(typeof images[viewIdx]==='string') images[viewIdx]=normalizeImageRecord(images[viewIdx]);
 
     const newRemark=document.getElementById('editCardRemark').value.trim();
     const newNegative=document.getElementById('editCardNegative').value.trim();
@@ -3879,9 +3986,9 @@ function loadEditImageFields() {
     const images=getEditingImages();
     const viewIdx=box?Math.max(0, Math.min(images.length-1, box.viewIndex||0)):0;
     const img=(images.length>0&&viewIdx<images.length)?images[viewIdx]:null;
-    const remarkParts=img&&typeof img!=='string'&&img.remark?parsePromptParts(img.remark):{};
+    const remarkParts=img&&img.remark?parsePromptParts(img.remark):{};
     const modelParts=[];
-    if(img&&typeof img!=='string'){
+    if(img){
         if(img.modelName) modelParts.push(img.modelName);
         if(img.modelVersion) modelParts.push(img.modelVersion);
         if(!modelParts.length&&img.baseModel) modelParts.push(img.baseModel);
@@ -3889,9 +3996,9 @@ function loadEditImageFields() {
     document.getElementById('editCardModel').value=modelParts.join(' / ');
     document.getElementById('editCardLoras').value=getImageLoraLabel(img);
     document.getElementById('editCardRemark').value=getImageRemark(img)||box?.remark||'';
-    document.getElementById('editCardNegative').value=img&&typeof img!=='string'&&img.negativePrompt!==undefined?img.negativePrompt:(remarkParts.negative||'');
-    document.getElementById('editCardSteps').value=img&&typeof img!=='string'&&img.steps!==undefined?img.steps:(remarkParts.steps||'');
-    document.getElementById('editCardWorkflow').value=img&&typeof img!=='string'?img.workflow||'':'';
+    document.getElementById('editCardNegative').value=img&&img.negativePrompt!==undefined?img.negativePrompt:(remarkParts.negative||'');
+    document.getElementById('editCardSteps').value=img&&img.steps!==undefined?img.steps:(remarkParts.steps||'');
+    document.getElementById('editCardWorkflow').value=img?img.workflow||'':'';
     syncEditFieldDensity();
     refreshEditImagePreview();
 }
@@ -3982,8 +4089,6 @@ async function saveEditCard() {
     // If box name changed, auto-rename all images to "boxname_001", "boxname_002"...
     if(nameChanged && images.length>0){
         for(let i=0;i<images.length;i++){
-            const img=images[i];
-            if(typeof img==='string'){ images[i]=normalizeImageRecord(img); }
             images[i].name=name+'_'+padImgNum(i+1);
         }
     }
@@ -3991,7 +4096,6 @@ async function saveEditCard() {
     // Save current image metadata
     if(images.length>0&&viewIdx<images.length){
         const img=images[viewIdx];
-        if(typeof img==='string'){ images[viewIdx]=normalizeImageRecord(img); }
         let fullRemark=newRemark;
         if(newNegative) fullRemark+='\nNegative prompt: '+newNegative;
         if(newSteps) fullRemark+='\nSteps: '+newSteps;
@@ -4023,17 +4127,18 @@ async function saveEditCard() {
 async function deleteCard(boxId) {
     const box=currentBoxes.find(b=>b.id===boxId);
     if(!box) return;
-    if(!confirm(`确认删除卡片 "${box.name}" 及其所有图片吗？此操作不可恢复。`)) return;
-
-    hideModal('editCardModal');
-    await dbDelete(STORE_BOXES,boxId);
-    await dbDelete(STORE_IMAGES,boxId);
-    currentBoxes=currentBoxes.filter(b=>b.id!==boxId);
-    cachedBoxImages.delete(boxId);
-    imageCount.delete(boxId);
-
-    updateStatsAndTags(); renderItems(true,{updateStats:false});
-    showToast('卡片已删除');
+    showStyledConfirm('确认删除卡片',
+        '<p>确认删除卡片 <b>'+escapeHtml(box.name)+'</b> 及其所有图片吗？此操作不可恢复。</p>',
+        '删除','取消',async()=>{
+            hideModal('editCardModal');
+            await dbDelete(STORE_BOXES,boxId);
+            await dbDelete(STORE_IMAGES,boxId);
+            currentBoxes=currentBoxes.filter(b=>b.id!==boxId);
+            cachedBoxImages.delete(boxId);
+            imageCount.delete(boxId);
+            updateStatsAndTags(); renderItems(true,{updateStats:false});
+            showToast('卡片已删除');
+        });
 }
 
 // ─── Image Management ───────────────────────
@@ -4059,6 +4164,39 @@ async function addLocalImagesToBox(boxId) {
     inp.click();
 }
 
+function dataTransferHasFiles(dataTransfer){
+    if(!dataTransfer) return false;
+    if(Array.from(dataTransfer.files||[]).length>0) return true;
+    if(Array.from(dataTransfer.items||[]).some(item=>item.kind==='file')) return true;
+    return Array.from(dataTransfer.types||[]).includes('Files');
+}
+
+function bindImageDropTarget(element,boxId){
+    if(!element) return;
+    element.ondragenter=e=>{
+        if(!dataTransferHasFiles(e.dataTransfer)) return;
+        e.preventDefault();
+        element.classList.add('image-drop-active');
+    };
+    element.ondragover=e=>{
+        if(!dataTransferHasFiles(e.dataTransfer)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect='copy';
+        element.classList.add('image-drop-active');
+    };
+    element.ondragleave=e=>{
+        if(e.relatedTarget && element.contains(e.relatedTarget)) return;
+        element.classList.remove('image-drop-active');
+    };
+    element.ondrop=e=>{
+        if(!dataTransferHasFiles(e.dataTransfer)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        element.classList.remove('image-drop-active');
+        void addFilesToBox(boxId,e.dataTransfer.files,'拖拽');
+    };
+}
+
 async function addFilesToBox(boxId, files, sourceLabel='图片'){
     const imageFiles=Array.from(files||[]).filter(file=>file&&(((file.type||'').match('image.*'))||isImageFileName(file.name)));
     if(imageFiles.length===0){ showToast('没有可加入的图片'); return; }
@@ -4071,7 +4209,6 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
         const record=await dbGet(STORE_IMAGES,boxId);
         if(record){
             existing=record.images||[];
-            existing=existing.map(normalizeImageRecord);
         }
 
         for(let i=0;i<imageFiles.length;i++){
@@ -4088,10 +4225,10 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
         await dbPut(STORE_IMAGES,{id:boxId,boxId,images:existing});
         cachedBoxImages.set(boxId,existing);
         imageCount.set(boxId,existing.length);
-        syncBoxImageCount(boxId);
-
         const box=currentBoxes.find(b=>b.id===boxId);
         if(box) box.viewIndex=existing.length-1;
+        await syncBoxImageCount(boxId);
+
         const card=cardByBoxId.get(boxId);
         if(card){
             renderCardImages(card, box||{id:boxId});
@@ -4109,9 +4246,6 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
 
 async function deleteImage(boxId, idx, card) {
     let images=cachedBoxImages.get(boxId)||[];
-    if(images.length>0 && typeof images[0]==='string'){
-        images=images.map(normalizeImageRecord);
-    }
     images.splice(idx,1);
     if(images.length===0){
         await dbDelete(STORE_IMAGES,boxId);
@@ -4161,24 +4295,41 @@ function observeGridResize(){
 
 function updateGridLayout() {
     const container=document.getElementById('itemsContainer');
-    const sidebarWidth=document.body.classList.contains('sidebar-collapsed')?0:260;
+    const rootStyle=getComputedStyle(document.documentElement);
+    const sidebarWidth=document.body.classList.contains('sidebar-open')
+        ? parseFloat(rootStyle.getPropertyValue('--sidebar-occupied-width'))||BASE_RAIL_WIDTH
+        : BASE_RAIL_WIDTH;
     const containerWidth=(container.clientWidth||(window.innerWidth-sidebarWidth-60));
     if(containerWidth<100) return;
 
     const requestedCols=getColumnCount();
     const minCardWidth=110;
     const maxSafeCols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(minCardWidth+virtualGrid.gap)));
-    virtualGrid.cols=Math.max(1,Math.min(requestedCols,maxSafeCols));
-    virtualGrid.cardWidth=(containerWidth-(virtualGrid.cols-1)*virtualGrid.gap)/virtualGrid.cols;
-    const titleSize=Math.max(0.66,Math.min(0.9,virtualGrid.cardWidth/250*0.86));
-    container.style.setProperty('--card-title-size',titleSize.toFixed(3)+'rem');
+    const cols=Math.max(1,Math.min(requestedCols,maxSafeCols));
+    const width=(containerWidth-(cols-1)*virtualGrid.gap)/cols;
+    const titleSize=Math.max(0.66,Math.min(0.9,width/250*0.86));
     const tagBarOn=document.getElementById('tagChipsBar').style.display==='flex';
-    virtualGrid.cardHeight=Math.round(virtualGrid.cardWidth * 4/3) + (tagBarOn?80:40);
-
-    const totalRows=Math.ceil(currentFiltered.length/virtualGrid.cols);
-    container.style.height=`${(totalRows*virtualGrid.cardHeight)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
+    const height=Math.round(width * 4/3) + (tagBarOn?80:40);
+    const totalRows=Math.ceil(currentFiltered.length/cols);
+    const layoutKey=[Math.round(containerWidth),cols,Math.round(width),height,totalRows,tagBarOn?'1':'0'].join(':');
+    if(layoutKey===lastLayoutKey) return;
+    lastLayoutKey=layoutKey;
+    virtualGrid.cols=cols;
+    virtualGrid.cardWidth=width;
+    virtualGrid.cardHeight=height;
+    container.style.setProperty('--card-title-size',titleSize.toFixed(3)+'rem');
+    container.style.height=`${(totalRows*height)+Math.max(0,totalRows-1)*virtualGrid.gap}px`;
     const label=document.getElementById('columnCountLabel');
     if(label) label.textContent=virtualGrid.cols+'列';
+}
+
+function updateSidebarWidth(){
+    const maxTotal=window.innerWidth/3;
+    const panelWidth=Math.max(0,Math.min(BASE_PANEL_WIDTH,maxTotal-BASE_RAIL_WIDTH));
+    const total=BASE_RAIL_WIDTH+panelWidth;
+    document.documentElement.style.setProperty('--panel-width',panelWidth.toFixed(2)+'px');
+    document.documentElement.style.setProperty('--sidebar-occupied-width',total.toFixed(2)+'px');
+    lastLayoutKey='';
 }
 
 function getColumnCount(){
@@ -4243,9 +4394,9 @@ function getFilteredBoxes() {
             let haystack=(box.name+' '+(box.remark||'')+' '+(box.tags||[]).join(' ')).toLowerCase();
             const imgs=cachedBoxImages.get(box.id)||[];
             for(const img of imgs){
-                const parts=img&&typeof img!=='string'&&img.remark?parsePromptParts(img.remark):{};
-                const negative=img&&typeof img!=='string'&&img.negativePrompt!==undefined?img.negativePrompt:(parts.negative||'');
-                const steps=img&&typeof img!=='string'&&img.steps!==undefined?img.steps:(parts.steps||'');
+                const parts=img&&img.remark?parsePromptParts(img.remark):{};
+                const negative=img&&img.negativePrompt!==undefined?img.negativePrompt:(parts.negative||'');
+                const steps=img&&img.steps!==undefined?img.steps:(parts.steps||'');
                 haystack+=' '+(getImageRemark(img)+' '+negative+' '+steps).toLowerCase();
             }
             if(!kws.every(k=>haystack.includes(k))) return false;
@@ -4366,13 +4517,13 @@ function renderItems(reset, options={}) {
 }
 
 function getImageRemark(img) {
-    if(!img||typeof img==='string') return '';
+    if(!img) return '';
     if(img.positivePrompt!==undefined) return img.positivePrompt;
     if(img.remark){ const p=parsePromptParts(img.remark); return p.positive||img.remark; }
     return '';
 }
 function getImageLoraLabel(img) {
-    if(!img||typeof img==='string') return '';
+    if(!img) return '';
     if(Array.isArray(img.loras)&&img.loras.length){
         return img.loras.map(formatLoraTag).join(' ');
     }
@@ -4455,7 +4606,8 @@ function mergeLoraLists(existing, incoming) {
     return out;
 }
 function mergeImportedImageMeta(img, meta){
-    if(!img||!meta) return img;
+    if(!img) return img;
+    meta=meta||{};
     const fill=(key,value)=>{
         if(value===undefined||value===null||value==='') return;
         if(!img[key]) img[key]=value;
@@ -4789,12 +4941,13 @@ async function renderCardImages(card, box) {
 
     // Bind preview events
     const pc=card.querySelector('.preview-container');
+    bindImageDropTarget(pc,box.id);
     if(count>0 && !isAddPage){
         const leftBtn=card.querySelector('.left-arrow');
         const rightBtn=card.querySelector('.right-arrow');
         const mainImg=card.querySelector('.preview-image');
-        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.max(0,(box.viewIndex||0)-1); dbPut(STORE_BOXES,box); renderCardImages(card,box); };
-        if(rightBtn) rightBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.min(count,(box.viewIndex||0)+1); dbPut(STORE_BOXES,box); renderCardImages(card,box); };
+        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.max(0,(box.viewIndex||0)-1); void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
+        if(rightBtn) rightBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.min(count,(box.viewIndex||0)+1); void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
         if(mainImg) mainImg.onclick=e=>{ e.stopPropagation(); showFullscreen(box.id, box.viewIndex||0); };
         // Card name overlay → edit, prompt overlay → copy
         const nameOverlay=card.querySelector('.card-name-overlay');
@@ -4811,14 +4964,10 @@ async function renderCardImages(card, box) {
         });
     } else if(isAddPage){
         pc.onclick=()=>addImagesToBox(box.id);
-        pc.ondragover=e=>e.preventDefault();
-        pc.ondrop=e=>{ e.preventDefault(); if(e.dataTransfer.files.length>0) handleDropUpload(e.dataTransfer.files,box.id); };
         const leftBtn=card.querySelector('.left-arrow');
-        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=count-1; dbPut(STORE_BOXES,box); renderCardImages(card,box); };
+        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=count-1; void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
     } else {
         pc.onclick=()=>addImagesToBox(box.id);
-        pc.ondragover=e=>e.preventDefault();
-        pc.ondrop=e=>{ e.preventDefault(); if(e.dataTransfer.files.length>0) handleDropUpload(e.dataTransfer.files,box.id); };
     }
 
     // Thumbnails
@@ -4827,7 +4976,7 @@ async function renderCardImages(card, box) {
             e.stopPropagation();
             const targetIdx=parseInt(tb.dataset.idx);
             if(targetIdx>=count){ addImagesToBox(box.id); }
-            else { box.viewIndex=targetIdx; dbPut(STORE_BOXES,box); renderCardImages(card,box); }
+            else { box.viewIndex=targetIdx; void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); }
         };
     });
 }
@@ -5020,7 +5169,13 @@ async function createModel() {
     const id='model_'+Date.now();
     const maxIdx=Math.max(-1,...Object.values(MODELS).map(m=>m.sortIndex||0));
     MODELS[id]={id,name,sortIndex:maxIdx+1};
-    saveModels();
+    try{
+        await saveModels();
+    }catch(error){
+        delete MODELS[id];
+        reportDataError(error,'模型创建失败');
+        return;
+    }
     hideModal('modelModal');
     document.getElementById('newModelName').value='';
     renderModelTabs();
@@ -5032,28 +5187,29 @@ async function createModel() {
 async function deleteModel(e,id) {
     e.stopPropagation();
     if(Object.keys(MODELS).length<=1){ showToast('至少保留一个模型标签'); return; }
-    if(!confirm(`确认删除模型 "${MODELS[id].name}" 及其所有数据吗？此操作不可恢复。`)) return;
-
-    // Delete all boxes and images for this model
-    const boxes=await dbGetByIndex(STORE_BOXES,'modelId',id);
-    for(const box of boxes){
-        await dbDelete(STORE_IMAGES,box.id);
-        await dbDelete(STORE_BOXES,box.id);
-        releaseBlobUrls('card:'+box.id);
-        cachedBoxImages.delete(box.id);
-        imageCount.delete(box.id);
-    }
-
-    delete MODELS[id];
-    saveModels();
-    if(currentModelId===id){
-        currentModelId=Object.keys(MODELS)[0];
-        setPref('ipm_lastModel',currentModelId);
-    }
-    renderModelTabs();
-    await loadBoxes();
-    updateStatsAndTags(); renderItems(true,{updateStats:false});
-    showToast('模型标签已删除');
+    const modelName=MODELS[id].name;
+    showStyledConfirm('确认删除模型',
+        '<p>确认删除模型 <b>'+escapeHtml(modelName)+'</b> 及其所有数据吗？此操作不可恢复。</p>',
+        '删除','取消',async()=>{
+            const boxes=await dbGetByIndex(STORE_BOXES,'modelId',id);
+            for(const box of boxes){
+                await dbDelete(STORE_IMAGES,box.id);
+                await dbDelete(STORE_BOXES,box.id);
+                releaseBlobUrls('card:'+box.id);
+                cachedBoxImages.delete(box.id);
+                imageCount.delete(box.id);
+            }
+            delete MODELS[id];
+            await saveModels();
+            if(currentModelId===id){
+                currentModelId=Object.keys(MODELS)[0];
+                setPref('ipm_lastModel',currentModelId);
+            }
+            renderModelTabs();
+            await loadBoxes();
+            updateStatsAndTags(); renderItems(true,{updateStats:false});
+            showToast('模型标签已删除');
+        });
 }
 
 async function handleZipImport(event){
@@ -5530,7 +5686,7 @@ async function executeBatchEdit(act='add-tags') {
 function openBatchTransferModal(){
     if(batchSelection.size===0){ showToast('请先选择卡片盒'); return; }
     const sel=document.getElementById('batchTransferModel');
-    sel.innerHTML=Object.values(MODELS).filter(m=>m.id!==currentModelId).map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+    sel.innerHTML=Object.values(MODELS).filter(m=>m.id!==currentModelId).map(m=>`<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join('');
     if(!sel.innerHTML) sel.innerHTML='<option value="">无其他模型</option>';
     document.getElementById('batchTransferCount').textContent=batchSelection.size;
     setBatchActionLocked(true);
@@ -5560,18 +5716,22 @@ async function executeBatchTransfer(){
 
 async function executeBatchDelete() {
     if(batchSelection.size===0){ showToast('未选择任何卡片盒'); return; }
-    if(!confirm(`确认删除选中的 ${batchSelection.size} 个卡片盒及其所有图片吗？此操作不可撤销！`)) return;
-    const selectedIds=new Set(batchSelection);
-    const deletedCount=selectedIds.size;
-    for(const boxId of selectedIds){
-        await dbDelete(STORE_IMAGES,boxId);
-        await dbDelete(STORE_BOXES,boxId);
-        cachedBoxImages.delete(boxId);
-        imageCount.delete(boxId);
-    }
-    currentBoxes=currentBoxes.filter(b=>!selectedIds.has(b.id));
-    finishBatchAction();
-    showToast(`已删除 ${deletedCount} 个卡片盒`);
+    const count=batchSelection.size;
+    showStyledConfirm('确认批量删除',
+        '<p>确认删除选中的 <b>'+count+'</b> 个卡片盒及其所有图片吗？此操作不可恢复。</p>',
+        '删除','取消',async()=>{
+            const selectedIds=new Set(batchSelection);
+            const deletedCount=selectedIds.size;
+            for(const boxId of selectedIds){
+                await dbDelete(STORE_IMAGES,boxId);
+                await dbDelete(STORE_BOXES,boxId);
+                cachedBoxImages.delete(boxId);
+                imageCount.delete(boxId);
+            }
+            currentBoxes=currentBoxes.filter(b=>!selectedIds.has(b.id));
+            finishBatchAction();
+            showToast(`已删除 ${deletedCount} 个卡片盒`);
+        });
 }
 
 async function executeBatchCopy() {
@@ -5824,7 +5984,11 @@ async function importPackageToDB(pkg, options={}){
         }
         for(const box of modelData.boxes||[]){
             notify({phase:'box-start',modelId:importModelId,boxId:box.id,boxName:box.name});
-            const incoming=(modelData.images&&modelData.images[box.id])||[];
+            const rawIncoming=(modelData.images&&modelData.images[box.id])||[];
+            const incoming=[];
+            for(let i=0;i<rawIncoming.length;i++){
+                incoming.push(isLegacyImageRecord(rawIncoming[i])?await migrateLegacyImageRecord(rawIncoming[i],i):rawIncoming[i]);
+            }
             const existingBox=boxesByModelAndName.get(targetModelId+'\n'+(box.name||''));
             if(existingBox){
                 const rec=await dbGet(STORE_IMAGES,existingBox.id);
@@ -6074,9 +6238,19 @@ function resetAll(){
 
 document.addEventListener('DOMContentLoaded',async ()=>{
     document.body.classList.add('layout-initializing');
-    await initDB();
+    const dbReady=await initDB();
     loadSettings();
+    if(!dbReady){
+        document.body.classList.remove('layout-initializing');
+        return;
+    }
+    try{
+        await migrateLegacyImageDataAndCounts();
+    }catch(error){
+        reportDataError(error,'图库数据升级失败');
+    }
     bindPanelMenuHover();
+    updateSidebarWidth();
     restoreSidebarState();
     observeGridResize();
     await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
@@ -6112,7 +6286,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     document.body.classList.remove('layout-initializing');
     // Event listeners
     window.addEventListener('scroll',onScroll,{passive:true});
-    window.addEventListener('resize',()=>{ updateGridLayout(); renderItems(false); });
+    window.addEventListener('resize',()=>{ updateSidebarWidth(); updateGridLayout(); renderItems(false); });
 
     document.getElementById('searchInput').addEventListener('input',()=>renderItems(true,{updateStats:false}));
     document.getElementById('sortSelect').addEventListener('change',()=>renderItems(true,{updateStats:false}));
