@@ -295,11 +295,20 @@
             display: flex; flex-direction: column; gap: 18px; min-width: 0;
             transition: margin-left 0.3s ease;
         }
+        .workspace-toolbar-sticky {
+            position: sticky; top: 0; z-index: 30;
+            display: flex; flex-direction: column; gap: 0;
+            padding-top: 4px; margin-top: -4px;
+            background: linear-gradient(to bottom, rgba(255,246,250,0.98) 82%, rgba(255,246,250,0));
+        }
+        .theme-night .workspace-toolbar-sticky {
+            background: linear-gradient(to bottom, rgba(18,14,16,0.98) 82%, rgba(18,14,16,0));
+        }
 
         .model-tabs-container {
             display: flex; align-items: flex-end; flex-wrap: nowrap; gap: 2px;
             width: 100%; max-width: 100%;
-            padding: 4px 0 0 8px; margin-bottom: -18px; overflow-x: auto; overflow-y: visible;
+            padding: 4px 0 0 8px; margin-bottom: 0; overflow-x: auto; overflow-y: visible;
             position: relative; z-index: 3;
             scrollbar-width: thin; scrollbar-color: rgba(255,107,157,0.24) transparent;
         }
@@ -371,6 +380,31 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
+        .toolbar-action-btn, .view-settings > summary {
+            width: auto; height: 34px; min-height: 34px; padding: 0 11px; border: 0; border-left: 1px solid rgba(255,107,157,0.2);
+            background: transparent; color: var(--text-main); cursor: pointer; font: inherit;
+            font-size: 0.78rem; font-weight: 760; line-height: 1; white-space: nowrap; list-style: none;
+            display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+        }
+        .toolbar-action-btn:hover, .view-settings > summary:hover, .view-settings[open] > summary {
+            background: rgba(255,107,157,0.07); color: var(--primary);
+        }
+        .toolbar-action-btn.active { background: var(--primary); color: #fff; }
+        .view-settings { position: relative; flex: 0 0 auto; height: 34px; display: flex; align-items: center; }
+        .view-settings > summary::-webkit-details-marker { display: none; }
+        .view-settings > summary::after { content: '⌄'; margin-left: 6px; color: var(--primary); }
+        .view-settings[open] > summary::after { content: '⌃'; }
+        .view-settings-popover {
+            position: absolute; top: calc(100% + 9px); right: 0; z-index: 60;
+            width: 236px; padding: 8px;
+            background: var(--card-bg); border: 1px solid rgba(255,107,157,0.2); border-radius: 10px;
+            box-shadow: 0 16px 36px rgba(59,35,46,0.18);
+        }
+        .view-settings-popover .filter-control {
+            width: 100%; justify-content: space-between; border-left: 0; border-bottom: 1px solid var(--border-color);
+            min-height: 42px; height: auto; border-radius: 6px;
+        }
+        .view-settings-popover .filter-control:last-child { border-bottom: 0; }
         .header-bar::before {
             content: '';
             position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
@@ -604,12 +638,12 @@
         }
         .card-name-overlay {
             font-size: var(--card-title-size, 0.86rem); font-weight: 650; color: rgba(255,255,255,0.96);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
             line-height: 1.12; text-shadow: 0 1px 3px rgba(0,0,0,0.45);
         }
-        /* Top-right row: edit | delete | image-count, aligned with title */
+        /* Top-right image count, leaving space for the explicit card menu */
         .card-top-actions {
-            position: absolute; top: 6px; right: 8px; z-index: 3;
+            position: absolute; top: 6px; right: 38px; z-index: 3;
             display: grid; min-width: 42px; height: 22px; align-items: center; justify-items: end;
         }
         .card-img-count-overlay {
@@ -622,25 +656,6 @@
         }
         .card-img-count-overlay svg { opacity: 0.66; width: 12px; height: 12px; stroke-width: 1.65; }
         .card-img-count-overlay .count-num { line-height: 1; transform: translateY(-1px); }
-        .card-action-set {
-            grid-area: 1 / 1; display: flex; align-items: center; gap: 5px;
-            opacity: 0; transform: translateY(-1px); pointer-events: none;
-            transition: opacity 0.16s ease, transform 0.16s ease;
-        }
-        .preview-container:hover .card-img-count-overlay {
-            opacity: 0; transform: translateY(1px); pointer-events: none;
-        }
-        .preview-container:hover .card-action-set {
-            opacity: 1; transform: translateY(0); pointer-events: auto;
-        }
-        .card-top-actions .img-action-btn {
-            width: 20px; height: 20px; border: none; border-radius: 999px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            background: transparent; color: #fff; transition: 0.2s;
-            opacity: 1; padding: 0;
-        }
-        .card-top-actions .img-action-btn:hover { background: rgba(255,255,255,0.85); color: var(--text-main); }
-        .card-top-actions .img-action-btn.del:hover { background: rgba(255,255,255,0.85); color: var(--error); }
         /* Prompt + tags at bottom of image */
         .card-bottom-overlay {
             position: absolute; bottom: 7px; left: 10px; right: 10px; z-index: 3;
@@ -648,9 +663,43 @@
         }
         .card-prompt-overlay {
             font-size: 0.66rem; color: rgba(255,255,255,0.78); overflow: hidden; text-overflow: ellipsis;
-            white-space: nowrap; cursor: pointer;
+            white-space: nowrap;
             line-height: 1.15; text-shadow: 0 1px 2px rgba(0,0,0,0.34);
         }
+        .card-menu { position: absolute; top: 5px; right: 7px; z-index: 9; }
+        .card-menu > summary {
+            width: 24px; height: 24px; display: grid; place-items: center; list-style: none;
+            border: 0; border-radius: 999px; background: rgba(18,18,20,0.48); color: #fff;
+            cursor: pointer; font-size: 1rem; line-height: 1; backdrop-filter: blur(5px);
+        }
+        .card-menu > summary::-webkit-details-marker { display: none; }
+        .card-menu[open] > summary, .card-menu > summary:hover { background: rgba(255,255,255,0.92); color: var(--primary); }
+        .card-menu-popover {
+            position: absolute; top: 29px; right: 0; width: 146px; padding: 5px;
+            display: flex; flex-direction: column; gap: 2px;
+            background: rgba(255,255,255,0.97); border: 1px solid rgba(255,107,157,0.22);
+            border-radius: 9px; box-shadow: 0 12px 28px rgba(31,24,28,0.2);
+        }
+        .theme-night .card-menu-popover { background: rgba(29,24,27,0.98); }
+        .card-menu-action {
+            width: 100%; padding: 7px 9px; border: 0; border-radius: 6px;
+            background: transparent; color: var(--text-main); text-align: left; cursor: pointer;
+            font: inherit; font-size: 0.75rem; font-weight: 650;
+        }
+        .card-menu-action:hover { background: rgba(255,107,157,0.09); color: var(--primary); }
+        .card-menu-action.danger { color: var(--error); }
+        .card-empty-name {
+            position: absolute; top: 9px; left: 11px; right: 40px; z-index: 3;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            color: var(--text-main); font-size: var(--card-title-size,0.86rem); font-weight: 700;
+        }
+        .empty-delete-card {
+            position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 4;
+            padding: 6px 10px; border: 1px solid rgba(211,47,69,0.3); border-radius: 7px;
+            background: rgba(255,255,255,0.7); color: var(--error); cursor: pointer;
+            font: inherit; font-size: 0.72rem; font-weight: 700; white-space: nowrap;
+        }
+        .empty-delete-card:hover { background: var(--error); color: #fff; }
         .card-tags-row {
             display: flex; gap: 4px; flex-wrap: wrap; padding: 2px 6px 4px;
             max-height: 44px; overflow: hidden;
@@ -682,16 +731,6 @@
         .nav-arrow.left-arrow { left: 4px; }
         .nav-arrow.right-arrow { right: 4px; }
         .nav-arrow:hover { background: var(--primary); }
-
-        .img-action-btn {
-            width: 24px; height: 24px; border: none; border-radius: 50%; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.7); color: var(--text-main); transition: 0.2s;
-            backdrop-filter: blur(2px);
-        }
-        .theme-night .img-action-btn { background: rgba(0,0,0,0.5); color: #ddd; }
-        .img-action-btn:hover { background: var(--primary); color: #fff; }
-        .img-action-btn.del:hover { background: var(--error); color: #fff; }
 
         .thumbnails-bar {
             display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none;
@@ -1286,6 +1325,9 @@
         .edit-card-header { padding: 22px 28px 18px; border-bottom: 1px solid rgba(255,107,157,0.16); gap: 18px; }
         .edit-card-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; }
         .edit-card-title svg { width: 23px; height: 23px; stroke-width: 1.9; }
+        .edit-title-sort-icon { display: none; }
+        .edit-card-modal.sorting-images .edit-title-edit-icon { display: none; }
+        .edit-card-modal.sorting-images .edit-title-sort-icon { display: block; }
         .edit-card-body { padding: 18px 28px 24px; overflow-y: auto; }
         .edit-card-meta {
             margin-left: auto; margin-right: 18px;
@@ -1343,6 +1385,17 @@
             font-size: 0.68rem;
             font-weight: 650;
         }
+        .edit-advanced {
+            margin-top: 10px; border-top: 1px solid rgba(255,107,157,0.16); padding-top: 8px;
+        }
+        .edit-advanced > summary {
+            padding: 7px 2px; cursor: pointer; list-style: none;
+            color: var(--text-light); font-size: 0.74rem; font-weight: 720;
+        }
+        .edit-advanced > summary::-webkit-details-marker { display: none; }
+        .edit-advanced > summary::before { content: '＋'; margin-right: 6px; color: var(--primary); }
+        .edit-advanced[open] > summary::before { content: '－'; }
+        .edit-advanced-fields { padding-top: 6px; }
         .edit-prompt-panel .compact-field .input-text {
             min-height: 34px;
             border-color: rgba(255,107,157,0.16);
@@ -1366,14 +1419,34 @@
             min-height: 58px;
         }
         .edit-prompt-panel .primary-prompt textarea.input-text {
-            min-height: 88px;
-            max-height: 220px;
+            position: static;
+            opacity: 1;
+            pointer-events: auto;
+            width: 100%;
+            height: clamp(280px, 38vh, 520px);
+            min-height: 280px;
+            max-height: 520px;
+            padding: 12px 13px;
+            border-width: 1.5px;
             background: rgba(255,255,255,0.82);
             border-color: rgba(255,107,157,0.28);
+            overflow: auto;
+            resize: vertical;
         }
-        .edit-prompt-panel .primary-prompt.has-value textarea.input-text,
-        .edit-prompt-panel .primary-prompt textarea.input-text:focus {
-            min-height: 124px;
+        .edit-field-label-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
+        }
+        .edit-field-label-row label { margin-bottom: 0 !important; }
+        .prompt-copy-btn {
+            width: 26px; height: 26px; flex: 0 0 auto; padding: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,107,157,0.24); border-radius: 7px;
+            background: rgba(255,107,157,0.07); color: var(--primary); cursor: pointer;
+            transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+        }
+        .prompt-copy-btn svg { width: 14px; height: 14px; }
+        .prompt-copy-btn:hover {
+            background: var(--primary); color: #fff; border-color: var(--primary); transform: translateY(-1px);
         }
         .edit-read-field {
             display: block;
@@ -1411,10 +1484,6 @@
             height: auto !important;
             border-width: 1.5px !important;
             overflow: auto;
-        }
-        .edit-prompt-panel .primary-prompt .edit-read-field {
-            max-height: 112px;
-            overflow: hidden;
         }
         .edit-prompt-panel .compact-field .edit-read-field {
             max-height: 62px;
@@ -1460,6 +1529,95 @@
             font-weight: 700;
             margin-bottom: 8px;
         }
+        .edit-image-preview-actions { display: inline-flex; align-items: center; gap: 7px; }
+        .edit-delete-shortcut {
+            display: inline-flex; align-items: center; gap: 5px;
+            color: var(--text-light); font-size: 0.66rem; font-weight: 650;
+            cursor: pointer; user-select: none;
+        }
+        .edit-delete-shortcut .toggle-switch { width: 30px; height: 18px; }
+        .edit-delete-shortcut .toggle-slider::before { width: 12px; height: 12px; left: 3px; bottom: 3px; }
+        .edit-delete-shortcut .toggle-switch input:checked+.toggle-slider::before { transform: translateX(12px); }
+        .edit-image-delete-btn {
+            width: 26px; height: 26px; padding: 0; border: 1px solid rgba(230,57,70,0.28);
+            border-radius: 7px; background: rgba(230,57,70,0.045); color: var(--error);
+            display: inline-grid; place-items: center; cursor: pointer;
+            transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        }
+        .edit-image-delete-btn svg { width: 14px; height: 14px; }
+        .edit-image-delete-btn:hover { background: var(--error); border-color: var(--error); color: #fff; }
+        .edit-image-delete-btn:disabled { opacity: 0.35; cursor: not-allowed; background: transparent; color: var(--text-light); }
+        .edit-sort-view { display: none; }
+        .edit-card-modal.sorting-images .edit-card-grid { display: none; }
+        .edit-card-modal.sorting-images .edit-sort-view { display: block; }
+        .edit-sort-panel {
+            min-height: 420px; padding: 18px;
+            border: 1px solid rgba(255,107,157,0.18); border-radius: 18px;
+            background: rgba(255,255,255,0.58);
+        }
+        .edit-sort-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+        .edit-sort-title { display: flex; align-items: center; gap: 9px; color: var(--primary); font-size: 0.96rem; font-weight: 780; }
+        .edit-sort-title svg { width: 18px; height: 18px; }
+        .edit-sort-help { margin-top: 5px; color: var(--text-light); font-size: 0.72rem; line-height: 1.5; }
+        .edit-sort-count {
+            padding: 5px 9px; border-radius: 999px; background: var(--primary-bg);
+            color: var(--primary); font-size: 0.7rem; font-weight: 760; white-space: nowrap;
+        }
+        .edit-sort-grid {
+            display: grid; grid-template-columns: repeat(auto-fill,minmax(124px,1fr));
+            gap: 12px; align-items: start;
+        }
+        .edit-sort-item {
+            position: relative; aspect-ratio: 4 / 5; min-width: 0; overflow: hidden;
+            border: 2px solid transparent; border-radius: 14px; background: rgba(61,48,54,0.055);
+            cursor: grab; user-select: none;
+            transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .edit-sort-item:active { cursor: grabbing; }
+        .edit-sort-item:focus-visible { outline: 3px solid rgba(255,107,157,0.34); outline-offset: 2px; }
+        .edit-sort-item.is-current { border-color: rgba(255,107,157,0.72); }
+        .edit-sort-item.dragging { opacity: 0.36; transform: scale(0.96); }
+        .edit-sort-item.drop-before::before,
+        .edit-sort-item.drop-after::after {
+            content: ''; position: absolute; z-index: 4; top: 7px; bottom: 7px; width: 4px;
+            border-radius: 999px; background: var(--primary); box-shadow: 0 0 0 2px rgba(255,255,255,0.8);
+        }
+        .edit-sort-item.drop-before::before { left: -1px; }
+        .edit-sort-item.drop-after::after { right: -1px; }
+        .edit-sort-item img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+        .edit-sort-index,
+        .edit-sort-handle {
+            position: absolute; z-index: 2; top: 7px; min-width: 24px; height: 24px;
+            display: grid; place-items: center; border-radius: 7px;
+            background: rgba(28,22,25,0.64); color: #fff; backdrop-filter: blur(5px);
+        }
+        .edit-sort-index { left: 7px; padding: 0 6px; font-size: 0.68rem; font-weight: 780; }
+        .edit-sort-handle { right: 7px; font-size: 0.9rem; letter-spacing: -2px; padding-right: 2px; }
+        .edit-sort-current-label {
+            position: absolute; z-index: 2; left: 7px; bottom: 7px; padding: 4px 7px;
+            border-radius: 7px; background: rgba(255,107,157,0.88); color: #fff;
+            font-size: 0.62rem; font-weight: 760;
+        }
+        .edit-sort-delete {
+            position: absolute; z-index: 5; right: 7px; bottom: 7px;
+            width: 25px; height: 25px; padding: 0; border: 0; border-radius: 8px;
+            display: grid; place-items: center; background: rgba(230,57,70,0.86); color: #fff;
+            cursor: pointer; opacity: 0.78;
+            box-shadow: 0 4px 10px rgba(80,20,28,0.2);
+            transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+        }
+        .edit-sort-delete svg { width: 13px; height: 13px; }
+        .edit-sort-delete:hover,
+        .edit-sort-delete:focus-visible { opacity: 1; background: #c92f3c; transform: translateY(-1px); }
+        .edit-sort-empty {
+            grid-column: 1 / -1; min-height: 220px; display: grid; place-items: center;
+            color: var(--text-light); font-size: 0.78rem; border: 1px dashed rgba(255,107,157,0.24);
+            border-radius: 14px; background: rgba(255,107,157,0.025);
+        }
+        .edit-sort-footer { display: none; margin-left: auto; gap: 9px; align-items: center; }
+        .edit-card-modal.sorting-images .edit-delete-btn,
+        .edit-card-modal.sorting-images .edit-footer-actions { display: none; }
+        .edit-card-modal.sorting-images .edit-sort-footer { display: flex; }
         .edit-image-preview-stage {
             position: relative;
             min-height: 220px;
@@ -1545,18 +1703,18 @@
         }
         .edit-footer-actions { display: flex; gap: 9px; align-items: center; }
         .edit-delete-btn {
-            color: var(--error) !important;
-            border-color: rgba(230,57,70,0.34) !important;
-            background: rgba(230,57,70,0.035) !important;
+            min-height: 30px !important; padding: 5px 10px !important;
+            color: #fff !important; border: 0 !important;
+            background: var(--error) !important;
             display: inline-flex; align-items: center; gap: 7px;
-            font-weight: 680;
+            font-size: 0.72rem !important; font-weight: 700; opacity: 0.76;
+            box-shadow: none !important;
         }
         .edit-delete-btn:hover {
-            border-color: rgba(230,57,70,0.62) !important;
-            background: rgba(230,57,70,0.08) !important;
+            background: #c92f3c !important; opacity: 1;
             transform: translateY(-1px);
         }
-        .edit-delete-btn svg { width: 15px; height: 15px; stroke-width: 1.9; }
+        .edit-delete-btn svg { width: 13px; height: 13px; stroke-width: 1.9; }
         .edit-card-modal .tag-suggestions {
             gap: 7px; margin-top: 8px; max-height: 236px; overflow: auto; padding-right: 2px;
         }
@@ -1565,6 +1723,7 @@
             font-size: 0.78rem;
         }
         .theme-night .edit-panel { background: rgba(255,255,255,0.04); border-color: rgba(255,107,157,0.18); }
+        .theme-night .edit-sort-panel { background: rgba(255,255,255,0.04); }
         .theme-night .edit-field .input-text { background: rgba(255,255,255,0.05); }
         .theme-night .edit-field .input-text:focus { background: rgba(255,255,255,0.08); }
         .theme-night .edit-prompt-panel .compact-field .input-text { background: rgba(255,255,255,0.035); }
@@ -1576,6 +1735,11 @@
             .edit-card-grid { grid-template-columns: 1fr; }
             .edit-prompt-grid { grid-template-columns: 1fr; }
             .edit-card-modal { width: 94% !important; }
+            .edit-sort-grid { grid-template-columns: repeat(auto-fill,minmax(98px,1fr)); gap: 9px; }
+            .edit-prompt-panel .primary-prompt textarea.input-text {
+                height: clamp(220px, 34vh, 360px);
+                min-height: 220px;
+            }
             .edit-card-footer { flex-direction: column-reverse; align-items: stretch; }
             .edit-footer-actions { justify-content: flex-end; }
         }
@@ -1590,7 +1754,7 @@
 
         .lightbox-modal { max-width: 95vw !important; max-height: 95vh !important; background: transparent !important; box-shadow: none !important; }
         .lightbox-body { display: flex; align-items: center; justify-content: center; padding: 0 !important; overflow: hidden !important; }
-        .lightbox-img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: var(--br-lg); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .lightbox-img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: var(--br-lg); box-shadow: 0 10px 40px rgba(0,0,0,0.5); user-select: none; touch-action: pan-y; }
         .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.4); color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; border: none; cursor: pointer; z-index: 10; transition: background 0.2s; }
         .lightbox-nav:hover { background: rgba(0,0,0,0.7); }
         .lightbox-prev { left: 20px; }
@@ -1600,6 +1764,8 @@
         .lightbox-edit:hover { background: rgba(255,107,157,0.9); transform: translateY(-1px); }
         .lightbox-trash { position: absolute; bottom: 20px; right: 20px; background: rgba(230,57,70,0.5); color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; border: none; cursor: pointer; z-index: 10; transition: background 0.2s; }
         .lightbox-trash:hover { background: rgba(230,57,70,0.85); }
+        #fullscreenOverlay.sort-preview .lightbox-edit,
+        #fullscreenOverlay.sort-preview .lightbox-trash { display: none; }
 
         .progress-bar { height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; margin-top: 10px; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s ease; }
@@ -1786,7 +1952,7 @@
                         </button>
                     </div>
                     <div class="sidebar-group">
-                        <div class="sidebar-group-title">卡片盒导入设置</div>
+                                <div class="sidebar-group-title">卡片盒“+”按钮默认来源</div>
                         <div class="sidebar-radio-set">
                             <label class="sidebar-radio-option">
                                 <input type="radio" name="boxQuickImportMode" value="local" onchange="setBoxQuickImportMode(this.value)">
@@ -1846,25 +2012,6 @@
                             <span>快捷复制过滤</span>
                         </button>
                     </div>
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-title">批量管理</div>
-                        <button class="btn-side sidebar-action-btn" onclick="toggleBatchMode('transfer')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="4" y="5" width="15" height="15" rx="2"/>
-                                <path d="M8 12l2.4 2.4L16 9"/>
-                            </svg>
-                            <span>转移与复制</span>
-                        </button>
-                        <button class="btn-side sidebar-action-btn" onclick="toggleBatchMode('tags')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20.5 13.5l-7 7a2 2 0 01-2.8 0L3.5 13.3V4h9.3l7.7 7.7a1.3 1.3 0 010 1.8z"/>
-                                <path d="M7.5 7.5h.01"/>
-                                <path d="M15 8v5"/>
-                                <path d="M12.5 10.5h5"/>
-                            </svg>
-                            <span>标签增减</span>
-                        </button>
-                    </div>
                     <div class="sidebar-group danger-group">
                         <div class="sidebar-group-title">危险操作</div>
                         <button class="btn-side danger" onclick="resetAll()"><span>重置所有数据</span></button>
@@ -1893,8 +2040,8 @@
     </aside>
 
     <main class="main-content">
-        <div class="model-tabs-container" id="modelTabs" role="tablist" aria-label="模型标签"></div>
-
+        <div class="workspace-toolbar-sticky">
+        <div class="model-tabs-container" id="modelTabs" role="tablist" aria-label="图库分组"></div>
         <div class="header-bar">
             <button type="button" class="header-stats" id="headerStatsCycle" onclick="toggleHeaderStatsScope()" title="点击切换当前 / 全局统计">
                 <div class="stat-main">
@@ -1904,7 +2051,7 @@
                 </div>
             </button>
             <span class="header-sep"></span>
-            <div class="search-box" style="max-width:230px;">
+            <div class="search-box">
                 <span class="search-icon">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="7"/>
@@ -1925,6 +2072,10 @@
                     <option value="name-desc">名称降序</option>
                 </select>
             </div>
+            <button type="button" class="toolbar-action-btn" id="batchModeToggle" aria-pressed="false" onclick="toggleBatchMode('all')">批量管理</button>
+            <details class="view-settings" id="viewSettings">
+                <summary>显示设置</summary>
+                <div class="view-settings-popover">
             <div class="filter-control" id="columnCountControl" title="根据窗口宽度自动分列，使用滚轮或加减按钮微调密度">
                 <span class="filter-label">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -1947,14 +2098,17 @@
                 </label>
             </div>
             <div class="filter-control">
-                <span class="filter-label">标签栏</span>
+                <span class="filter-label">显示标签</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="tagBarToggle" aria-label="显示标签栏" onchange="toggleTagBar()">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+                </div>
+            </details>
         </div>
         <div class="tag-chips-bar" id="tagChipsBar" style="display:none;"></div>
+        </div>
 
         <div class="items-grid" id="itemsContainer"></div>
     </main>
@@ -2105,11 +2259,14 @@
         <div class="modal edit-card-modal">
             <div class="modal-header edit-card-header">
                 <div class="modal-title edit-card-title">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="edit-title-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 20h9"/>
                         <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
                     </svg>
-                    <span>编辑卡片盒</span>
+                    <svg class="edit-title-sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 6h12"/><path d="M8 12h12"/><path d="M8 18h12"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/>
+                    </svg>
+                    <span id="editCardTitleText">编辑卡片盒</span>
                 </div>
                 <button class="modal-close" onclick="hideModal('editCardModal')">×</button>
             </div>
@@ -2139,7 +2296,21 @@
                         <div class="edit-image-preview" id="editImagePreviewBox">
                             <div class="edit-image-preview-head">
                                 <span>当前图片</span>
-                                <span id="editImageCounter">0 / 0</span>
+                                <div class="edit-image-preview-actions">
+                                    <span id="editImageCounter">0 / 0</span>
+                                    <label class="edit-delete-shortcut" title="开启后，在编辑窗口中按 Delete 可直接删除当前图片">
+                                        <span>Delete 快删</span>
+                                        <span class="toggle-switch">
+                                            <input type="checkbox" id="editDeleteShortcutToggle" aria-label="启用编辑页 Delete 快速删除" onchange="setEditDeleteShortcut(this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </span>
+                                    </label>
+                                    <button type="button" class="edit-image-delete-btn" id="editImageDeleteBtn" onclick="deleteEditingCurrentImage()" title="删除当前图片" aria-label="删除当前图片">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6.5 6l1 14h9l1-14"/><path d="M10 10v6"/><path d="M14 10v6"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="edit-image-preview-stage">
                                 <button type="button" class="edit-image-nav edit-image-prev" onclick="navigateEditImage(-1)">‹</button>
@@ -2172,10 +2343,20 @@
                             </div>
                         </div>
                         <div class="edit-field primary-prompt">
-                            <label for="editCardRemark">正面提示词</label>
-                            <div class="edit-read-field" data-edit-target="editCardRemark"></div>
+                            <div class="edit-field-label-row">
+                                <label for="editCardRemark">正面提示词</label>
+                                <button type="button" class="prompt-copy-btn" onpointerdown="event.preventDefault()" onclick="copyCurrentPositivePrompt(event)" title="有选区时复制选中内容，否则复制全部" aria-label="复制选中内容或全部正面提示词">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <rect x="8" y="8" width="11" height="11" rx="2"/>
+                                        <path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>
+                                    </svg>
+                                </button>
+                            </div>
                             <textarea id="editCardRemark" class="input-text" placeholder="正面提示词..."></textarea>
                         </div>
+                        <details class="edit-advanced">
+                            <summary>高级信息：负面提示词、参数与工作流</summary>
+                            <div class="edit-advanced-fields">
                         <div class="edit-field compact-field">
                             <label for="editCardNegative">负面提示词</label>
                             <div class="edit-read-field" data-edit-target="editCardNegative"></div>
@@ -2191,8 +2372,25 @@
                             <div class="edit-read-field" data-edit-target="editCardWorkflow"></div>
                             <textarea id="editCardWorkflow" class="input-text" placeholder="ComfyUI 工作流 JSON..."></textarea>
                         </div>
+                            </div>
+                        </details>
                     </section>
                 </div>
+                <section class="edit-sort-view edit-sort-panel" aria-label="盒内图片排序">
+                    <div class="edit-sort-head">
+                        <div>
+                            <div class="edit-sort-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>
+                                </svg>
+                                <span>整理盒内图片</span>
+                            </div>
+                            <p class="edit-sort-help">单击查看大图，拖动调整顺序；大图中可左右滑动查看细节。</p>
+                        </div>
+                        <span class="edit-sort-count" id="editSortCount">0 张图片</span>
+                    </div>
+                    <div class="edit-sort-grid" id="editImageSortGrid"></div>
+                </section>
             </div>
             <div class="modal-footer edit-card-footer">
                 <button class="btn btn-outline edit-delete-btn" onclick="deleteCard(editingBoxId)">
@@ -2203,11 +2401,15 @@
                         <path d="M10 10v6"/>
                         <path d="M14 10v6"/>
                     </svg>
-                    <span>删除卡片盒</span>
+                    <span>删除卡片</span>
                 </button>
                 <div class="edit-footer-actions">
                     <button class="btn btn-outline" onclick="hideModal('editCardModal')">取消</button>
                     <button class="btn btn-primary" onclick="saveEditCard()">保存</button>
+                </div>
+                <div class="edit-sort-footer">
+                    <button class="btn btn-outline" onclick="cancelEditImageSort()">取消排序</button>
+                    <button class="btn btn-primary" id="saveEditImageSortBtn" onclick="saveEditImageSort()">保存顺序</button>
                 </div>
             </div>
         </div>
@@ -2226,7 +2428,7 @@
             </button>
             <button class="lightbox-trash" onclick="deleteFromFullscreen()" aria-label="删除当前图片">🗑️</button>
             <div class="modal-body lightbox-body" onclick="hideModal('fullscreenOverlay')">
-                <img src="" class="lightbox-img" id="fsImage" onclick="event.stopPropagation()">
+                <img src="" class="lightbox-img" id="fsImage" draggable="false" onclick="event.stopPropagation()" onpointerdown="fullscreenPointerDown(event)" onpointerup="fullscreenPointerUp(event)" onpointercancel="fullscreenPointerCancel()">
             </div>
         </div>
     </div>
@@ -2273,7 +2475,7 @@
     <!-- New Model Modal -->
     <div class="modal-overlay" id="modelModal">
         <div class="modal">
-            <div class="modal-header"><div class="modal-title">新建模型标签</div><button class="modal-close" onclick="hideModal('modelModal')">×</button></div>
+            <div class="modal-header"><div class="modal-title">新建分组</div><button class="modal-close" onclick="hideModal('modelModal')">×</button></div>
             <div class="modal-body">
                 <input type="text" id="newModelName" class="input-text" placeholder="例如: SDXL, Pony, Flux...">
             </div>
@@ -2353,9 +2555,13 @@ function hideModal(id) {
     document.getElementById(id).style.display='none';
     if(id==='editCardModal'){
         releaseBlobUrls('edit-preview');
+        resetEditImageSortMode();
     }
     if(id==='fullscreenOverlay'){
         isFullscreenOpen=false;
+        fullscreenImagesOverride=null;
+        fullscreenSwipeStart=null;
+        document.getElementById('fullscreenOverlay')?.classList.remove('sort-preview');
         releaseBlobUrls('fullscreen');
         const img=document.getElementById('fsImage');
         if(img) img.removeAttribute('src');
@@ -2457,7 +2663,7 @@ function handleLocalImportProgress(event){
     detail.innerHTML=html;
 }
 // ─── Settings ───────────────────────────────
-let appSettings={copyFilterPatterns:[],imageDataVersion:0};
+let appSettings={copyFilterPatterns:[],imageDataVersion:0,editDeleteShortcut:false};
 
 function loadSettings() {
     try{
@@ -2467,6 +2673,7 @@ function loadSettings() {
             appSettings.copyFilterPatterns=parsed.copyFilterPatterns||[];
             if(Number.isFinite(parsed.imageDataVersion)) appSettings.imageDataVersion=parsed.imageDataVersion;
             if(parsed.boxQuickImportMode!==undefined) appSettings.boxQuickImportMode=parsed.boxQuickImportMode;
+            appSettings.editDeleteShortcut=parsed.editDeleteShortcut===true;
         }
     } catch(e){}
     if(!['local','clipboard','url'].includes(appSettings.boxQuickImportMode)) appSettings.boxQuickImportMode='local';
@@ -2477,10 +2684,23 @@ function loadSettings() {
     }
     renderFilterPatterns();
     renderBoxQuickImportSetting();
+    renderEditDeleteShortcutSetting();
 }
 
 function saveSettings() {
     try{ localStorage.setItem('gallery_app_settings',JSON.stringify(appSettings)); } catch(e){}
+}
+
+function setEditDeleteShortcut(enabled){
+    appSettings.editDeleteShortcut=enabled===true;
+    saveSettings();
+    renderEditDeleteShortcutSetting();
+    showToast(appSettings.editDeleteShortcut?'已开启编辑页 Delete 快删':'已关闭编辑页 Delete 快删');
+}
+
+function renderEditDeleteShortcutSetting(){
+    const toggle=document.getElementById('editDeleteShortcutToggle');
+    if(toggle) toggle.checked=appSettings.editDeleteShortcut===true;
 }
 
 function setBoxQuickImportMode(mode){
@@ -2584,11 +2804,31 @@ function applyCopyFilter(text) {
     return result;
 }
 
-function copyText(txt) {
+async function copyText(txt, messages={}) {
     const filtered=applyCopyFilter(txt);
-    navigator.clipboard.writeText(filtered);
-    const toastMsg=filtered===txt?'已复制: '+txt:'已复制(已过滤): '+filtered.substring(0,80)+(filtered.length>80?'...':'');
-    showToast(toastMsg);
+    try{
+        await navigator.clipboard.writeText(filtered);
+        showToast(filtered===txt?(messages.success||'提示词已复制'):(messages.filtered||'提示词已复制并应用过滤'));
+    }catch(error){
+        reportDataError(error,'复制失败');
+    }
+}
+
+function copyCurrentPositivePrompt(event){
+    if(event){ event.preventDefault(); event.stopPropagation(); }
+    const field=document.getElementById('editCardRemark');
+    const start=field&&Number.isFinite(field.selectionStart)?field.selectionStart:0;
+    const end=field&&Number.isFinite(field.selectionEnd)?field.selectionEnd:0;
+    const hasSelection=!!field&&end>start;
+    const text=field?(hasSelection?field.value.slice(start,end):field.value).trim():'';
+    if(!text){ showToast('当前图片没有正面提示词'); return; }
+    void copyText(text,hasSelection?{
+        success:'已复制选中内容',
+        filtered:'已复制选中内容并应用过滤'
+    }:{
+        success:'已复制全部正面提示词',
+        filtered:'已复制全部正面提示词并应用过滤'
+    });
 }
 
 function formatTime(ts) {
@@ -2749,6 +2989,11 @@ let currentModelId=null;
 let currentBoxes=[];       // boxes for current model
 let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> image records
+let fullscreenBoxId=null;
+let fullscreenImgIdx=0;
+let isFullscreenOpen=false;
+let fullscreenImagesOverride=null;
+let fullscreenSwipeStart=null;
 const MAX_CACHED_BOXES=60;
 const imageCacheOrder=new Map();
 const SEARCH_TEXT_VERSION=1;
@@ -3500,7 +3745,7 @@ function renderModelTabs() {
     });
     const addBtn=document.createElement('button');
     addBtn.className='model-tab add-model-btn'; addBtn.innerText='+';
-    addBtn.type='button'; addBtn.setAttribute('aria-label','新建模型');
+    addBtn.type='button'; addBtn.setAttribute('aria-label','新建分组');
     addBtn.onclick=()=>showModal('modelModal');
     c.appendChild(addBtn);
 }
@@ -3553,10 +3798,7 @@ async function switchModel(modelId) {
     currentModelId=modelId;
     setPref('ipm_lastModel',modelId);
     await saveModels(false);
-    document.getElementById('searchInput').value='';
-    selectedFilterTags=[];
     renderTagChips();
-    document.getElementById('sortSelect').value='time-desc';
     renderModelTabs();
     await loadBoxes();
     updateStatsAndTags();
@@ -4085,6 +4327,9 @@ async function executeUnifiedImport(mode){
 
 // ─── Edit Card ──────────────────────────────
 let editingBoxId=null;
+let isDeletingEditImage=false;
+let editImageSortState=null;
+let isSavingEditImageSort=false;
 function getEditingBox() {
     return currentBoxes.find(b=>b.id===editingBoxId);
 }
@@ -4128,6 +4373,7 @@ function refreshEditImagePreview() {
     const counter=document.getElementById('editImageCounter');
     const prev=document.querySelector('.edit-image-prev');
     const next=document.querySelector('.edit-image-next');
+    const deleteBtn=document.getElementById('editImageDeleteBtn');
     releaseBlobUrls('edit-preview');
     if(!preview||!empty||!counter) return;
     if(!box||!images.length){
@@ -4137,6 +4383,7 @@ function refreshEditImagePreview() {
         counter.textContent='0 / 0';
         if(prev) prev.disabled=true;
         if(next) next.disabled=true;
+        if(deleteBtn) deleteBtn.disabled=true;
         return;
     }
     box.viewIndex=Math.max(0, Math.min(images.length-1, box.viewIndex||0));
@@ -4147,6 +4394,7 @@ function refreshEditImagePreview() {
     counter.textContent=(box.viewIndex+1)+' / '+images.length;
     if(prev) prev.disabled=box.viewIndex<=0;
     if(next) next.disabled=box.viewIndex>=images.length-1;
+    if(deleteBtn) deleteBtn.disabled=false;
 }
 function loadEditImageFields() {
     const box=getEditingBox();
@@ -4180,8 +4428,272 @@ async function navigateEditImage(delta) {
     const card=Array.from(document.querySelectorAll('.card')).find(el=>el.dataset.boxId===box.id);
     if(card) renderCardImages(card, box);
 }
+
+function clearEditSortDropMarks(){
+    document.querySelectorAll('#editImageSortGrid .drop-before, #editImageSortGrid .drop-after').forEach(item=>{
+        item.classList.remove('drop-before','drop-after');
+    });
+}
+
+function moveEditSortImage(fromIndex,toIndex,focusAfter=false){
+    if(!editImageSortState) return;
+    const images=editImageSortState.workingImages;
+    if(fromIndex<0||fromIndex>=images.length||toIndex<0||toIndex>=images.length||fromIndex===toIndex) return;
+    const [moved]=images.splice(fromIndex,1);
+    images.splice(toIndex,0,moved);
+    renderEditImageSortGrid();
+    if(focusAfter){
+        requestAnimationFrame(()=>document.querySelector('#editImageSortGrid [data-sort-index="'+toIndex+'"]')?.focus());
+    }
+}
+
+function renderEditImageSortGrid(){
+    const grid=document.getElementById('editImageSortGrid');
+    const count=document.getElementById('editSortCount');
+    if(!grid||!editImageSortState) return;
+    releaseBlobUrls('edit-sort');
+    grid.replaceChildren();
+    const images=editImageSortState.workingImages;
+    if(count) count.textContent=images.length+' 张图片';
+    if(images.length===0){
+        const empty=document.createElement('div');
+        empty.className='edit-sort-empty';
+        empty.textContent='卡片盒内已无图片';
+        grid.appendChild(empty);
+        return;
+    }
+    images.forEach((img,index)=>{
+        const item=document.createElement('div');
+        item.className='edit-sort-item'+(img===editImageSortState.currentImage?' is-current':'');
+        item.draggable=true;
+        item.tabIndex=0;
+        item.dataset.sortIndex=String(index);
+        item.setAttribute('role','listitem');
+        item.setAttribute('aria-label','第 '+(index+1)+' 张图片，单击查看大图，拖动调整顺序');
+
+        const preview=document.createElement('img');
+        preview.src=getImageUrl(img,'edit-sort');
+        preview.alt=img.name||('第 '+(index+1)+' 张图片');
+        preview.draggable=false;
+        const indexBadge=document.createElement('span');
+        indexBadge.className='edit-sort-index';
+        indexBadge.textContent=String(index+1);
+        const handle=document.createElement('span');
+        handle.className='edit-sort-handle';
+        handle.textContent='⠿';
+        handle.setAttribute('aria-hidden','true');
+        item.append(preview,indexBadge,handle);
+        if(img===editImageSortState.currentImage){
+            const current=document.createElement('span');
+            current.className='edit-sort-current-label';
+            current.textContent='当前';
+            item.appendChild(current);
+        }
+        const deleteBtn=document.createElement('button');
+        deleteBtn.type='button';
+        deleteBtn.className='edit-sort-delete';
+        deleteBtn.title='删除这张图片';
+        deleteBtn.setAttribute('aria-label','删除第 '+(index+1)+' 张图片');
+        deleteBtn.draggable=false;
+        deleteBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6.5 6l1 14h9l1-14"/><path d="M10 10v6"/><path d="M14 10v6"/></svg>';
+        deleteBtn.addEventListener('pointerdown',event=>event.stopPropagation());
+        deleteBtn.addEventListener('dragstart',event=>{ event.preventDefault(); event.stopPropagation(); });
+        deleteBtn.addEventListener('click',event=>{
+            event.preventDefault();
+            event.stopPropagation();
+            requestDeleteEditSortImage(img,index);
+        });
+        item.appendChild(deleteBtn);
+
+        item.addEventListener('click',event=>{
+            if(event.target.closest('.edit-sort-delete')||editImageSortState.didDrag) return;
+            void showFullscreen(editingBoxId,index,{images:editImageSortState.workingImages,sortPreview:true});
+        });
+
+        item.addEventListener('dragstart',event=>{
+            editImageSortState.dragIndex=index;
+            editImageSortState.didDrag=true;
+            event.dataTransfer.effectAllowed='move';
+            event.dataTransfer.setData('text/plain',String(index));
+            requestAnimationFrame(()=>item.classList.add('dragging'));
+        });
+        item.addEventListener('dragover',event=>{
+            if(editImageSortState.dragIndex===null||editImageSortState.dragIndex===undefined) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect='move';
+            clearEditSortDropMarks();
+            const rect=item.getBoundingClientRect();
+            const after=event.clientX>=rect.left+rect.width/2;
+            item.classList.add(after?'drop-after':'drop-before');
+            editImageSortState.dropAfter=after;
+        });
+        item.addEventListener('drop',event=>{
+            event.preventDefault();
+            const from=editImageSortState.dragIndex;
+            let insertion=index+(editImageSortState.dropAfter?1:0);
+            clearEditSortDropMarks();
+            if(from===null||from===undefined) return;
+            const [moved]=images.splice(from,1);
+            if(from<insertion) insertion--;
+            insertion=Math.max(0,Math.min(images.length,insertion));
+            images.splice(insertion,0,moved);
+            editImageSortState.dragIndex=null;
+            editImageSortState.dropAfter=false;
+            renderEditImageSortGrid();
+        });
+        item.addEventListener('dragend',()=>{
+            editImageSortState.dragIndex=null;
+            editImageSortState.dropAfter=false;
+            clearEditSortDropMarks();
+            item.classList.remove('dragging');
+            setTimeout(()=>{ if(editImageSortState) editImageSortState.didDrag=false; },120);
+        });
+        item.addEventListener('keydown',event=>{
+            if(event.target!==item) return;
+            if(event.key==='Enter'||event.key===' '){
+                event.preventDefault();
+                void showFullscreen(editingBoxId,index,{images:editImageSortState.workingImages,sortPreview:true});
+                return;
+            }
+            if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight') return;
+            event.preventDefault();
+            const target=index+(event.key==='ArrowLeft'?-1:1);
+            moveEditSortImage(index,target,true);
+        });
+        grid.appendChild(item);
+    });
+    grid.setAttribute('role','list');
+}
+
+function requestDeleteEditSortImage(img,index){
+    const box=getEditingBox();
+    if(!box||!editImageSortState) return;
+    showStyledConfirm(
+        '删除单张图片',
+        '<p>从卡片盒 <b>'+escapeHtml(box.name||'未命名')+'</b> 中删除第 '+(index+1)+' 张图片吗？此操作不会因取消排序而恢复。</p>',
+        '删除图片','取消',()=>deleteEditSortImage(img)
+    );
+}
+
+async function deleteEditSortImage(img){
+    const state=editImageSortState;
+    const box=getEditingBox();
+    if(!state||!box||isSavingEditImageSort) return;
+    const cached=getEditingImages();
+    const cachedIndex=cached.indexOf(img);
+    const workingIndex=state.workingImages.indexOf(img);
+    if(cachedIndex<0||workingIndex<0){ showToast('未找到要删除的图片'); return; }
+
+    const nextCached=cached.filter(item=>item!==img);
+    const nextWorking=state.workingImages.filter(item=>item!==img);
+    const nextOriginal=state.originalImages.filter(item=>item!==img);
+    let nextCurrent=state.currentImage;
+    if(nextCurrent===img){
+        nextCurrent=nextWorking[Math.min(workingIndex,nextWorking.length-1)]||null;
+    }
+    const nextBox={...box};
+    nextBox.viewIndex=nextCurrent?Math.max(0,nextCached.indexOf(nextCurrent)):0;
+    nextBox.imageCount=nextCached.length;
+    updateBoxSearchText(nextBox,nextCached);
+
+    try{
+        await dbSaveBoxAndImages(nextBox,nextCached);
+        Object.assign(box,nextBox);
+        setCachedBoxImages(box.id,nextCached);
+        state.workingImages=nextWorking;
+        state.originalImages=nextOriginal;
+        state.currentImage=nextCurrent;
+        imageCount.set(box.id,nextCached.length);
+        const card=cardByBoxId.get(box.id);
+        if(card) renderCardImages(card,box);
+        updateStatsAndTags();
+        renderEditImageSortGrid();
+        showToast('单张图片已删除');
+    }catch(error){
+        reportDataError(error,'图片删除失败');
+    }
+}
+
+function enterEditImageSortMode(){
+    const box=getEditingBox();
+    const images=getEditingImages();
+    if(!box||images.length<2){ showToast('至少需要两张图片才能排序'); return; }
+    applyEditImageFieldsToCurrentImage();
+    const currentIndex=Math.max(0,Math.min(images.length-1,box.viewIndex||0));
+    editImageSortState={
+        originalImages:images.slice(),
+        workingImages:images.slice(),
+        currentImage:images[currentIndex],
+        dragIndex:null,
+        dropAfter:false,
+        didDrag:false
+    };
+    const titleText=document.getElementById('editCardTitleText');
+    if(titleText) titleText.textContent='整理图片';
+    document.querySelector('#editCardModal .edit-card-modal')?.classList.add('sorting-images');
+    renderEditImageSortGrid();
+    const body=document.querySelector('#editCardModal .edit-card-body');
+    if(body) body.scrollTop=0;
+}
+
+function resetEditImageSortMode(){
+    releaseBlobUrls('edit-sort');
+    document.querySelector('#editCardModal .edit-card-modal')?.classList.remove('sorting-images');
+    const titleText=document.getElementById('editCardTitleText');
+    if(titleText) titleText.textContent='编辑卡片盒';
+    document.getElementById('editImageSortGrid')?.replaceChildren();
+    editImageSortState=null;
+    isSavingEditImageSort=false;
+    const saveBtn=document.getElementById('saveEditImageSortBtn');
+    if(saveBtn) saveBtn.disabled=false;
+}
+
+function cancelEditImageSort(){
+    if(!editImageSortState) return;
+    hideModal('editCardModal');
+    showToast('已取消图片排序');
+}
+
+async function saveEditImageSort(){
+    if(!editImageSortState||isSavingEditImageSort) return;
+    const box=getEditingBox();
+    if(!box) return;
+    isSavingEditImageSort=true;
+    const saveBtn=document.getElementById('saveEditImageSortBtn');
+    if(saveBtn) saveBtn.disabled=true;
+    const state=editImageSortState;
+    const images=state.workingImages.slice();
+    const nextBox={...box};
+    nextBox.viewIndex=Math.max(0,images.indexOf(state.currentImage));
+    nextBox.imageCount=images.length;
+    updateBoxSearchText(nextBox,images);
+    try{
+        await dbSaveBoxAndImages(nextBox,images);
+        Object.assign(box,nextBox);
+        setCachedBoxImages(box.id,images);
+        const card=cardByBoxId.get(box.id);
+        if(card) renderCardImages(card,box);
+        hideModal('editCardModal');
+        showToast('图片顺序已保存');
+    }catch(error){
+        isSavingEditImageSort=false;
+        if(saveBtn) saveBtn.disabled=false;
+        reportDataError(error,'图片排序保存失败');
+    }
+}
+
 function editCardKeyHandler(e) {
     if(!isModalVisible('editCardModal')) return;
+    if(isModalVisible('storageModeModal')) return;
+    if(isModalVisible('fullscreenOverlay')) return;
+    if(editImageSortState){
+        if(e.key==='Escape'){
+            e.preventDefault();
+            e.stopPropagation();
+            cancelEditImageSort();
+        }
+        return;
+    }
     if(e.altKey||e.ctrlKey||e.metaKey) return;
     if(isTextEditingTarget(e.target)) return;
     if(e.key==='ArrowLeft'||e.keyCode===37){
@@ -4192,12 +4704,20 @@ function editCardKeyHandler(e) {
         e.preventDefault();
         e.stopPropagation();
         navigateEditImage(1);
+    } else if((e.key==='Delete'||e.keyCode===46)&&appSettings.editDeleteShortcut===true){
+        e.preventDefault();
+        e.stopPropagation();
+        if(!e.repeat) void deleteEditingCurrentImage({skipConfirm:true});
     }
 }
 function openEditCard(boxId) {
     const box=currentBoxes.find(b=>b.id===boxId);
     if(!box) return;
     editingBoxId=boxId;
+    const titleText=document.getElementById('editCardTitleText');
+    if(titleText) titleText.textContent='编辑卡片盒';
+    const advanced=document.querySelector('#editCardModal .edit-advanced');
+    if(advanced) advanced.open=false;
     const timeEl=document.getElementById('editCardTime');
     const header=document.querySelector('#editCardModal .edit-card-header');
     const closeBtn=header?.querySelector('.modal-close');
@@ -4223,9 +4743,17 @@ function openEditCard(boxId) {
     document.querySelectorAll('#editCardModal .edit-read-field').forEach(read=>{
         read.onclick=()=>enterInlineEditField(read.closest('.edit-field'));
     });
+    renderEditDeleteShortcutSetting();
     loadEditImageFields();
 
     showModal('editCardModal');
+}
+
+function openEditImageSort(boxId){
+    const images=getCachedBoxImages(boxId)||[];
+    if(images.length<2){ showToast('至少需要两张图片才能排序'); return; }
+    openEditCard(boxId);
+    enterEditImageSortMode();
 }
 
 async function saveEditCard() {
@@ -4436,6 +4964,44 @@ async function deleteImage(boxId, idx, card) {
     showToast('图片已删除');
 }
 
+function requestDeleteImage(boxId,idx,card){
+    const box=currentBoxes.find(item=>item.id===boxId);
+    if(!box) return;
+    showStyledConfirm(
+        '删除当前图片',
+        '<p>从卡片盒 <b>'+escapeHtml(box.name||'未命名')+'</b> 中删除当前图片吗？卡片盒会继续保留。</p>',
+        '删除图片','取消',()=>deleteImage(boxId,idx,card)
+    );
+}
+
+async function deleteEditingCurrentImage(options={}){
+    const box=getEditingBox();
+    const images=getEditingImages();
+    if(!box||!images.length||isDeletingEditImage) return;
+    const idx=Math.max(0,Math.min(images.length-1,box.viewIndex||0));
+    const performDelete=async()=>{
+        if(isDeletingEditImage) return;
+        isDeletingEditImage=true;
+        try{
+            await deleteImage(box.id,idx,cardByBoxId.get(box.id));
+            loadEditImageFields();
+        }catch(error){
+            reportDataError(error,'删除图片失败');
+        }finally{
+            isDeletingEditImage=false;
+        }
+    };
+    if(options.skipConfirm===true){
+        await performDelete();
+        return;
+    }
+    showStyledConfirm(
+        '删除当前图片',
+        '<p>从卡片盒 <b>'+escapeHtml(box.name||'未命名')+'</b> 中删除第 '+(idx+1)+' 张图片吗？卡片盒会继续保留。</p>',
+        '删除图片','取消',performDelete
+    );
+}
+
 // ─── Render Cards ───────────────────────────
 function scheduleGridRelayout(){
     if(gridResizeTicking) return;
@@ -4642,9 +5208,9 @@ function renderGalleryEmptyState(container){
     action.type='button';
     action.className='btn btn-primary';
     if(!currentModelId){
-        title.textContent='还没有模型标签';
-        detail.textContent='先建立一个模型标签，再导入对应的图片。';
-        action.textContent='新建模型';
+        title.textContent='还没有图库分组';
+        detail.textContent='先建立一个分组，再导入对应的图片。';
+        action.textContent='新建分组';
         action.onclick=()=>showModal('modelModal');
     }else if(hasFilters){
         title.textContent='没有找到匹配的卡片盒';
@@ -4877,6 +5443,11 @@ function enterInlineEditField(field) {
 }
 function leaveInlineEditField(field) {
     if(!field) return;
+    if(field.classList.contains('primary-prompt')){
+        field.classList.remove('editing','read-mode');
+        syncEditFieldDensity();
+        return;
+    }
     field.classList.remove('editing');
     field.classList.add('read-mode');
     syncEditFieldDensity();
@@ -5084,33 +5655,38 @@ async function renderCardImages(card, box) {
     const count=images.length;
     let viewIdx=box.viewIndex||0;
     if(count===0) viewIdx=0;
-    else if(viewIdx>count) viewIdx=count;
-    const isAddPage=(count>0 && viewIdx===count);
+    else viewIdx=Math.max(0,Math.min(count-1,viewIdx));
+    box.viewIndex=viewIdx;
 
     const currentImgRemark=(count>0&&viewIdx<count)?getImageRemark(images[viewIdx]):'';
     const imgUrl=(count>0&&viewIdx<count)?getImageUrl(images[viewIdx],cardUrlOwner):'';
+    const cardMenuHTML=`
+        <details class="card-menu" onclick="event.stopPropagation()">
+            <summary aria-label="打开卡片盒操作">⋯</summary>
+            <div class="card-menu-popover">
+                <button type="button" class="card-menu-action" data-card-action="edit-box">编辑卡片盒</button>
+                ${count>1?'<button type="button" class="card-menu-action" data-card-action="sort-images">整理图片</button>':''}
+                <button type="button" class="card-menu-action" data-card-action="add-image">添加图片</button>
+                ${count?'<button type="button" class="card-menu-action danger" data-card-action="delete-image">删除当前图片</button>':''}
+                <button type="button" class="card-menu-action danger" data-card-action="delete-box">删除卡片盒</button>
+            </div>
+        </details>`;
 
     // Build preview HTML with gradient overlay
     let previewHTML;
     if(count===0){
         previewHTML=`
             <div class="preview-container" data-action="uploadImg">
-                <span class="preview-placeholder">点击上传图片</span>
-            </div>`;
-    } else if(isAddPage){
-        previewHTML=`
-            <div class="preview-container" data-action="uploadImg">
-                <button class="nav-arrow left-arrow">◀</button>
-                <span class="preview-placeholder" style="font-size:1.15rem;">+ 追加图片</span>
+                <div class="card-empty-name" title="${escapeHtml(box.name||'未命名')}">${escapeHtml(box.name||'未命名')}</div>
+                ${cardMenuHTML}
+                <span class="preview-placeholder">点击或拖入图片</span>
+                <button type="button" class="empty-delete-card" data-card-action="delete-box">删除卡片盒</button>
             </div>`;
     }
-    const pencilSVG='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
-    const trashSVG='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6.5 6l1 14h9l1-14"/><path d="M10 10v6"/><path d="M14 10v6"/></svg>';
-    if(count>0 && !isAddPage){
-        const tagsHTML=(box.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+    if(count>0){
         previewHTML=`
             <div class="preview-container">
-                <button class="nav-arrow left-arrow" ${viewIdx===0?'style="display:none;"':''}>◀</button>
+                <button class="nav-arrow left-arrow" aria-label="上一张图片" ${viewIdx===0?'style="display:none;"':''}>◀</button>
                 <img src="${imgUrl}" class="preview-image" decoding="async" alt="${escapeHtml(box.name||'图片')}">
                 <div class="preview-overlay-top"></div>
                 <div class="preview-overlay-bottom"></div>
@@ -5118,19 +5694,16 @@ async function renderCardImages(card, box) {
                     <div class="card-name-overlay" title="${escapeHtml(box.name)}">${escapeHtml(box.name)}</div>
                 </div>
                 <div class="card-top-actions">
-                    <div class="card-action-set">
-                        <button class="img-action-btn" data-action="editImg" title="编辑">${pencilSVG}</button>
-                        <button class="img-action-btn del" data-action="delImg" title="删除">${trashSVG}</button>
-                    </div>
                     <div class="card-img-count-overlay">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="15" rx="1.5"/><rect x="8" y="2" width="12" height="15" rx="1.5"/></svg>
                         <span class="count-num">${count}</span>
                     </div>
                 </div>
+                ${cardMenuHTML}
                 <div class="card-bottom-overlay">
                     <div class="card-prompt-overlay" title="${escapeHtml(currentImgRemark||'')}">${escapeHtml(currentImgRemark||'')}</div>
                 </div>
-                <button class="nav-arrow right-arrow">▶</button>
+                <button class="nav-arrow right-arrow" aria-label="下一张图片" ${viewIdx===count-1?'style="display:none;"':''}>▶</button>
             </div>`;
     }
 
@@ -5147,7 +5720,7 @@ async function renderCardImages(card, box) {
         for(let i=start;i<end;i++){
             html+=`<button type="button" class="thumb-box ${i===activeIdx?'active':''}" data-idx="${i}" aria-label="查看第 ${i+1} 张图片"><img src="${getThumbUrl(images[i],cardUrlOwner)}" alt=""></button>`;
         }
-        html+=`<button type="button" class="thumb-box ${activeIdx>=total?'active':''}" data-idx="${total}" title="添加新图" aria-label="添加新图">+</button>`;
+        html+=`<button type="button" class="thumb-box" data-idx="${total}" title="添加新图" aria-label="添加新图">+</button>`;
         return html;
     }
 
@@ -5180,32 +5753,36 @@ async function renderCardImages(card, box) {
     // Bind preview events
     const pc=card.querySelector('.preview-container');
     bindImageDropTarget(pc,box.id);
-    if(count>0 && !isAddPage){
+    if(count>0){
         const leftBtn=card.querySelector('.left-arrow');
         const rightBtn=card.querySelector('.right-arrow');
         const mainImg=card.querySelector('.preview-image');
         if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.max(0,(box.viewIndex||0)-1); void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
-        if(rightBtn) rightBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.min(count,(box.viewIndex||0)+1); void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
+        if(rightBtn) rightBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=Math.min(count-1,(box.viewIndex||0)+1); void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
         if(mainImg) mainImg.onclick=e=>{ e.stopPropagation(); showFullscreen(box.id, box.viewIndex||0); };
-        // Card name overlay → edit, prompt overlay → copy
-        const nameOverlay=card.querySelector('.card-name-overlay');
-        const promptOverlay=card.querySelector('.card-prompt-overlay');
-        if(nameOverlay) nameOverlay.onclick=e=>{ e.stopPropagation(); openEditCard(box.id); };
-        if(promptOverlay) promptOverlay.onclick=e=>{ e.stopPropagation(); copyText(currentImgRemark||box.name); };
-        card.querySelectorAll('.img-action-btn').forEach(btn=>{
-            btn.onclick=e=>{
-                e.stopPropagation();
-                const action=btn.dataset.action;
-                if(action==='delImg') deleteImage(box.id,box.viewIndex||0,card);
-                else if(action==='editImg') openEditCard(box.id);
-            };
-        });
-    } else if(isAddPage){
-        pc.onclick=()=>addImagesToBox(box.id);
-        const leftBtn=card.querySelector('.left-arrow');
-        if(leftBtn) leftBtn.onclick=e=>{ e.stopPropagation(); box.viewIndex=count-1; void dbPut(STORE_BOXES,box).catch(error=>reportDataError(error)); renderCardImages(card,box); };
     } else {
         pc.onclick=()=>addImagesToBox(box.id);
+    }
+
+    card.querySelectorAll('[data-card-action]').forEach(btn=>{
+        btn.onclick=e=>{
+            e.preventDefault(); e.stopPropagation();
+            const action=btn.dataset.cardAction;
+            const menu=btn.closest('.card-menu');
+            if(menu) menu.open=false;
+            if(action==='edit-box') openEditCard(box.id);
+            else if(action==='sort-images') openEditImageSort(box.id);
+            else if(action==='add-image') addImagesToBox(box.id);
+            else if(action==='delete-image') requestDeleteImage(box.id,viewIdx,card);
+            else if(action==='delete-box') deleteCard(box.id);
+        };
+    });
+    const cardMenu=card.querySelector('.card-menu');
+    if(cardMenu){
+        cardMenu.addEventListener('toggle',()=>{
+            if(!cardMenu.open) return;
+            document.querySelectorAll('.card-menu[open]').forEach(other=>{ if(other!==cardMenu) other.open=false; });
+        });
     }
 
     // Thumbnails
@@ -5219,8 +5796,12 @@ async function renderCardImages(card, box) {
     });
 }
 
-async function showFullscreen(boxId, imgIdx) {
-    let images=getCachedBoxImages(boxId);
+function getFullscreenImages(){
+    return fullscreenImagesOverride||getCachedBoxImages(fullscreenBoxId)||[];
+}
+
+async function showFullscreen(boxId, imgIdx, options={}) {
+    let images=Array.isArray(options.images)?options.images:getCachedBoxImages(boxId);
     if(!images){
         const record=await dbGet(STORE_IMAGES, boxId);
         images=(record&&record.images)?record.images:[];
@@ -5231,7 +5812,9 @@ async function showFullscreen(boxId, imgIdx) {
     if(!images[imgIdx]) return;
     fullscreenBoxId=boxId;
     fullscreenImgIdx=imgIdx;
+    fullscreenImagesOverride=Array.isArray(options.images)?options.images:null;
     isFullscreenOpen=true;
+    document.getElementById('fullscreenOverlay')?.classList.toggle('sort-preview',options.sortPreview===true);
     releaseBlobUrls('fullscreen');
     document.getElementById('fsImage').src=getImageUrl(images[imgIdx],'fullscreen');
     showModal('fullscreenOverlay');
@@ -5240,7 +5823,7 @@ async function showFullscreen(boxId, imgIdx) {
 }
 
 function updateFullscreenNav() {
-    const images=getCachedBoxImages(fullscreenBoxId)||[];
+    const images=getFullscreenImages();
     const prevBtn=document.querySelector('.lightbox-prev');
     const nextBtn=document.querySelector('.lightbox-next');
     if(prevBtn) prevBtn.style.visibility=fullscreenImgIdx>0?'visible':'hidden';
@@ -5248,7 +5831,7 @@ function updateFullscreenNav() {
 }
 
 function fullscreenNav(delta) {
-    const images=getCachedBoxImages(fullscreenBoxId)||[];
+    const images=getFullscreenImages();
     const newIdx=fullscreenImgIdx+delta;
     if(newIdx<0||newIdx>=images.length) return;
     fullscreenImgIdx=newIdx;
@@ -5257,10 +5840,32 @@ function fullscreenNav(delta) {
     updateFullscreenNav();
 }
 
+function fullscreenPointerDown(event){
+    if(event.button!==undefined&&event.button!==0) return;
+    fullscreenSwipeStart={x:event.clientX,y:event.clientY,pointerId:event.pointerId};
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function fullscreenPointerUp(event){
+    if(!fullscreenSwipeStart||fullscreenSwipeStart.pointerId!==event.pointerId) return;
+    const dx=event.clientX-fullscreenSwipeStart.x;
+    const dy=event.clientY-fullscreenSwipeStart.y;
+    fullscreenSwipeStart=null;
+    if(Math.abs(dx)<54||Math.abs(dx)<=Math.abs(dy)*1.15) return;
+    fullscreenNav(dx<0?1:-1);
+}
+
+function fullscreenPointerCancel(){
+    fullscreenSwipeStart=null;
+}
+
 function fullscreenKeyHandler(e) {
     if(e.key==='ArrowLeft'||e.keyCode===37){ e.preventDefault(); fullscreenNav(-1); }
     else if(e.key==='ArrowRight'||e.keyCode===39){ e.preventDefault(); fullscreenNav(1); }
-    else if(e.key==='Delete'||e.key==='Backspace'||e.keyCode===46||e.keyCode===8){ e.preventDefault(); deleteFromFullscreen(); }
+    else if(e.key==='Delete'||e.key==='Backspace'||e.keyCode===46||e.keyCode===8){
+        e.preventDefault();
+        if(!fullscreenImagesOverride) deleteFromFullscreen();
+    }
     else if(e.key==='Escape'){ e.preventDefault(); hideModal('fullscreenOverlay'); }
 }
 
@@ -5419,16 +6024,16 @@ async function createModel() {
     document.getElementById('newModelName').value='';
     renderModelTabs();
     await switchModel(id);
-    showToast('模型标签已创建');
+    showToast('分组已创建');
 }
 
 
 async function deleteModel(e,id) {
     e.stopPropagation();
-    if(Object.keys(MODELS).length<=1){ showToast('至少保留一个模型标签'); return; }
+    if(Object.keys(MODELS).length<=1){ showToast('至少保留一个分组'); return; }
     const modelName=MODELS[id].name;
-    showStyledConfirm('确认删除模型',
-        '<p>确认删除模型 <b>'+escapeHtml(modelName)+'</b> 及其所有数据吗？此操作不可恢复。</p>',
+    showStyledConfirm('确认删除分组',
+        '<p>确认删除分组 <b>'+escapeHtml(modelName)+'</b> 及其所有数据吗？此操作不可恢复。</p>',
         '删除','取消',async()=>{
             const boxes=await dbGetByIndex(STORE_BOXES,'modelId',id);
             const nextModels={...MODELS};
@@ -5454,7 +6059,7 @@ async function deleteModel(e,id) {
             renderModelTabs();
             await loadBoxes();
             updateStatsAndTags(); renderItems(true,{updateStats:false});
-            showToast('模型标签已删除');
+            showToast('分组已删除');
         });
 }
 
@@ -5812,8 +6417,8 @@ function setBatchActionLocked(locked){
     });
 }
 function syncBatchActionBarMode(){
-    document.querySelectorAll('.batch-action-transfer').forEach(btn=>btn.style.display=batchToolMode==='transfer'?'':'none');
-    document.querySelectorAll('.batch-action-tags').forEach(btn=>btn.style.display=batchToolMode==='tags'?'':'none');
+    document.querySelectorAll('.batch-action-transfer').forEach(btn=>btn.style.display=(batchToolMode==='transfer'||batchToolMode==='all')?'':'none');
+    document.querySelectorAll('.batch-action-tags').forEach(btn=>btn.style.display=(batchToolMode==='tags'||batchToolMode==='all')?'':'none');
     if(!isModalVisible('batchTransferModal')) setBatchActionLocked(false);
 }
 function toggleBatchMode(mode=null, options={}) {
@@ -5831,6 +6436,12 @@ function toggleBatchMode(mode=null, options={}) {
     }
     const grid=document.getElementById('itemsContainer');
     grid.classList.toggle('batch-mode',batchMode);
+    const toolbarToggle=document.getElementById('batchModeToggle');
+    if(toolbarToggle){
+        toolbarToggle.classList.toggle('active',batchMode);
+        toolbarToggle.setAttribute('aria-pressed',batchMode?'true':'false');
+        toolbarToggle.textContent=batchMode?'退出批量':'批量管理';
+    }
     document.getElementById('batchActionBar').style.display=batchMode?'flex':'none';
     syncBatchActionBarMode();
     updateBatchCount();
@@ -6062,7 +6673,7 @@ function updateMarquee(currentX, currentY) {
 
 document.addEventListener('mousedown',e=>{
     if(!batchMode) return;
-    if(e.target.closest('#batchActionBar')||e.target.closest('.modal-overlay')) return;
+    if(e.target.closest('#batchActionBar')||e.target.closest('.modal-overlay')||e.target.closest('.workspace-toolbar-sticky')||e.target.closest('.nav-rail')||e.target.closest('.sidebar-panel')) return;
     isDraggingMarquee=false; isMarqueeActive=true;
     marqueeStartX=e.pageX; marqueeStartY=e.pageY;
     lastMarqueeX=e.clientX; lastMarqueeY=e.clientY;
@@ -6563,6 +7174,13 @@ document.addEventListener('DOMContentLoaded',async ()=>{
 
     document.getElementById('searchInput').addEventListener('input',handleSearchInput);
     document.getElementById('sortSelect').addEventListener('change',()=>renderItems(true,{updateStats:false}));
+    document.addEventListener('click',event=>{
+        if(!event.target.closest('.card-menu')) document.querySelectorAll('.card-menu[open]').forEach(menu=>{ menu.open=false; });
+        if(!event.target.closest('.view-settings')){
+            const settings=document.getElementById('viewSettings');
+            if(settings) settings.open=false;
+        }
+    });
     const columnControl=document.getElementById('columnCountControl');
     if(columnControl){
         columnControl.addEventListener('wheel',e=>{

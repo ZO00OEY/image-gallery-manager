@@ -3,3 +3,7 @@
 单文件前端图库工具，直接用浏览器打开 `index.html` 使用。
 
 数据保存在浏览器本地 IndexedDB 中，可通过侧边栏导出/导入 zip 备份。
+
+## 更新记录
+
+版本更新内容见 [CHANGELOG.md](CHANGELOG.md)。
