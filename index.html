@@ -52,6 +52,11 @@
         .theme-night .thumb-box { background: rgba(255,255,255,0.04); }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 3px solid rgba(224,74,122,0.55);
+            outline-offset: 2px;
+        }
 
         .app-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
@@ -88,7 +93,6 @@
             transition: background-color 0.28s ease, border-color 0.28s ease;
         }
         body.sidebar-open .nav-rail { background: transparent; border-right-color: transparent; }
-        body.sidebar-open #railSettings,
         body.sidebar-open #railTheme { visibility: hidden; }
         .rail-spacer { flex: 1; min-height: 8px; }
         .rail-button {
@@ -293,9 +297,9 @@
         }
 
         .model-tabs-container {
-            display: flex; align-items: flex-end; flex-wrap: wrap; gap: 2px;
-            width: fit-content; max-width: 100%;
-            padding: 0 0 0 8px; margin-bottom: -18px; overflow: visible;
+            display: flex; align-items: flex-end; flex-wrap: nowrap; gap: 2px;
+            width: 100%; max-width: 100%;
+            padding: 4px 0 0 8px; margin-bottom: -18px; overflow-x: auto; overflow-y: visible;
             position: relative; z-index: 3;
             scrollbar-width: thin; scrollbar-color: rgba(255,107,157,0.24) transparent;
         }
@@ -377,6 +381,7 @@
             display: flex; align-items: center; gap: 9px;
             min-width: 152px; padding: 0 14px 0 8px;
             flex-shrink: 0; cursor: pointer; user-select: none;
+            border: 0; background: transparent; color: inherit; font: inherit;
         }
         .stat-main {
             display: flex; align-items: baseline; gap: 9px;
@@ -463,7 +468,7 @@
         .tag-filter-chip {
             padding: 4px 12px; border: 2px solid var(--border-color); border-radius: 16px;
             font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-            transition: 0.15s; color: var(--text-light); background: transparent;
+            transition: 0.15s; color: var(--text-light); background: transparent; font-family: inherit;
         }
         .tag-filter-chip:hover { border-color: var(--primary-light); color: var(--primary); }
         .tag-filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -513,7 +518,7 @@
         .sidebar-tag-chip {
             padding: 5px 11px; border: 1px solid rgba(255,107,157,0.18); border-radius: 7px;
             font-size: 0.75rem; font-weight: 760; cursor: pointer; white-space: nowrap;
-            transition: 0.15s; color: var(--text-light); background: rgba(255,255,255,0.48);
+            transition: 0.15s; color: var(--text-light); background: rgba(255,255,255,0.48); font-family: inherit;
         }
         .sidebar-tag-chip:hover { border-color: rgba(255,107,157,0.42); color: var(--primary); background: rgba(255,107,157,0.08); }
         .sidebar-tag-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 6px 16px rgba(255,107,157,0.22); }
@@ -521,6 +526,16 @@
         .header-sep { width: 1px; height: 18px; background: var(--border-color); margin: 0 6px; flex-shrink: 0; }
 
         .items-grid { position: relative; min-height: 200px; width: 100%; }
+        .empty-state {
+            min-height: 240px; width: 100%; padding: 46px 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+            color: var(--text-light); text-align: center;
+            border: 1px dashed rgba(255,107,157,0.26); border-radius: 18px;
+            background: rgba(255,255,255,0.28);
+        }
+        .empty-state strong { color: var(--text-main); font-size: 1rem; }
+        .empty-state span { max-width: 420px; font-size: 0.84rem; line-height: 1.6; }
+        .empty-state .btn { margin-top: 4px; }
 
         .item-card {
             position: absolute; background: var(--card-bg); border-radius: 14px;
@@ -691,8 +706,9 @@
             width: 30px; height: 30px; border-radius: 7px; object-fit: cover;
             cursor: pointer; border: 1px solid transparent; opacity: 0.46; transition: 0.18s;
             background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;
-            font-size: 1.04rem; color: rgba(136,136,136,0.55); flex-shrink: 0;
+            font-size: 1.04rem; color: rgba(136,136,136,0.55); flex-shrink: 0; padding: 0;
         }
+        .thumb-box img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
         .thumb-box:hover { opacity: 0.9; transform: translateY(-1px); background: rgba(255,107,157,0.07); }
         .thumb-box.active {
             border-color: var(--primary); opacity: 1;
@@ -1629,6 +1645,20 @@
             .filter-control { height: 34px; border-left: 0; padding: 4px 8px; }
             .header-stats { padding: 0 8px 0 4px; min-width: 148px; }
         }
+        @media (max-width: 700px) {
+            body.sidebar-open .main-content { margin-left: var(--rail-width); }
+            .sidebar-panel { max-width: calc(100vw - 12px); }
+            #batchActionBar { max-width: calc(100vw - 20px); overflow-x: auto; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
 
         textarea.input-text { resize: vertical; min-height: 60px; }
 
@@ -1642,7 +1672,7 @@
         .tag-chip {
             display: inline-block; padding: 2px 7px; border-radius: 11px; font-size: 0.66rem;
             cursor: pointer; transition: 0.15s; white-space: nowrap;
-            background: var(--primary-bg); color: var(--primary); border: 1px solid var(--primary-light);
+            background: var(--primary-bg); color: var(--primary); border: 1px solid var(--primary-light); font-family: inherit;
         }
         .tag-chip:hover { background: var(--primary); color: #fff; transform: translateY(-1px); }
         .tag-suggestions-title {
@@ -1673,7 +1703,7 @@
 
     <!-- Nav Rail -->
     <nav class="nav-rail" id="navRail">
-        <button class="rail-button rail-logo" id="railLogo" data-tooltip="展开菜单" onclick="toggleSidebar()" style="margin-bottom:2px;">
+        <button class="rail-button rail-logo" id="railLogo" data-tooltip="展开菜单" aria-label="展开或收起菜单" onclick="toggleSidebar()" style="margin-bottom:2px;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="4" width="20" height="16" rx="2"/>
                 <line x1="7" y1="4" x2="7" y2="20"/>
@@ -1683,20 +1713,17 @@
                 <path class="arrow-collapse" d="M12 12h5"/>
             </svg>
         </button>
-        <button class="rail-button" data-tooltip="导入图片" data-section="sec_import" onclick="openPanelDetail('sec_import')">
+        <button class="rail-button" data-tooltip="导入图片" aria-label="导入图片" data-section="sec_import" onclick="openPanelDetail('sec_import')">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         </button>
-        <button class="rail-button" data-tooltip="数据管理" data-section="sec_data" onclick="openPanelDetail('sec_data')">
+        <button class="rail-button" data-tooltip="数据管理" aria-label="数据管理" data-section="sec_data" onclick="openPanelDetail('sec_data')">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </button>
-        <button class="rail-button" data-tooltip="标签" data-section="sec_tags" onclick="openPanelDetail('sec_tags')">
+        <button class="rail-button" data-tooltip="标签" aria-label="标签管理" data-section="sec_tags" onclick="openPanelDetail('sec_tags')">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
         </button>
         <div class="rail-spacer"></div>
-        <button class="rail-button" id="railSettings" data-tooltip="设置" data-section="sec_settings" onclick="openPanelDetail('sec_settings')">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6 1.7 1.7 0 00-.4 1.1V21h-4v-.1A1.7 1.7 0 008.6 19.4a1.7 1.7 0 00-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-.6-1 1.7 1.7 0 00-1.1-.4H3v-4h.1A1.7 1.7 0 004.6 8.6a1.7 1.7 0 00-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-.6 1.7 1.7 0 00.4-1.1V3h4v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0019.4 9c.15.37.37.7.65.98.28.28.66.43 1.05.42h.1v4h-.1a1.7 1.7 0 00-1.7.6z"/></svg>
-        </button>
-        <button class="rail-button" id="railTheme" data-tooltip="主题" onclick="toggleTheme()">
+        <button class="rail-button" id="railTheme" data-tooltip="主题" aria-label="切换主题" onclick="toggleTheme()">
             <svg id="railThemeIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         </button>
     </nav>
@@ -1853,38 +1880,29 @@
                             <button class="tag-mode-btn active" data-mode="or" onclick="setTagMode('or',this)" title="显示包含任一所选标签的卡片盒">任一</button>
                         </div>
                     </div>
-                    <input type="text" id="tagSearchInput" class="input-text tag-search-input" placeholder="搜索标签..." oninput="renderSidebarTags()">
+                    <input type="text" id="tagSearchInput" class="input-text tag-search-input" aria-label="搜索标签" placeholder="搜索标签..." oninput="renderSidebarTags()">
                     <div id="sidebarTagsContainer" class="sidebar-tags-container"></div>
-                </div>
-                <!-- sec_settings detail -->
-                <div class="sidebar-section" data-panel="sec_settings" style="display:none;">
-                    <div style="color:var(--text-light); font-size:0.84rem; line-height:1.7; padding:8px;">
-                        数据导入、导出、本地压缩包/目录检查已经移到“数据管理”中。这里之后保留给界面和偏好设置。
-                    </div>
                 </div>
             </div>
         </div>
         <div class="sidebar-panel-foot">
-            <button class="sidebar-foot-btn" id="panelSettings" title="设置" onclick="openPanelDetail('sec_settings')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6 1.7 1.7 0 00-.4 1.1V21h-4v-.1A1.7 1.7 0 008.6 19.4a1.7 1.7 0 00-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-.6-1 1.7 1.7 0 00-1.1-.4H3v-4h.1A1.7 1.7 0 004.6 8.6a1.7 1.7 0 00-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-.6 1.7 1.7 0 00.4-1.1V3h4v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0019.4 9c.15.37.37.7.65.98.28.28.66.43 1.05.42h.1v4h-.1a1.7 1.7 0 00-1.7.6z"/></svg>
-            </button>
-            <button class="sidebar-foot-btn" id="panelTheme" title="切换主题" onclick="toggleTheme()">
+            <button class="sidebar-foot-btn" id="panelTheme" title="切换主题" aria-label="切换主题" onclick="toggleTheme()">
                 <svg id="panelThemeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
             </button>
         </div>
     </aside>
 
     <main class="main-content">
-        <div class="model-tabs-container" id="modelTabs"></div>
+        <div class="model-tabs-container" id="modelTabs" role="tablist" aria-label="模型标签"></div>
 
         <div class="header-bar">
-            <div class="header-stats" id="headerStatsCycle" onclick="toggleHeaderStatsScope()" title="点击切换当前 / 全局统计">
+            <button type="button" class="header-stats" id="headerStatsCycle" onclick="toggleHeaderStatsScope()" title="点击切换当前 / 全局统计">
                 <div class="stat-main">
                     <span class="stat-main-scope" id="statsMainScope">当前</span>
                     <span class="stat-item">卡片盒<span class="stat-value" id="statsActiveBoxes">0</span></span>
                     <span class="stat-item">图片<span class="stat-value" id="statsActiveImages">0</span></span>
                 </div>
-            </div>
+            </button>
             <span class="header-sep"></span>
             <div class="search-box" style="max-width:230px;">
                 <span class="search-icon">
@@ -1893,21 +1911,21 @@
                         <path d="M20 20l-4-4"/>
                     </svg>
                 </span>
-                <input type="text" id="searchInput" placeholder="搜索...">
+                <input type="text" id="searchInput" aria-label="搜索卡片和提示词" placeholder="搜索...">
             </div>
             <div class="filter-control">
                 <span class="filter-label">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v14"/><path d="M5 15l3 3 3-3"/><path d="M16 4h4"/><path d="M14 10h6"/><path d="M12 16h8"/></svg>
                     排序
                 </span>
-                <select id="sortSelect">
+                <select id="sortSelect" aria-label="图片盒排序方式">
                     <option value="time-desc" selected>最新创建</option>
                     <option value="time-asc">最早创建</option>
                     <option value="name-asc">名称升序</option>
                     <option value="name-desc">名称降序</option>
                 </select>
             </div>
-            <div class="filter-control" id="columnCountControl" title="滚轮调整列数">
+            <div class="filter-control" id="columnCountControl" title="根据窗口宽度自动分列，使用滚轮或加减按钮微调密度">
                 <span class="filter-label">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 17L17 4l3 3L7 20l-3-3z"/>
@@ -1915,23 +1933,23 @@
                         <path d="M10 11l2 2"/>
                         <path d="M13 8l2 2"/>
                     </svg>
-                    列数
+                    自动列数
                 </span>
                 <button class="scale-step-btn" onclick="stepColumns(-1)" title="减少一列">−</button>
-                <span class="column-count-value" id="columnCountLabel">5列</span>
+                <span class="column-count-value" id="columnCountLabel">自动</span>
                 <button class="scale-step-btn" onclick="stepColumns(1)" title="增加一列">+</button>
             </div>
             <div class="filter-control">
-                <span class="filter-label">NSFW</span>
+                <span class="filter-label">显示 NSFW</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="sfwToggle" onchange="toggleSfwMode()">
+                    <input type="checkbox" id="sfwToggle" aria-label="显示 NSFW 内容" onchange="toggleSfwMode()">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
             <div class="filter-control">
                 <span class="filter-label">标签栏</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="tagBarToggle" onchange="toggleTagBar()">
+                    <input type="checkbox" id="tagBarToggle" aria-label="显示标签栏" onchange="toggleTagBar()">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -2198,15 +2216,15 @@
     <!-- Fullscreen Image -->
     <div class="modal-overlay" id="fullscreenOverlay" tabindex="-1" onkeydown="fullscreenKeyHandler(event)" onclick="if(event.target===this) hideModal('fullscreenOverlay')">
         <div class="modal lightbox-modal">
-            <button class="lightbox-nav lightbox-prev" onclick="fullscreenNav(-1)">◀</button>
-            <button class="lightbox-nav lightbox-next" onclick="fullscreenNav(1)">▶</button>
-            <button class="lightbox-edit" onclick="editFromFullscreen()" title="编辑当前图片">
+            <button class="lightbox-nav lightbox-prev" onclick="fullscreenNav(-1)" aria-label="上一张">◀</button>
+            <button class="lightbox-nav lightbox-next" onclick="fullscreenNav(1)" aria-label="下一张">▶</button>
+            <button class="lightbox-edit" onclick="editFromFullscreen()" title="编辑当前图片" aria-label="编辑当前图片">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 20h9"/>
                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                 </svg>
             </button>
-            <button class="lightbox-trash" onclick="deleteFromFullscreen()">🗑️</button>
+            <button class="lightbox-trash" onclick="deleteFromFullscreen()" aria-label="删除当前图片">🗑️</button>
             <div class="modal-body lightbox-body" onclick="hideModal('fullscreenOverlay')">
                 <img src="" class="lightbox-img" id="fsImage" onclick="event.stopPropagation()">
             </div>
@@ -2307,7 +2325,7 @@
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* JSZip 3.10.1 - embedded for offline zip import/export */
@@ -2638,32 +2656,37 @@ function initDB(){
 }
 
 function dbReadRequest(store, fallback, run){
-    return new Promise(resolve=>{
-        if(!db){ resolve(fallback); return; }
+    return new Promise((resolve,reject)=>{
+        if(!db){ reject(new Error('数据库尚未初始化')); return; }
         try{
             const tx=db.transaction([store]);
             const req=run(tx.objectStore(store));
             req.onsuccess=e=>resolve(e.target.result!==undefined?e.target.result:fallback);
-            req.onerror=()=>resolve(fallback);
-        }catch(e){ resolve(fallback); }
+            req.onerror=e=>{
+                const cause=(e&&e.target&&e.target.error)||req.error;
+                reject(new Error('数据库读取失败：'+(cause&&cause.message?cause.message:store)));
+            };
+        }catch(e){ reject(e instanceof Error?e:new Error('数据库读取失败')); }
     });
 }
-function dbWriteRequest(store, run){
+function dbTransaction(storeNames, mode, run){
     return new Promise((resolve,reject)=>{
         if(!db){ reject(new Error('数据库尚未初始化')); return; }
         let settled=false;
         try{
-            const tx=db.transaction([store],'readwrite');
-            const request=run(tx.objectStore(store));
+            const tx=db.transaction(storeNames,mode);
+            const stores={};
+            storeNames.forEach(name=>{ stores[name]=tx.objectStore(name); });
+            const result=run(stores,tx);
             tx.oncomplete=()=>{
                 if(settled) return;
                 settled=true;
-                resolve(true);
+                resolve(result===undefined?true:result);
             };
             const fail=event=>{
                 if(settled) return;
                 settled=true;
-                const cause=(event&&event.target&&event.target.error)||(request&&request.error)||tx.error;
+                const cause=(event&&event.target&&event.target.error)||tx.error;
                 reject(new Error(cause&&cause.name==='QuotaExceededError'?'浏览器存储空间不足':'数据库写入失败'));
             };
             tx.onerror=fail;
@@ -2673,10 +2696,17 @@ function dbWriteRequest(store, run){
         }
     });
 }
+function dbWriteRequest(store, run){
+    return dbTransaction([store],'readwrite',stores=>run(stores[store]));
+}
 function reportDataError(error, prefix='保存失败'){
     console.error(prefix,error);
     showToast(prefix+'：'+(error&&error.message?error.message:'未知错误'));
 }
+window.addEventListener('unhandledrejection',event=>{
+    event.preventDefault();
+    reportDataError(event.reason,'操作失败');
+});
 function dbGet(store,id){
     return dbReadRequest(store, null, s=>s.get(id));
 }
@@ -2692,6 +2722,22 @@ function dbGetAll(store){
 function dbGetByIndex(store,indexName,value){
     return dbReadRequest(store, [], s=>s.index(indexName).getAll(value));
 }
+function dbSaveBoxAndImages(box,images){
+    return dbTransaction([STORE_BOXES,STORE_IMAGES],'readwrite',stores=>{
+        stores[STORE_BOXES].put(box);
+        if(Array.isArray(images)&&images.length>0){
+            stores[STORE_IMAGES].put({id:box.id,boxId:box.id,images});
+        }else{
+            stores[STORE_IMAGES].delete(box.id);
+        }
+    });
+}
+function dbDeleteBoxAndImages(boxId){
+    return dbTransaction([STORE_BOXES,STORE_IMAGES],'readwrite',stores=>{
+        stores[STORE_IMAGES].delete(boxId);
+        stores[STORE_BOXES].delete(boxId);
+    });
+}
 
 // ─── Data Model ─────────────────────────────
 // MODELS: { modelId: { id, name } } — stored in STORE_MODELS
@@ -2703,11 +2749,18 @@ let currentModelId=null;
 let currentBoxes=[];       // boxes for current model
 let imageCount=new Map();  // boxId -> count
 let cachedBoxImages=new Map(); // boxId -> image records
+const MAX_CACHED_BOXES=60;
+const imageCacheOrder=new Map();
+const SEARCH_TEXT_VERSION=1;
+const searchIndexPromises=new Map();
 let globalBoxCount=0, globalImgCount=0;
 let currentBoxCount=0, currentImgCount=0;
 let headerStatsScope='current';
 
-let virtualGrid={ cardWidth:230, cardHeight:375, gap:18, cols:1, bufferRows:3 };
+let virtualGrid={ cardWidth:200, cardHeight:307, gap:18, cols:1, bufferRows:2 };
+const IDEAL_CARD_WIDTH=200;
+const MIN_CARD_WIDTH=170;
+const MAX_AUTO_COLUMNS=14;
 let activeCards=new Map();
 let cardByBoxId=new Map(); // boxId -> card element for fast single-card updates
 let renderToken=0;
@@ -2727,6 +2780,54 @@ let lastObservedGridWidth=0;
 let lastLayoutKey='';
 const BASE_RAIL_WIDTH=66;
 const BASE_PANEL_WIDTH=260;
+
+function getCachedBoxImages(boxId){
+    if(!cachedBoxImages.has(boxId)) return undefined;
+    imageCacheOrder.delete(boxId);
+    imageCacheOrder.set(boxId,Date.now());
+    return cachedBoxImages.get(boxId);
+}
+function setCachedBoxImages(boxId,images){
+    cachedBoxImages.set(boxId,images);
+    imageCacheOrder.delete(boxId);
+    imageCacheOrder.set(boxId,Date.now());
+    trimImageCache();
+    return images;
+}
+function deleteCachedBoxImages(boxId){
+    imageCacheOrder.delete(boxId);
+    cachedBoxImages.delete(boxId);
+}
+function clearCachedBoxImages(){
+    imageCacheOrder.clear();
+    cachedBoxImages.clear();
+}
+function trimImageCache(){
+    if(cachedBoxImages.size<=MAX_CACHED_BOXES) return;
+    const protectedIds=new Set([editingBoxId,fullscreenBoxId,...cardByBoxId.keys()].filter(Boolean));
+    for(const boxId of imageCacheOrder.keys()){
+        if(cachedBoxImages.size<=MAX_CACHED_BOXES) break;
+        if(protectedIds.has(boxId)) continue;
+        deleteCachedBoxImages(boxId);
+    }
+}
+
+function buildImageSearchText(images){
+    const parts=[];
+    for(const raw of Array.isArray(images)?images:[]){
+        const img=normalizeImageRecord(raw);
+        parts.push(
+            getImageRemark(img),img.negativePrompt||'',img.steps||'',img.modelName||'',
+            img.modelVersion||'',img.baseModel||'',getImageLoraLabel(img)
+        );
+    }
+    return parts.filter(Boolean).join(' ').toLowerCase();
+}
+function updateBoxSearchText(box,images){
+    if(!box) return;
+    box.imageSearchText=buildImageSearchText(images);
+    box.searchTextVersion=SEARCH_TEXT_VERSION;
+}
 
 function sanitizeFileName(name){
     return name.replace(/[<>:"/\\|?*]/g,'_').replace(/\s+/g,' ').trim()||'untitled';
@@ -2762,7 +2863,7 @@ function bytesToBlob(bytes, mimeType){
     const arr=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
     return new Blob([arr],{type:mimeType||'image/png'});
 }
-const THUMB_MAX_SIZE=160;
+const THUMB_MAX_SIZE=320;
 const THUMB_MIME_TYPE='image/jpeg';
 const THUMB_QUALITY=0.76;
 async function blobToBytes(blob){
@@ -3014,11 +3115,14 @@ async function migrateLegacyImageRecord(image,index){
     delete migrated.dataUrl;
     return migrated;
 }
-async function migrateLegacyImageDataAndCounts(){
-    if((appSettings.imageDataVersion||0)>=IMAGE_DATA_VERSION) return;
+async function migrateLegacyImageDataAndCounts(onProgress=null){
+    if((appSettings.imageDataVersion||0)>=IMAGE_DATA_VERSION) return false;
     const boxes=await dbGetAll(STORE_BOXES);
     const records=await dbGetAll(STORE_IMAGES);
-    const counts=new Map();
+    const boxesById=new Map(boxes.map(box=>[box.id,box]));
+    const seenBoxes=new Set();
+    const totalImages=records.reduce((sum,record)=>sum+(Array.isArray(record.images)?record.images.length:0),0);
+    let processedImages=0;
     let failedImages=0;
 
     for(const record of records){
@@ -3028,6 +3132,8 @@ async function migrateLegacyImageDataAndCounts(){
         for(let i=0;i<images.length;i++){
             if(!isLegacyImageRecord(images[i])){
                 migrated.push(images[i]);
+                processedImages++;
+                if(onProgress) onProgress({processed:processedImages,total:totalImages});
                 continue;
             }
             try{
@@ -3038,14 +3144,27 @@ async function migrateLegacyImageDataAndCounts(){
                 failedImages++;
                 console.error('旧图片迁移失败',record.id,i,error);
             }
+            processedImages++;
+            if(onProgress) onProgress({processed:processedImages,total:totalImages});
+            if(processedImages%4===0) await new Promise(resolve=>setTimeout(resolve,0));
         }
-        if(changed) await dbPut(STORE_IMAGES,{...record,images:migrated});
-        counts.set(record.boxId||record.id,migrated.length);
+        const boxId=record.boxId||record.id;
+        const box=boxesById.get(boxId);
+        seenBoxes.add(boxId);
+        if(box){
+            box.imageCount=migrated.length;
+            updateBoxSearchText(box,migrated);
+            await dbSaveBoxAndImages(box,migrated);
+        }else if(changed){
+            await dbPut(STORE_IMAGES,{...record,images:migrated});
+        }
     }
 
     for(const box of boxes){
-        const count=counts.get(box.id)||0;
-        if(box.imageCount!==count) await dbPut(STORE_BOXES,{...box,imageCount:count});
+        if(seenBoxes.has(box.id)) continue;
+        box.imageCount=0;
+        updateBoxSearchText(box,[]);
+        await dbSaveBoxAndImages(box,[]);
     }
 
     if(failedImages===0){
@@ -3055,24 +3174,67 @@ async function migrateLegacyImageDataAndCounts(){
     }else{
         showToast('有 '+failedImages+' 张旧图片暂未迁移，原数据已保留');
     }
+    return true;
 }
 
 async function loadBoxes() {
     currentBoxes=await dbGetByIndex(STORE_BOXES,'modelId',currentModelId);
     currentBoxes.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     imageCount.clear();
-    cachedBoxImages.clear();
+    clearCachedBoxImages();
 
     // Only read image counts from box records — no image data loaded
     currentBoxes.forEach(b=>{ imageCount.set(b.id, b.imageCount||0); });
+    if((appSettings.imageDataVersion||0)>=IMAGE_DATA_VERSION){
+        void ensureCurrentModelSearchIndex().catch(error=>reportDataError(error,'搜索索引更新失败'));
+    }
 }
 
-async function syncBoxImageCount(boxId){
-    const count=imageCount.get(boxId)||0;
-    const box=currentBoxes.find(b=>b.id===boxId);
-    if(box && box.imageCount!==count){
-        box.imageCount=count;
-        await dbPut(STORE_BOXES, box);
+function ensureCurrentModelSearchIndex(){
+    const modelId=currentModelId;
+    if(!modelId) return Promise.resolve();
+    if(searchIndexPromises.has(modelId)) return searchIndexPromises.get(modelId);
+    const boxes=currentBoxes.filter(box=>box.searchTextVersion!==SEARCH_TEXT_VERSION);
+    if(boxes.length===0) return Promise.resolve();
+    const task=(async()=>{
+        const updates=[];
+        for(let i=0;i<boxes.length;i++){
+            const box=boxes[i];
+            const record=await dbGet(STORE_IMAGES,box.id);
+            updateBoxSearchText(box,record&&Array.isArray(record.images)?record.images:[]);
+            updates.push(box);
+            if(i%8===7) await new Promise(resolve=>setTimeout(resolve,0));
+        }
+        await dbTransaction([STORE_BOXES],'readwrite',stores=>{
+            updates.forEach(box=>stores[STORE_BOXES].put(box));
+        });
+        if(currentModelId===modelId){
+            const searchById=new Map(updates.map(box=>[box.id,{imageSearchText:box.imageSearchText,searchTextVersion:box.searchTextVersion}]));
+            currentBoxes.forEach(box=>{
+                const indexed=searchById.get(box.id);
+                if(indexed) Object.assign(box,indexed);
+            });
+        }
+    })().finally(()=>searchIndexPromises.delete(modelId));
+    searchIndexPromises.set(modelId,task);
+    return task;
+}
+
+async function handleSearchInput(){
+    const input=document.getElementById('searchInput');
+    if(!input) return;
+    if(!input.value.trim()){
+        renderItems(true,{updateStats:false});
+        return;
+    }
+    input.setAttribute('aria-busy','true');
+    try{
+        await ensureCurrentModelSearchIndex();
+        renderItems(true,{updateStats:false});
+    }catch(error){
+        reportDataError(error,'搜索准备失败');
+    }finally{
+        input.removeAttribute('aria-busy');
     }
 }
 
@@ -3220,13 +3382,13 @@ function extractJpegCom(bytes) {
 async function extractImageRemark(file) {
     if(file.type && !file.type.match('image.*') && !isImageFileName(file.name)) return {remark:null,workflow:null};
     try{
-        return extractImageRemarkFromBytes(new Uint8Array(await file.arrayBuffer()));
+        return await extractImageRemarkFromBytes(new Uint8Array(await file.arrayBuffer()));
     }catch(e){
         return {remark:null,workflow:null};
     }
 }
 
-function extractImageRemarkFromBytes(bytes){
+async function extractImageRemarkFromBytes(bytes){
     try {
         const isJpeg=bytes[0]===0xFF && bytes[1]===0xD8;
         const isPng=bytes[0]===137 && bytes[1]===80 && bytes[2]===78 && bytes[3]===71;
@@ -3236,7 +3398,7 @@ function extractImageRemarkFromBytes(bytes){
             const com=extractJpegCom(bytes);
             return {remark:com,workflow:null};
         }
-        if(isPng) return extractPngTextChunks(bytes);
+        if(isPng) return await extractPngTextChunks(bytes);
     }catch(e){}
     return {remark:null,workflow:null};
 }
@@ -3271,6 +3433,9 @@ function renderModelTabs() {
         const isEditing=editingModelTabId===m.id;
         const btn=document.createElement('button');
         btn.className=`model-tab ${m.id===currentModelId?'active':''} ${isEditing?'editing':''}`;
+        btn.type='button';
+        btn.setAttribute('role','tab');
+        btn.setAttribute('aria-selected',m.id===currentModelId?'true':'false');
         btn.draggable=!isEditing;
         btn.dataset.modelId=m.id;
         btn.dataset.sortIdx=idx;
@@ -3335,6 +3500,7 @@ function renderModelTabs() {
     });
     const addBtn=document.createElement('button');
     addBtn.className='model-tab add-model-btn'; addBtn.innerText='+';
+    addBtn.type='button'; addBtn.setAttribute('aria-label','新建模型');
     addBtn.onclick=()=>showModal('modelModal');
     c.appendChild(addBtn);
 }
@@ -3429,7 +3595,7 @@ function openPanelDetail(sectionId){
     document.querySelectorAll('#panelDetailView [data-panel]').forEach(el=>{ el.style.display='none'; });
     const target=document.querySelector('#panelDetailView [data-panel="'+sectionId+'"]');
     if(target) target.style.display=sectionId==='sec_tags'?'flex':'';
-    const titles={sec_import:'图片导入',sec_data:'数据管理',sec_tags:'标签管理',sec_settings:'设置'};
+    const titles={sec_import:'图片导入',sec_data:'数据管理',sec_tags:'标签管理'};
     document.getElementById('sidebarPanelTitle').innerText=titles[sectionId]||'图库管理器';
     setActiveRailSection(sectionId);
     updateSidebarWidth();
@@ -3508,7 +3674,8 @@ function renderTagSuggestions(containerId, inputId) {
     }
     container.onmousedown=e=>e.preventDefault();
     tags.forEach(t=>{
-        const chip=document.createElement('span');
+        const chip=document.createElement('button');
+        chip.type='button';
         chip.className='tag-chip';
         chip.textContent=t;
         chip.onclick=()=>{
@@ -3873,8 +4040,8 @@ async function executeUnifiedImport(mode){
             const images=[img];
 
             const box={id:boxId, name, tags, remark:'', createdAt:Date.now(), modelId:currentModelId, viewIndex:0, imageCount:1};
-            await dbPut(STORE_BOXES,box);
-            await dbPut(STORE_IMAGES,{id:boxId, boxId, images});
+            updateBoxSearchText(box,images);
+            await dbSaveBoxAndImages(box,images);
             imageCount.set(boxId,1);
             totalImported++;
 
@@ -3902,8 +4069,8 @@ async function executeUnifiedImport(mode){
         }
 
         const box={id:boxId, name, tags, remark:'', createdAt:Date.now(), modelId:currentModelId, viewIndex:0, imageCount:images.length};
-        await dbPut(STORE_BOXES,box);
-        await dbPut(STORE_IMAGES,{id:boxId, boxId, images});
+        updateBoxSearchText(box,images);
+        await dbSaveBoxAndImages(box,images);
         imageCount.set(boxId,images.length);
     }
 
@@ -3922,7 +4089,7 @@ function getEditingBox() {
     return currentBoxes.find(b=>b.id===editingBoxId);
 }
 function getEditingImages() {
-    return cachedBoxImages.get(editingBoxId)||[];
+    return getCachedBoxImages(editingBoxId)||[];
 }
 function applyEditImageFieldsToCurrentImage() {
     const box=getEditingBox();
@@ -3951,7 +4118,7 @@ function applyEditImageFieldsToCurrentImage() {
     images[viewIdx].baseModel='';
     images[viewIdx].loras=mergeLoraLists([], parseLoraLabel(newLoras));
     images[viewIdx].loraText=images[viewIdx].loras.map(formatLoraTag).join(' ');
-    cachedBoxImages.set(editingBoxId, images);
+    setCachedBoxImages(editingBoxId, images);
 }
 function refreshEditImagePreview() {
     const box=getEditingBox();
@@ -4083,7 +4250,7 @@ async function saveEditCard() {
     box.name=name;
     box.tags=document.getElementById('editCardTags').value.split(',').map(s=>s.trim()).filter(s=>s);
 
-    const images=cachedBoxImages.get(editingBoxId)||[];
+    const images=getCachedBoxImages(editingBoxId)||[];
     const viewIdx=(box.viewIndex||0);
 
     // If box name changed, auto-rename all images to "boxname_001", "boxname_002"...
@@ -4109,13 +4276,14 @@ async function saveEditCard() {
         images[viewIdx].baseModel='';
         images[viewIdx].loras=mergeLoraLists([], parseLoraLabel(newLoras));
         images[viewIdx].loraText=images[viewIdx].loras.map(formatLoraTag).join(' ');
-        await dbPut(STORE_IMAGES,{id:editingBoxId, boxId:editingBoxId, images});
-        cachedBoxImages.set(editingBoxId,images);
+        setCachedBoxImages(editingBoxId,images);
     } else {
         box.remark=newRemark;
     }
 
-    await dbPut(STORE_BOXES,box);
+    updateBoxSearchText(box,images);
+    box.imageCount=images.length;
+    await dbSaveBoxAndImages(box,images);
     hideModal('editCardModal');
     updateStatsAndTags(); renderItems(true,{updateStats:false});
     showToast(nameChanged?'卡片已更新，全部图片已自动重命名':'卡片已更新');
@@ -4131,10 +4299,9 @@ async function deleteCard(boxId) {
         '<p>确认删除卡片 <b>'+escapeHtml(box.name)+'</b> 及其所有图片吗？此操作不可恢复。</p>',
         '删除','取消',async()=>{
             hideModal('editCardModal');
-            await dbDelete(STORE_BOXES,boxId);
-            await dbDelete(STORE_IMAGES,boxId);
+            await dbDeleteBoxAndImages(boxId);
             currentBoxes=currentBoxes.filter(b=>b.id!==boxId);
-            cachedBoxImages.delete(boxId);
+            deleteCachedBoxImages(boxId);
             imageCount.delete(boxId);
             updateStatsAndTags(); renderItems(true,{updateStats:false});
             showToast('卡片已删除');
@@ -4205,10 +4372,10 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
     document.getElementById('progressFill').style.width='0%';
     document.getElementById('progressText').innerText='0/'+imageFiles.length;
     try{
-        let existing=cachedBoxImages.get(boxId)||[];
+        let existing=[...(getCachedBoxImages(boxId)||[])];
         const record=await dbGet(STORE_IMAGES,boxId);
         if(record){
-            existing=record.images||[];
+            existing=[...(record.images||[])];
         }
 
         for(let i=0;i<imageFiles.length;i++){
@@ -4222,12 +4389,14 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
             if(i%3===0) await new Promise(r=>setTimeout(r,0));
         }
 
-        await dbPut(STORE_IMAGES,{id:boxId,boxId,images:existing});
-        cachedBoxImages.set(boxId,existing);
-        imageCount.set(boxId,existing.length);
         const box=currentBoxes.find(b=>b.id===boxId);
-        if(box) box.viewIndex=existing.length-1;
-        await syncBoxImageCount(boxId);
+        if(!box) throw new Error('未找到目标卡片盒');
+        box.viewIndex=existing.length-1;
+        box.imageCount=existing.length;
+        updateBoxSearchText(box,existing);
+        await dbSaveBoxAndImages(box,existing);
+        setCachedBoxImages(boxId,existing);
+        imageCount.set(boxId,existing.length);
 
         const card=cardByBoxId.get(boxId);
         if(card){
@@ -4245,21 +4414,19 @@ async function addFilesToBox(boxId, files, sourceLabel='图片'){
 }
 
 async function deleteImage(boxId, idx, card) {
-    let images=cachedBoxImages.get(boxId)||[];
+    const cached=getCachedBoxImages(boxId);
+    const record=cached===undefined?await dbGet(STORE_IMAGES,boxId):null;
+    const images=[...(cached!==undefined?cached:((record&&record.images)||[]))];
+    if(idx<0||idx>=images.length) throw new Error('未找到要删除的图片');
     images.splice(idx,1);
-    if(images.length===0){
-        await dbDelete(STORE_IMAGES,boxId);
-        cachedBoxImages.set(boxId,[]);
-        imageCount.set(boxId,0);
-        syncBoxImageCount(boxId);
-    } else {
-        await dbPut(STORE_IMAGES,{id:boxId,boxId,images});
-        cachedBoxImages.set(boxId,images);
-        imageCount.set(boxId,images.length);
-        syncBoxImageCount(boxId);
-    }
     const box=currentBoxes.find(b=>b.id===boxId);
-    if(box && box.viewIndex>=images.length) box.viewIndex=Math.max(0,images.length-1);
+    if(!box) throw new Error('未找到目标卡片盒');
+    if(box.viewIndex>=images.length) box.viewIndex=Math.max(0,images.length-1);
+    box.imageCount=images.length;
+    updateBoxSearchText(box,images);
+    await dbSaveBoxAndImages(box,images);
+    setCachedBoxImages(boxId,images);
+    imageCount.set(boxId,images.length);
     if(card){
         renderCardImages(card, box||{id:boxId});
     } else {
@@ -4302,10 +4469,7 @@ function updateGridLayout() {
     const containerWidth=(container.clientWidth||(window.innerWidth-sidebarWidth-60));
     if(containerWidth<100) return;
 
-    const requestedCols=getColumnCount();
-    const minCardWidth=110;
-    const maxSafeCols=Math.max(1,Math.floor((containerWidth+virtualGrid.gap)/(minCardWidth+virtualGrid.gap)));
-    const cols=Math.max(1,Math.min(requestedCols,maxSafeCols));
+    const cols=getColumnCount(containerWidth);
     const width=(containerWidth-(cols-1)*virtualGrid.gap)/cols;
     const titleSize=Math.max(0.66,Math.min(0.9,width/250*0.86));
     const tagBarOn=document.getElementById('tagChipsBar').style.display==='flex';
@@ -4324,27 +4488,35 @@ function updateGridLayout() {
 }
 
 function updateSidebarWidth(){
-    const maxTotal=window.innerWidth/3;
-    const panelWidth=Math.max(0,Math.min(BASE_PANEL_WIDTH,maxTotal-BASE_RAIL_WIDTH));
+    const isNarrow=window.innerWidth<=700;
+    const maxTotal=isNarrow?Math.max(BASE_RAIL_WIDTH,window.innerWidth-12):window.innerWidth/3;
+    const minPanel=isNarrow?220:0;
+    const panelWidth=Math.max(minPanel,Math.min(BASE_PANEL_WIDTH,maxTotal-BASE_RAIL_WIDTH));
     const total=BASE_RAIL_WIDTH+panelWidth;
     document.documentElement.style.setProperty('--panel-width',panelWidth.toFixed(2)+'px');
     document.documentElement.style.setProperty('--sidebar-occupied-width',total.toFixed(2)+'px');
     lastLayoutKey='';
 }
 
-function getColumnCount(){
-    const saved=parseInt(getPref('ipm_columns','5'));
-    return Math.max(1,Math.min(8,Number.isFinite(saved)?saved:5));
+function getColumnDensityBias(){
+    const saved=parseInt(getPref('ipm_columnDensityBias','0'));
+    return Math.max(-2,Math.min(2,Number.isFinite(saved)?saved:0));
+}
+
+function getColumnCount(containerWidth=null){
+    const container=document.getElementById('itemsContainer');
+    const width=containerWidth||(container&&container.clientWidth)||Math.max(320,window.innerWidth-BASE_RAIL_WIDTH-60);
+    const autoCols=Math.max(1,Math.min(MAX_AUTO_COLUMNS,Math.floor((width+virtualGrid.gap)/(IDEAL_CARD_WIDTH+virtualGrid.gap))));
+    const maxSafeCols=Math.max(1,Math.floor((width+virtualGrid.gap)/(MIN_CARD_WIDTH+virtualGrid.gap)));
+    return Math.max(1,Math.min(maxSafeCols,autoCols+getColumnDensityBias()));
 }
 
 function setColumnCount(value, preserveFocus=true){
-    const next=Math.max(1,Math.min(8,parseInt(value)||5));
     const prev=getColumnCount();
-    if(next===prev){
-        const label=document.getElementById('columnCountLabel');
-        if(label) label.textContent=next+'列';
-        return;
-    }
+    const requested=Math.max(1,parseInt(value)||prev);
+    const direction=Math.sign(requested-prev);
+    const currentBias=getColumnDensityBias();
+    const nextBias=Math.max(-2,Math.min(2,currentBias+direction));
     const container=document.getElementById('itemsContainer');
     let focusIdx=null;
     if(preserveFocus&&container&&currentFiltered.length>0&&virtualGrid.cols>0){
@@ -4354,10 +4526,22 @@ function setColumnCount(value, preserveFocus=true){
         const col=Math.min(virtualGrid.cols-1,Math.max(0,Math.floor(virtualGrid.cols/2)));
         focusIdx=Math.min(currentFiltered.length-1,row*virtualGrid.cols+col);
     }
-    setPref('ipm_columns',next);
+    if(direction===0||nextBias===currentBias){
+        const label=document.getElementById('columnCountLabel');
+        if(label) label.textContent=prev+'列';
+        return;
+    }
+    setPref('ipm_columnDensityBias',nextBias);
+    lastLayoutKey='';
+    updateGridLayout();
+    const next=getColumnCount();
+    if(next===prev){
+        const label=document.getElementById('columnCountLabel');
+        if(label) label.textContent=next+'列';
+        return;
+    }
     const label=document.getElementById('columnCountLabel');
     if(label) label.textContent=next+'列';
-    updateGridLayout();
     renderItems(false);
     if(focusIdx!==null&&container){
         const containerTop=container.getBoundingClientRect().top+window.scrollY;
@@ -4391,14 +4575,7 @@ function getFilteredBoxes() {
 
     let result=currentBoxes.filter(box=>{
         if(kws.length>0){
-            let haystack=(box.name+' '+(box.remark||'')+' '+(box.tags||[]).join(' ')).toLowerCase();
-            const imgs=cachedBoxImages.get(box.id)||[];
-            for(const img of imgs){
-                const parts=img&&img.remark?parsePromptParts(img.remark):{};
-                const negative=img&&img.negativePrompt!==undefined?img.negativePrompt:(parts.negative||'');
-                const steps=img&&img.steps!==undefined?img.steps:(parts.steps||'');
-                haystack+=' '+(getImageRemark(img)+' '+negative+' '+steps).toLowerCase();
-            }
+            const haystack=(box.name+' '+(box.remark||'')+' '+(box.tags||[]).join(' ')+' '+(box.imageSearchText||'')).toLowerCase();
             if(!kws.every(k=>haystack.includes(k))) return false;
         }
         // Tag filter
@@ -4437,19 +4614,57 @@ function renderTagChips() {
     const tags=Array.from(allTags).sort();
     bar.innerHTML='';
     if(selectedFilterTags.length>0){
-        const clear=document.createElement('span');
+        const clear=document.createElement('button');
+        clear.type='button';
         clear.className='tag-filter-chip tag-filter-clear';
         clear.textContent='✕';
         clear.onclick=()=>{ selectedFilterTags=[]; renderTagChips(); renderItems(true,{updateStats:false}); };
         bar.appendChild(clear);
     }
     tags.forEach(tag=>{
-        const chip=document.createElement('span');
+        const chip=document.createElement('button');
+        chip.type='button';
         chip.className='tag-filter-chip'+(selectedFilterTags.includes(tag)?' active':'');
         chip.textContent=tag;
         chip.onclick=()=>toggleFilterTag(tag);
         bar.appendChild(chip);
     });
+}
+
+function renderGalleryEmptyState(container){
+    const query=document.getElementById('searchInput').value.trim();
+    const hasFilters=query||selectedFilterTags.length>0;
+    const wrap=document.createElement('div');
+    wrap.className='empty-state';
+    const title=document.createElement('strong');
+    const detail=document.createElement('span');
+    const action=document.createElement('button');
+    action.type='button';
+    action.className='btn btn-primary';
+    if(!currentModelId){
+        title.textContent='还没有模型标签';
+        detail.textContent='先建立一个模型标签，再导入对应的图片。';
+        action.textContent='新建模型';
+        action.onclick=()=>showModal('modelModal');
+    }else if(hasFilters){
+        title.textContent='没有找到匹配的卡片盒';
+        detail.textContent='可以换一个关键词，或者清除当前标签筛选。';
+        action.textContent='清除筛选';
+        action.onclick=()=>{
+            document.getElementById('searchInput').value='';
+            selectedFilterTags=[];
+            renderTagChips();
+            renderSidebarTags();
+            renderItems(true,{updateStats:false});
+        };
+    }else{
+        title.textContent='这个模型下还没有图片';
+        detail.textContent='导入本地图片后，它们会按卡片盒组织在这里。';
+        action.textContent='导入图片';
+        action.onclick=openUnifiedImport;
+    }
+    wrap.append(title,detail,action);
+    container.replaceChildren(wrap);
 }
 
 function renderItems(reset, options={}) {
@@ -4466,7 +4681,7 @@ function renderItems(reset, options={}) {
     }
 
     if(currentFiltered.length===0){
-        if(reset) container.innerHTML='<div style="text-align:center;padding:50px;color:var(--text-light);width:100%;">暂无卡片，请先导入或创建</div>';
+        if(reset) renderGalleryEmptyState(container);
         return;
     }
 
@@ -4767,26 +4982,49 @@ function resolvePrompts(remark, workflow){
     };
 }
 
-function extractPngTextChunks(bytes){
+async function inflateZlibBytes(bytes){
+    if(typeof DecompressionStream==='undefined') return null;
+    try{
+        const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+    }catch(e){ return null; }
+}
+
+async function extractPngTextChunks(bytes){
     let pos=8, remark=null, workflow=null;
-    while(pos<bytes.length-8){
-        const len=(bytes[pos]<<24)|(bytes[pos+1]<<16)|(bytes[pos+2]<<8)|bytes[pos+3];
+    const latin1=new TextDecoder('latin1');
+    const utf8=new TextDecoder('utf-8');
+    while(pos+12<=bytes.length){
+        const len=((bytes[pos]<<24)|(bytes[pos+1]<<16)|(bytes[pos+2]<<8)|bytes[pos+3])>>>0;
+        const chunkEnd=pos+8+len;
+        if(chunkEnd+4>bytes.length) break;
         const type=String.fromCharCode(bytes[pos+4],bytes[pos+5],bytes[pos+6],bytes[pos+7]);
         if(type==='tEXt'||type==='iTXt'||type==='zTXt'){
             const dataStart=pos+8;
             let keywordEnd=dataStart;
-            while(keywordEnd<dataStart+len&&bytes[keywordEnd]!==0) keywordEnd++;
-            const keyword=String.fromCharCode(...bytes.slice(dataStart,keywordEnd));
+            while(keywordEnd<chunkEnd&&bytes[keywordEnd]!==0) keywordEnd++;
+            if(keywordEnd>=chunkEnd){ pos+=12+len; continue; }
+            const keyword=latin1.decode(bytes.subarray(dataStart,keywordEnd));
             let valueStart=keywordEnd+1;
+            let valueBytes=null;
             if(type==='iTXt'){
+                if(valueStart+2>chunkEnd){ pos+=12+len; continue; }
+                const compressed=bytes[valueStart]===1;
                 let extraPos=keywordEnd+3;
-                while(extraPos<pos+8+len&&bytes[extraPos]!==0) extraPos++;
+                while(extraPos<chunkEnd&&bytes[extraPos]!==0) extraPos++;
                 extraPos++;
-                while(extraPos<pos+8+len&&bytes[extraPos]!==0) extraPos++;
+                while(extraPos<chunkEnd&&bytes[extraPos]!==0) extraPos++;
                 extraPos++;
                 valueStart=extraPos;
+                valueBytes=bytes.subarray(valueStart,chunkEnd);
+                if(compressed) valueBytes=await inflateZlibBytes(valueBytes);
+            }else if(type==='zTXt'){
+                valueBytes=await inflateZlibBytes(bytes.subarray(valueStart+1,chunkEnd));
+            }else{
+                valueBytes=bytes.subarray(valueStart,chunkEnd);
             }
-            const value=String.fromCharCode(...bytes.slice(valueStart,pos+8+len));
+            if(!valueBytes){ pos+=12+len; continue; }
+            const value=(type==='tEXt'?latin1:utf8).decode(valueBytes);
             if(keyword==='parameters'&&!remark) remark=value;
             else if(keyword==='workflow') workflow=value;
             else if((keyword==='prompt'||keyword==='Description'||keyword==='Comment')&&!remark) remark=value;
@@ -4829,14 +5067,14 @@ async function renderCardImages(card, box) {
     const cardUrlOwner='card:'+box.id;
     releaseBlobUrls(cardUrlOwner);
 
-    let images=cachedBoxImages.get(box.id);
+    let images=getCachedBoxImages(box.id);
 
     if(!images && card.dataset.imgLoaded!=='true'){
         pw.innerHTML=`<div class="preview-container"><div class="preview-loading">↻</div></div>`;
         const record=await dbGet(STORE_IMAGES, box.id);
         images=(record&&record.images)?record.images:[];
         images=images.map(normalizeImageRecord);
-        cachedBoxImages.set(box.id, images);
+        setCachedBoxImages(box.id, images);
         imageCount.set(box.id, images.length);
         card.dataset.imgLoaded='true';
     } else {
@@ -4873,7 +5111,7 @@ async function renderCardImages(card, box) {
         previewHTML=`
             <div class="preview-container">
                 <button class="nav-arrow left-arrow" ${viewIdx===0?'style="display:none;"':''}>◀</button>
-                <img src="${imgUrl}" class="preview-image" decoding="async">
+                <img src="${imgUrl}" class="preview-image" decoding="async" alt="${escapeHtml(box.name||'图片')}">
                 <div class="preview-overlay-top"></div>
                 <div class="preview-overlay-bottom"></div>
                 <div class="card-top-row">
@@ -4907,9 +5145,9 @@ async function renderCardImages(card, box) {
         }
         const end=Math.min(total, start+MAX);
         for(let i=start;i<end;i++){
-            html+=`<img src="${getThumbUrl(images[i],cardUrlOwner)}" class="thumb-box ${i===activeIdx?'active':''}" data-idx="${i}">`;
+            html+=`<button type="button" class="thumb-box ${i===activeIdx?'active':''}" data-idx="${i}" aria-label="查看第 ${i+1} 张图片"><img src="${getThumbUrl(images[i],cardUrlOwner)}" alt=""></button>`;
         }
-        html+=`<div class="thumb-box ${activeIdx>=total?'active':''}" data-idx="${total}" title="添加新图">+</div>`;
+        html+=`<button type="button" class="thumb-box ${activeIdx>=total?'active':''}" data-idx="${total}" title="添加新图" aria-label="添加新图">+</button>`;
         return html;
     }
 
@@ -4982,12 +5220,12 @@ async function renderCardImages(card, box) {
 }
 
 async function showFullscreen(boxId, imgIdx) {
-    let images=cachedBoxImages.get(boxId);
+    let images=getCachedBoxImages(boxId);
     if(!images){
         const record=await dbGet(STORE_IMAGES, boxId);
         images=(record&&record.images)?record.images:[];
         images=images.map(normalizeImageRecord);
-        cachedBoxImages.set(boxId, images);
+        setCachedBoxImages(boxId, images);
         imageCount.set(boxId, images.length);
     }
     if(!images[imgIdx]) return;
@@ -5002,7 +5240,7 @@ async function showFullscreen(boxId, imgIdx) {
 }
 
 function updateFullscreenNav() {
-    const images=cachedBoxImages.get(fullscreenBoxId)||[];
+    const images=getCachedBoxImages(fullscreenBoxId)||[];
     const prevBtn=document.querySelector('.lightbox-prev');
     const nextBtn=document.querySelector('.lightbox-next');
     if(prevBtn) prevBtn.style.visibility=fullscreenImgIdx>0?'visible':'hidden';
@@ -5010,7 +5248,7 @@ function updateFullscreenNav() {
 }
 
 function fullscreenNav(delta) {
-    const images=cachedBoxImages.get(fullscreenBoxId)||[];
+    const images=getCachedBoxImages(fullscreenBoxId)||[];
     const newIdx=fullscreenImgIdx+delta;
     if(newIdx<0||newIdx>=images.length) return;
     fullscreenImgIdx=newIdx;
@@ -5042,11 +5280,11 @@ async function editFromFullscreen() {
 async function deleteFromFullscreen() {
     if(fullscreenBoxId===null) return;
     const boxId=fullscreenBoxId;
-    const images=cachedBoxImages.get(boxId)||[];
+    const images=getCachedBoxImages(boxId)||[];
     if(images.length===0) return;
     const idx=fullscreenImgIdx;
     await deleteImage(boxId, idx, cardByBoxId.get(boxId));
-    const after=cachedBoxImages.get(boxId)||[];
+    const after=getCachedBoxImages(boxId)||[];
     if(after.length===0){
         hideModal('fullscreenOverlay');
         return;
@@ -5147,7 +5385,8 @@ function renderSidebarTags(){
         return a.localeCompare(b);
     });
     visible.forEach(tag=>{
-        const chip=document.createElement('span');
+        const chip=document.createElement('button');
+        chip.type='button';
         chip.className='sidebar-tag-chip'+(selectedFilterTags.includes(tag)?' active':'');
         chip.textContent=tag;
         chip.onclick=()=>toggleFilterTag(tag);
@@ -5192,15 +5431,22 @@ async function deleteModel(e,id) {
         '<p>确认删除模型 <b>'+escapeHtml(modelName)+'</b> 及其所有数据吗？此操作不可恢复。</p>',
         '删除','取消',async()=>{
             const boxes=await dbGetByIndex(STORE_BOXES,'modelId',id);
+            const nextModels={...MODELS};
+            delete nextModels[id];
+            await dbTransaction([STORE_MODELS,STORE_BOXES,STORE_IMAGES],'readwrite',stores=>{
+                boxes.forEach(box=>{
+                    stores[STORE_IMAGES].delete(box.id);
+                    stores[STORE_BOXES].delete(box.id);
+                });
+                stores[STORE_MODELS].put({id:'main',data:nextModels});
+            });
             for(const box of boxes){
-                await dbDelete(STORE_IMAGES,box.id);
-                await dbDelete(STORE_BOXES,box.id);
                 releaseBlobUrls('card:'+box.id);
-                cachedBoxImages.delete(box.id);
+                deleteCachedBoxImages(box.id);
                 imageCount.delete(box.id);
             }
-            delete MODELS[id];
-            await saveModels();
+            MODELS=nextModels;
+            scheduleGlobalStatsRefresh();
             if(currentModelId===id){
                 currentModelId=Object.keys(MODELS)[0];
                 setPref('ipm_lastModel',currentModelId);
@@ -5406,7 +5652,7 @@ async function getPromptFixBoxes(includeAll){
 }
 
 async function getPromptFixImages(box, includeAll){
-    let imgs=!includeAll ? cachedBoxImages.get(box.id) : null;
+    let imgs=!includeAll ? getCachedBoxImages(box.id) : null;
     if(!imgs){
         const record=await dbGet(STORE_IMAGES, box.id);
         imgs=(record&&record.images)?record.images:[];
@@ -5435,7 +5681,7 @@ async function buildPromptFixPlan(includeAll){
                 if(getImageMimeType(img)==='image/png'){
                     const bytes=await imageToBytes(img);
                     if(bytes){
-                        const chunks=extractPngTextChunks(bytes);
+                        const chunks=await extractPngTextChunks(bytes);
                         const prompts=resolvePrompts(chunks.remark, chunks.workflow);
                         const fields={};
                         if(chunks.remark&&!img.remark) fields.remark=chunks.remark;
@@ -5542,8 +5788,13 @@ async function executePromptFixPlan(plan){
                 await new Promise(r=>setTimeout(r,0));
             }
         }
-        await dbPut(STORE_IMAGES,{id:boxChange.boxId, boxId:boxChange.boxId, images});
-        if(cachedBoxImages.has(boxChange.boxId)) cachedBoxImages.set(boxChange.boxId,images);
+        const box=currentBoxes.find(item=>item.id===boxChange.boxId)||await dbGet(STORE_BOXES,boxChange.boxId);
+        if(box){
+            box.imageCount=images.length;
+            updateBoxSearchText(box,images);
+            await dbSaveBoxAndImages(box,images);
+        }
+        if(cachedBoxImages.has(boxChange.boxId)) setCachedBoxImages(boxChange.boxId,images);
     }
     hideModal('progressModal');
     updateStatsAndTags(); renderItems(true,{updateStats:false});
@@ -5648,7 +5899,8 @@ function renderBatchTagSuggestions(){
     title.textContent='待选标签';
     container.appendChild(title);
     tags.forEach(t=>{
-        const chip=document.createElement('span');
+        const chip=document.createElement('button');
+        chip.type='button';
         chip.className='tag-chip'+(selectedSet.has(t)?' selected':'');
         chip.textContent=t;
         chip.onclick=()=>{
@@ -5722,10 +5974,14 @@ async function executeBatchDelete() {
         '删除','取消',async()=>{
             const selectedIds=new Set(batchSelection);
             const deletedCount=selectedIds.size;
+            await dbTransaction([STORE_BOXES,STORE_IMAGES],'readwrite',stores=>{
+                selectedIds.forEach(boxId=>{
+                    stores[STORE_IMAGES].delete(boxId);
+                    stores[STORE_BOXES].delete(boxId);
+                });
+            });
             for(const boxId of selectedIds){
-                await dbDelete(STORE_IMAGES,boxId);
-                await dbDelete(STORE_BOXES,boxId);
-                cachedBoxImages.delete(boxId);
+                deleteCachedBoxImages(boxId);
                 imageCount.delete(boxId);
             }
             currentBoxes=currentBoxes.filter(b=>!selectedIds.has(b.id));
@@ -5742,15 +5998,23 @@ async function executeBatchCopy() {
         if(!box) continue;
         const newId='box_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
         const newBox={...box, id:newId, name:(box.name||'未命名')+' - 副本', createdAt:Date.now(), modelId:currentModelId};
-        await dbPut(STORE_BOXES,newBox);
-        const images=cachedBoxImages.get(boxId);
-        if(images&&images.length>0){
+        let images=getCachedBoxImages(boxId);
+        if(!images){
+            const record=await dbGet(STORE_IMAGES,boxId);
+            images=record&&Array.isArray(record.images)?record.images:[];
+        }
+        if(images.length>0){
             const newImages=images.map(img=>({...img}));
-            await dbPut(STORE_IMAGES,{id:newId, boxId:newId, images:newImages});
-            cachedBoxImages.set(newId,newImages);
+            newBox.imageCount=newImages.length;
+            updateBoxSearchText(newBox,newImages);
+            await dbSaveBoxAndImages(newBox,newImages);
+            setCachedBoxImages(newId,newImages);
             imageCount.set(newId,newImages.length);
         } else {
-            cachedBoxImages.set(newId,[]);
+            newBox.imageCount=0;
+            updateBoxSearchText(newBox,[]);
+            await dbSaveBoxAndImages(newBox,[]);
+            setCachedBoxImages(newId,[]);
             imageCount.set(newId,0);
         }
         currentBoxes.push(newBox);
@@ -5835,7 +6099,16 @@ async function parseLocalModeZipFile(file, options={}){
     const importModels=settings.models||{};
     const importFilters=settings.copyFilterPatterns||[];
     const importBoxes={};
-    const report={jsonTotal:0, actualFiles:0, missingFiles:[], orphanFiles:[], hashDups:[], modelCount:0, boxCount:0};
+    const report={jsonTotal:0, actualFiles:0, missingFiles:[], orphanFiles:[], modelCount:0, boxCount:0};
+    const imageNamesByFolder=new Map();
+    for(const path of Object.keys(zip.files||{})){
+        if(!isImageFileName(path)) continue;
+        const slash=path.lastIndexOf('/');
+        const folder=slash>=0?path.slice(0,slash+1):'';
+        const fileName=slash>=0?path.slice(slash+1):path;
+        if(!imageNamesByFolder.has(folder)) imageNamesByFolder.set(folder,new Set());
+        imageNamesByFolder.get(folder).add(fileName);
+    }
     let done=0;
     const boxRefs=[];
     for(const modelId of Object.keys(settings.boxIndex||{})){
@@ -5859,33 +6132,7 @@ async function parseLocalModeZipFile(file, options={}){
         report.boxCount++;
         const metaImageNames=new Set(Object.keys(imgMap||{}));
         const boxPrefix=ref.modelName+'/'+ref.folderName+'/';
-        const actualImageNames=new Set();
-        for(const path of Object.keys(zip.files||{})){
-            if(!path.startsWith(boxPrefix)) continue;
-            const rel=path.slice(boxPrefix.length);
-            if(!rel || rel.includes('/') || rel==='_meta.json') continue;
-            if(isImageFileName(rel)) actualImageNames.add(rel);
-        }
-        const hashMap=new Map();
-        for(const imgName of actualImageNames){
-            const imgFile=zip.file(boxPrefix+imgName);
-            if(!imgFile) continue;
-            try{
-                const bytes=new Uint8Array(await imgFile.async('arraybuffer'));
-                const hash=await hashBytes(bytes);
-                if(hash){
-                    if(!hashMap.has(hash)) hashMap.set(hash,[]);
-                    hashMap.get(hash).push(imgName);
-                }
-            }catch(e){}
-        }
-        for(const [hash,names] of hashMap){
-            if(names.length>1){
-                for(let i=1;i<names.length;i++){
-                    report.hashDups.push({modelId:ref.modelId,boxId:actualBoxId,folderName:ref.folderName,fileName:names[i],hash});
-                }
-            }
-        }
+        const actualImageNames=imageNamesByFolder.get(boxPrefix)||new Set();
         for(const imgName of metaImageNames){
             report.jsonTotal++;
             const imgPath=ref.modelName+'/'+ref.folderName+'/'+imgName;
@@ -5900,7 +6147,7 @@ async function parseLocalModeZipFile(file, options={}){
                 const bytes=new Uint8Array(imgBuf);
                 const storedMeta=imgMap[imgName]||{};
                 const imgMeta=imageMetaNeedsPromptScan(storedMeta)
-                    ? mergeExtractedImageMeta(storedMeta,extractImageRemarkFromBytes(bytes))
+                    ? mergeExtractedImageMeta(storedMeta,await extractImageRemarkFromBytes(bytes))
                     : storedMeta;
                 importBoxes[ref.modelId].images[actualBoxId].push(await createImageRecordFromBytes(bytes,imgName,{name:imgName,...imgMeta}));
                 if(progress) progress({done:report.actualFiles,total:report.jsonTotal||report.actualFiles,modelName:ref.modelName,boxName:box.name||ref.folderName});
@@ -5916,7 +6163,7 @@ async function parseLocalModeZipFile(file, options={}){
                 if(!imgFile) continue;
                 const imgBuf=await imgFile.async('arraybuffer');
                 const bytes=new Uint8Array(imgBuf);
-                const extracted=extractImageRemarkFromBytes(bytes);
+                const extracted=await extractImageRemarkFromBytes(bytes);
                 const prompts=resolvePrompts(extracted.remark||'', extracted.workflow||null);
                 importBoxes[ref.modelId].images[actualBoxId].push(await createImageRecordFromBytes(bytes,imgName,{
                     name:imgName,
@@ -6019,8 +6266,10 @@ async function importPackageToDB(pkg, options={}){
                     notify({phase:'image',modelId:importModelId,boxId:box.id,fileName:nextImg.name});
                 }
                 const mergedTags=Array.from(new Set([...(existingBox.tags||[]),...(box.tags||[])]));
-                await dbPut(STORE_BOXES,{...existingBox,tags:mergedTags,imageCount:mergedImages.length});
-                await dbPut(STORE_IMAGES,{id:existingBox.id,boxId:existingBox.id,images:mergedImages});
+                const mergedBox={...existingBox,tags:mergedTags,imageCount:mergedImages.length};
+                updateBoxSearchText(mergedBox,mergedImages);
+                await dbSaveBoxAndImages(mergedBox,mergedImages);
+                boxesByModelAndName.set(targetModelId+'\n'+(mergedBox.name||''),mergedBox);
                 boxCount++;
             }else{
                 let targetBoxId=usedBoxIds.has(box.id)?makeUniqueId('box',usedBoxIds):box.id;
@@ -6041,8 +6290,8 @@ async function importPackageToDB(pkg, options={}){
                     }
                 }
                 const cleanBox={...box,id:targetBoxId,modelId:targetModelId,imageCount:preparedIncoming.length};
-                await dbPut(STORE_BOXES,cleanBox);
-                await dbPut(STORE_IMAGES,{id:targetBoxId,boxId:targetBoxId,images:preparedIncoming});
+                updateBoxSearchText(cleanBox,preparedIncoming);
+                await dbSaveBoxAndImages(cleanBox,preparedIncoming);
                 boxesByModelAndName.set(targetModelId+'\n'+(cleanBox.name||''),cleanBox);
                 boxCount++;
                 imgCount+=preparedIncoming.length;
@@ -6244,11 +6493,6 @@ document.addEventListener('DOMContentLoaded',async ()=>{
         document.body.classList.remove('layout-initializing');
         return;
     }
-    try{
-        await migrateLegacyImageDataAndCounts();
-    }catch(error){
-        reportDataError(error,'图库数据升级失败');
-    }
     bindPanelMenuHover();
     updateSidebarWidth();
     restoreSidebarState();
@@ -6282,13 +6526,42 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     }
 
     // DB-primary mode: local folders are only touched by explicit import/sync tools.
-    await reloadData();
-    document.body.classList.remove('layout-initializing');
+    try{
+        await reloadData();
+        document.body.classList.remove('layout-initializing');
+    }catch(error){
+        document.body.classList.remove('layout-initializing');
+        reportDataError(error,'图库读取失败');
+        const container=document.getElementById('itemsContainer');
+        if(container) container.innerHTML='<div class="empty-state"><strong>图库暂时无法读取</strong><span>请刷新页面重试，在恢复前不要重置数据。</span></div>';
+        return;
+    }
+
+    if((appSettings.imageDataVersion||0)<IMAGE_DATA_VERSION){
+        showModal('progressModal');
+        setImportBusy(true);
+        document.getElementById('progressTitle').innerText='升级图库数据...';
+        document.getElementById('progressFill').style.width='0%';
+        document.getElementById('progressText').innerText='准备中...';
+        try{
+            await migrateLegacyImageDataAndCounts(({processed,total})=>{
+                const pct=total?Math.round(processed/total*100):100;
+                document.getElementById('progressFill').style.width=pct+'%';
+                document.getElementById('progressText').innerText=processed+'/'+total+' ('+pct+'%)';
+            });
+            await reloadData();
+        }catch(error){
+            reportDataError(error,'图库数据升级失败');
+        }finally{
+            setImportBusy(false);
+            hideModal('progressModal');
+        }
+    }
     // Event listeners
     window.addEventListener('scroll',onScroll,{passive:true});
     window.addEventListener('resize',()=>{ updateSidebarWidth(); updateGridLayout(); renderItems(false); });
 
-    document.getElementById('searchInput').addEventListener('input',()=>renderItems(true,{updateStats:false}));
+    document.getElementById('searchInput').addEventListener('input',handleSearchInput);
     document.getElementById('sortSelect').addEventListener('change',()=>renderItems(true,{updateStats:false}));
     const columnControl=document.getElementById('columnCountControl');
     if(columnControl){
